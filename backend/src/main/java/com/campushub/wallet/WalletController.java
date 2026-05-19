@@ -1,6 +1,7 @@
 package com.campushub.wallet;
 
 import com.campushub.common.ApiResponse;
+import com.campushub.common.BusinessException;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,13 @@ public class WalletController {
                 .map(WalletAccountSummary::from)
                 .toList();
         return ApiResponse.ok(accounts);
+    }
+
+    @GetMapping("/users/{userId}")
+    public ApiResponse<WalletAccountSummary> getUserWallet(@PathVariable Long userId) {
+        WalletAccount account = walletAccountRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException("wallet account not found"));
+        return ApiResponse.ok(WalletAccountSummary.from(account));
     }
 
     @GetMapping("/users/{userId}/flows")
