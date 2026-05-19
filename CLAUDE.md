@@ -102,7 +102,7 @@ npm --prefix frontend run build
 
 The build emits a Vite warning that the main chunk is larger than 500KB because Element Plus is bundled broadly. This is not currently treated as a build failure.
 
-Backend verification was attempted with Maven, but the previous environment lacked both `mvn` and a Maven wrapper. Re-run backend verification once Maven is available.
+Backend verification was attempted locally with Maven, but the local environment lacked both `mvn` and a Maven wrapper. Backend Docker image builds successfully on the production server after the latest fixes below.
 
 ## Payment and production boundary
 
@@ -126,3 +126,29 @@ Production security requirements:
 - Never commit real `.env`, SMTP passwords, JWT secrets, payment-center tokens, or database passwords.
 - `.env.prod.example` is the only env-style production file intended for git.
 - MySQL must not be exposed publicly in production; use internal Docker networking and reverse proxy only web/API traffic.
+
+## Latest deployment handoff, 2026-05-20
+
+Pushed commits on `master` during the deployment session:
+
+- `426cb39` add local payment flow and production deploy config.
+- `ccaca1f` add Docker build ignores.
+- `f414eaf` fix auth controller password encoder injection.
+- `15c44dc` skip test compilation in production image build.
+- `aa06567` fetch goods seller for summary mapping.
+
+Server state after `aa06567`:
+
+- `/opt/campushub` exists and tracks `https://github.com/SunTomb/USTC-CampusHub.git`.
+- `.env` exists on the server, generated with random local deployment secrets; do not print it.
+- `docker compose -f docker-compose.prod.yml up -d --build` succeeded.
+- Running containers: `campushub-campushub-mysql-1` healthy, `campushub-campushub-backend-1` up, `campushub-campushub-web-1` up and bound to `127.0.0.1:18080->80`.
+- Local server check `curl http://127.0.0.1:18080` returns the Vue app.
+- Local server check `curl http://127.0.0.1:18080/api/goods` returns `success: true` after the `GoodsRepository @EntityGraph(attributePaths = "seller")` fix.
+
+Known remaining issues before public Playwriter verification:
+
+- `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/payment/users/1/service-fees` returned HTTP 500 on the server. They are likely the same `LazyInitializationException` pattern as `/api/goods`: DTO mappers access lazy `User` / owner / payer relations after the session closes. Minimal fix is to add `@EntityGraph` to the relevant repository query methods for `publisher`, `owner`, and `payer` as appropriate.
+- Frontend currently calls `getWallet(1)` as `/api/wallet/users/1`, but backend only exposes `/api/wallet/accounts` and `/api/wallet/users/{userId}/flows`; either add `GET /api/wallet/users/{userId}` using `WalletAccountRepository.findByUserId`, or change the frontend to use `/wallet/accounts`.
+- The public domain `https://ustc.suntomb.qzz.io` was not yet verified after containers came up. Existing `deploy-web-1` owns host ports 80/443 for the API-Transfer-Station site; integrate CampusHub carefully into that existing reverse proxy, without disrupting `server.suntomb.qzz.io`.
+- The server is only 2 vCPU / 2 GB RAM and already hosts another site. Use small steps, low-frequency checks, and avoid repeated full Docker builds unless necessary.
