@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  mail:
+    host: ${CAMPUSHUB_MAIL_SMTP_HOST}
+    port: ${CAMPUSHUB_MAIL_SMTP_PORT:587}
+    username: ${CAMPUSHUB_MAIL_SMTP_USERNAME}
+    password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: ${CAMPUSHUB_MAIL_SMTP_CONNECTION_TIMEOUT_MS:5000}
+          timeout: ${CAMPUSHUB_MAIL_SMTP_TIMEOUT_MS:5000}
+          writetimeout: ${CAMPUSHUB_MAIL_SMTP_WRITE_TIMEOUT_MS:5000}
+
+logging:
+  level:
+    com.campushub: info
+    org.hibernate.SQL: warn
+
+campushub:
+  jwt:
+    issuer: ${CAMPUSHUB_JWT_ISSUER:campushub}
+    secret: ${CAMPUSHUB_JWT_SECRET}
+    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:720}
+  file-storage:
+    root: ${CAMPUSHUB_FILE_ROOT:/var/lib/campushub/uploads}
+  payment:
+    provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
+    mock-enabled: ${CAMPUSHUB_PAYMENT_MOCK_ENABLED:false}
+  mail:
+    enabled: ${CAMPUSHUB_MAIL_ENABLED:true}
+    provider: ${CAMPUSHUB_MAIL_PROVIDER:brevo}
+    smtp:
+      host: ${CAMPUSHUB_MAIL_SMTP_HOST}
+      port: ${CAMPUSHUB_MAIL_SMTP_PORT:587}
+      username: ${CAMPUSHUB_MAIL_SMTP_USERNAME}
+      password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD}
+      from: ${CAMPUSHUB_MAIL_FROM}
+      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:CampusHub}
+    code:
+      ttl-minutes: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:10}
+      resend-seconds: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:60}

@@ -1,0 +1,41 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: campushub
+  profiles:
+    default: local
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+campushub:
+  jwt:
+    issuer: ${CAMPUSHUB_JWT_ISSUER:campushub-local}
+    secret: ${CAMPUSHUB_JWT_SECRET:campushub-local-development-secret-with-enough-length}
+    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:720}
+  file-storage:
+    root: ${CAMPUSHUB_FILE_ROOT:./data/uploads}
+  payment:
+    provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
+  mail:
+    enabled: ${CAMPUSHUB_MAIL_ENABLED:false}
+    provider: ${CAMPUSHUB_MAIL_PROVIDER:mock}
+    smtp:
+      host: ${CAMPUSHUB_MAIL_SMTP_HOST:localhost}
+      port: ${CAMPUSHUB_MAIL_SMTP_PORT:587}
+      username: ${CAMPUSHUB_MAIL_SMTP_USERNAME:}
+      password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD:}
+      from: ${CAMPUSHUB_MAIL_FROM:no-reply@localhost}
+      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:CampusHub}
+    code:
+      ttl-minutes: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:10}
+      resend-seconds: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:60}

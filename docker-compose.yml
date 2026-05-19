@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: campushub-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root-local-password
+      MYSQL_DATABASE: campushub
+      MYSQL_USER: campushub
+      MYSQL_PASSWORD: campushub-local-password
+    ports:
+      - "3306:3306"
+    volumes:
+      - campushub-mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot-local-password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  campushub-mysql-data:
