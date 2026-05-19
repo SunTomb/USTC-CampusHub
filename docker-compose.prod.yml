@@ -1,0 +1,71 @@
+services:
+  campushub-mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-campushub}
+      MYSQL_USER: ${MYSQL_USER:-campushub}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - campushub-mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - campushub
+
+  campushub-backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      campushub-mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://campushub-mysql:3306/${MYSQL_DATABASE:-campushub}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-campushub}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      CAMPUSHUB_JWT_SECRET: ${CAMPUSHUB_JWT_SECRET}
+      CAMPUSHUB_JWT_ISSUER: ${CAMPUSHUB_JWT_ISSUER:-campushub}
+      CAMPUSHUB_FILE_ROOT: /app/uploads
+      CAMPUSHUB_PAYMENT_PROVIDER: ${CAMPUSHUB_PAYMENT_PROVIDER:-mock}
+      CAMPUSHUB_PAYMENT_MOCK_ENABLED: ${CAMPUSHUB_PAYMENT_MOCK_ENABLED:-false}
+      CAMPUSHUB_MAIL_ENABLED: ${CAMPUSHUB_MAIL_ENABLED:-true}
+      CAMPUSHUB_MAIL_PROVIDER: ${CAMPUSHUB_MAIL_PROVIDER:-brevo}
+      CAMPUSHUB_MAIL_SMTP_HOST: ${CAMPUSHUB_MAIL_SMTP_HOST}
+      CAMPUSHUB_MAIL_SMTP_PORT: ${CAMPUSHUB_MAIL_SMTP_PORT:-587}
+      CAMPUSHUB_MAIL_SMTP_USERNAME: ${CAMPUSHUB_MAIL_SMTP_USERNAME}
+      CAMPUSHUB_MAIL_SMTP_PASSWORD: ${CAMPUSHUB_MAIL_SMTP_PASSWORD}
+      CAMPUSHUB_MAIL_FROM: ${CAMPUSHUB_MAIL_FROM}
+      CAMPUSHUB_MAIL_FROM_NAME: ${CAMPUSHUB_MAIL_FROM_NAME:-校集 CampusHub}
+      CAMPUSHUB_MAIL_CODE_TTL_MINUTES: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:-10}
+      CAMPUSHUB_MAIL_CODE_RESEND_SECONDS: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:-60}
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - campushub
+
+  campushub-web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - campushub-backend
+    ports:
+      - "127.0.0.1:${CAMPUSHUB_WEB_PORT:-18080}:80"
+    networks:
+      - campushub
+
+volumes:
+  campushub-mysql-data:
+
+networks:
+  campushub:
+    name: campushub

@@ -8,6 +8,8 @@ CampusHub is a USTC database course-design prototype for a campus second-hand tr
 
 The repository is intentionally scoped to the `campushub/` application only. Course LaTeX/PDF artifacts live outside this repository and should not be treated as app source.
 
+Shell tools are normally restricted for this project: prefer dedicated file/search/edit tools for local reads and edits. For explicitly authorized deployment work, Bash or PowerShell may be used only for git push, SSH, server deployment, Docker Compose, and necessary verification; never use shell to read or print secret contents.
+
 ## Common commands
 
 ### Local database
@@ -71,6 +73,7 @@ Important flows:
 - `application.yml` contains shared defaults and local-safe development values.
 - `application-local.yml` contains local datasource settings.
 - `application-prod.yml` is environment-variable driven for production datasource, JWT, upload root, payment mode, and SMTP/Brevo mail settings.
+- `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, and `frontend/nginx.conf` define the current containerized production deployment shape.
 - Production secrets should be supplied through environment variables, not committed files.
 
 Mail-related environment variable names use the `CAMPUSHUB_MAIL_*` / `CAMPUSHUB_MAIL_SMTP_*` / `CAMPUSHUB_MAIL_CODE_*` pattern from `application.yml` and `application-prod.yml`.
@@ -104,3 +107,22 @@ Backend verification was attempted with Maven, but the previous environment lack
 ## Payment and production boundary
 
 CampusHub currently keeps payment local/mock-oriented. Production Alipay handling is expected to remain in the external API-Transfer-Station payment center, with CampusHub calling internal payment-center APIs and receiving internal callbacks. Do not make CampusHub read or copy Alipay private/public key files directly unless the architecture is explicitly changed later.
+
+Current local payment code provides `PaymentProvider`, `MockPaymentProvider`, `AlipayPaymentProvider` skeleton, `PaymentService`, and payment endpoints under `/api/payment/service-fees/{feeId}/mock-pay` and `/api/payment/service-fees/{feeId}/mock-success`. The mock success endpoint marks pending service-fee records as `PAID` and writes a wallet flow for demonstration.
+
+Production deployment context from `生产环境与支付中心接手说明.md`:
+
+- Target domain: `https://ustc.suntomb.qzz.io`.
+- Server: `38.76.179.17`, SSH user `root`, key-based login.
+- Recommended production directory: `/opt/campushub`.
+- Existing API-Transfer-Station production app lives at `/opt/ai-relay`; keep CampusHub separate from it.
+- Preferred production flow is: push CampusHub code to GitHub, pull on the server, deploy with `docker-compose.prod.yml`, then verify in browser with Playwriter.
+- The server is small enough that long-lived heavy Maven/npm/Docker build work should be used cautiously.
+
+Production security requirements:
+
+- Never read, print, copy, or commit Alipay key file contents from `/opt/ai-relay/secrets/alipay/` or container secret mounts.
+- If diagnosing Alipay secret access, only check existence/permissions/mount paths; do not output key contents.
+- Never commit real `.env`, SMTP passwords, JWT secrets, payment-center tokens, or database passwords.
+- `.env.prod.example` is the only env-style production file intended for git.
+- MySQL must not be exposed publicly in production; use internal Docker networking and reverse proxy only web/API traffic.

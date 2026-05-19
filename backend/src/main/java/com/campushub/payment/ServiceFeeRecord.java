@@ -46,6 +46,18 @@ public class ServiceFeeRecord {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
+    protected ServiceFeeRecord() {
+    }
+
+    public ServiceFeeRecord(String feeNo, User payer, String targetType, Long targetId, BigDecimal amount) {
+        this.feeNo = feeNo;
+        this.payer = payer;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.amount = amount;
+        this.status = "PENDING";
+    }
+
     public Long getId() {
         return id;
     }
@@ -80,5 +92,10 @@ public class ServiceFeeRecord {
 
     public LocalDateTime getPaidAt() {
         return paidAt;
+    }
+
+    public void markPaid(LocalDateTime paidAt) {
+        this.status = "PAID";
+        this.paidAt = paidAt;
     }
 }

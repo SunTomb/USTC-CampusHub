@@ -28,6 +28,27 @@
       </div>
     </div>
 
+    <el-card shadow="never">
+      <template #header>服务费与本地 mock 支付</template>
+      <el-table v-loading="loading" :data="serviceFees" stripe class="data-table">
+        <el-table-column prop="feeNo" label="服务费单号" min-width="170" />
+        <el-table-column prop="targetType" label="业务类型" width="150" />
+        <el-table-column prop="amount" label="金额" width="100">
+          <template #default="{ row }">¥{{ row.amount }}</template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100" />
+        <el-table-column prop="paidAt" label="支付时间" min-width="170" />
+        <el-table-column label="操作" width="180">
+          <template #default="{ row }">
+            <el-button v-if="row.status !== 'PAID'" size="small" :loading="payingId === row.id" @click="payFee(row.id)">
+              本地模拟支付
+            </el-button>
+            <el-tag v-else type="success">已支付</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <el-table v-loading="loading" :data="flows" stripe class="data-table">
       <el-table-column prop="flowNo" label="流水号" min-width="180" />
       <el-table-column prop="direction" label="方向" width="90" />
@@ -46,22 +67,48 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getWallet, listWalletFlows, type WalletAccountSummary, type WalletFlowSummary } from '@/api/campushub'
+import {
+  createMockServiceFeePayment,
+  getWallet,
+  listServiceFees,
+  listWalletFlows,
+  markMockServiceFeeSuccess,
+  type ServiceFeeSummary,
+  type WalletAccountSummary,
+  type WalletFlowSummary,
+} from '@/api/campushub'
 
 const account = ref<WalletAccountSummary>()
 const flows = ref<WalletFlowSummary[]>([])
+const serviceFees = ref<ServiceFeeSummary[]>([])
 const loading = ref(false)
+const payingId = ref<number>()
 
 async function loadWallet() {
   loading.value = true
   try {
-    const [walletAccount, walletFlows] = await Promise.all([getWallet(1), listWalletFlows(1)])
+    const [walletAccount, walletFlows, fees] = await Promise.all([getWallet(1), listWalletFlows(1), listServiceFees(1)])
     account.value = walletAccount
     flows.value = walletFlows
+    serviceFees.value = fees
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '钱包加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function payFee(feeId: number) {
+  payingId.value = feeId
+  try {
+    const payment = await createMockServiceFeePayment(feeId)
+    const status = await markMockServiceFeeSuccess(feeId)
+    ElMessage.success(`${payment.provider}: ${status.message}`)
+    await loadWallet()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '本地支付失败')
+  } finally {
+    payingId.value = undefined
   }
 }
 

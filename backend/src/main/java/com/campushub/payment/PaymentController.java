@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
+    private final PaymentService paymentService;
 
-    public PaymentController(ServiceFeeRecordRepository serviceFeeRecordRepository) {
+    public PaymentController(ServiceFeeRecordRepository serviceFeeRecordRepository, PaymentService paymentService) {
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
+        this.paymentService = paymentService;
     }
 
     @GetMapping("/service-fees")
@@ -35,13 +37,12 @@ public class PaymentController {
     }
 
     @PostMapping("/service-fees/{feeId}/mock-pay")
-    public ApiResponse<MockPayResponse> mockPayServiceFee(@PathVariable Long feeId) {
-        ServiceFeeRecord fee = serviceFeeRecordRepository.findById(feeId)
-                .orElseThrow(() -> new IllegalArgumentException("service fee not found"));
-        return ApiResponse.ok(new MockPayResponse(
-                "LOCAL_MOCK_ALIPAY_READY",
-                fee.getFeeNo(),
-                fee.getStatus(),
-                "本地演示接口：不调用真实支付网关，生产环境需接入支付宝签名验签和 HTTPS 回调。"));
+    public ApiResponse<PaymentCreation> createMockServiceFeePayment(@PathVariable Long feeId) {
+        return ApiResponse.ok(paymentService.createServiceFeePayment(feeId));
+    }
+
+    @PostMapping("/service-fees/{feeId}/mock-success")
+    public ApiResponse<PaymentStatus> markMockServiceFeeSuccess(@PathVariable Long feeId) {
+        return ApiResponse.ok(paymentService.markMockServiceFeeSuccess(feeId));
     }
 }

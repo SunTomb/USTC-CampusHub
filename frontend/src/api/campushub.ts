@@ -87,6 +87,34 @@ export interface WalletFlowSummary {
   createdAt: string
 }
 
+export interface ServiceFeeSummary {
+  id: number
+  feeNo: string
+  payerId: number
+  payerNickname: string
+  targetType: string
+  targetId: number
+  amount: number
+  status: string
+  createdAt: string
+  paidAt: string | null
+}
+
+export interface PaymentCreation {
+  provider: string
+  tradeNo: string
+  paymentUrl: string
+  status: string
+  message: string
+}
+
+export interface PaymentStatus {
+  provider: string
+  tradeNo: string
+  status: string
+  message: string
+}
+
 export interface ReviewRecordSummary {
   id: number
   reviewerId: number | null
@@ -143,6 +171,18 @@ export function getWallet(userId = 1) {
 
 export function listWalletFlows(userId = 1) {
   return getApi<WalletFlowSummary[]>(`/wallet/users/${userId}/flows`)
+}
+
+export function listServiceFees(userId = 1) {
+  return getApi<ServiceFeeSummary[]>(`/payment/users/${userId}/service-fees`)
+}
+
+export function createMockServiceFeePayment(feeId: number) {
+  return postApi<PaymentCreation>(`/payment/service-fees/${feeId}/mock-pay`, {})
+}
+
+export function markMockServiceFeeSuccess(feeId: number) {
+  return postApi<PaymentStatus>(`/payment/service-fees/${feeId}/mock-success`, {})
 }
 
 export function listReviewRecords() {

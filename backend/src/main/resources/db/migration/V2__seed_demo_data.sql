@@ -78,7 +78,8 @@ INSERT INTO wallet_flows (wallet_account_id, user_id, flow_no, direction, amount
 
 INSERT INTO service_fee_records (fee_no, payer_id, target_type, target_id, amount, status, paid_at) VALUES
 ('SF202605190001', 1, 'GOODS_ORDER', 1, 0.70, 'PAID', CURRENT_TIMESTAMP(6)),
-('SF202605190002', 1, 'SERVICE_ORDER', 1, 1.18, 'PAID', CURRENT_TIMESTAMP(6));
+('SF202605190002', 1, 'SERVICE_ORDER', 1, 1.18, 'PAID', CURRENT_TIMESTAMP(6)),
+('SF202605190003', 2, 'LOCAL_PAYMENT_DEMO', 1, 0.99, 'PENDING', NULL);
 
 INSERT INTO file_resources (id, uploader_id, original_name, storage_path, content_type, size_bytes, status) VALUES
 (1, 1, 'keyboard.jpg', './data/uploads/demo/keyboard.jpg', 'image/jpeg', 102400, 'AVAILABLE'),

@@ -52,6 +52,30 @@ public class WalletFlow {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected WalletFlow() {
+    }
+
+    public WalletFlow(
+            WalletAccount walletAccount,
+            User user,
+            String flowNo,
+            String direction,
+            BigDecimal amount,
+            BigDecimal balanceAfter,
+            String businessType,
+            Long businessId,
+            String remark) {
+        this.walletAccount = walletAccount;
+        this.user = user;
+        this.flowNo = flowNo;
+        this.direction = direction;
+        this.amount = amount;
+        this.balanceAfter = balanceAfter;
+        this.businessType = businessType;
+        this.businessId = businessId;
+        this.remark = remark;
+    }
+
     public Long getId() {
         return id;
     }
