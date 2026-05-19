@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final RegistrationService registrationService;
     private final SecretKey jwtKey;
     private final String issuer;
