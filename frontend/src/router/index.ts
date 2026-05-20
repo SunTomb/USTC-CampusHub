@@ -22,7 +22,7 @@ const router = createRouter({
         { path: 'goods', name: 'goods', component: GoodsView },
         { path: 'tasks', name: 'tasks', component: TasksView },
         { path: 'shops', name: 'shops', component: ShopsView },
-        { path: 'projects', name: 'projects', component: ProjectAdsView },
+        { path: 'project-ads', name: 'project-ads', component: ProjectAdsView },
         { path: 'wallet', name: 'wallet', component: WalletView },
         { path: 'admin/review', name: 'admin-review', component: AdminReviewView },
       ],
