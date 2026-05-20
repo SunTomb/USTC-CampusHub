@@ -268,7 +268,7 @@ git commit -m "require campus contact during registration"
 - Create: `backend/src/main/java/com/campushub/identity/AdminIdentityController.java`
 - Test: `backend/src/test/java/com/campushub/identity/IdentityServiceIntegrationTest.java`
 
-- [ ] **Step 1: Extend migration with role applications**
+- [x] **Step 1: Extend migration with role applications**
 
 Append to `V4__platform_identity_and_notifications.sql`:
 
@@ -291,7 +291,7 @@ CREATE TABLE role_applications (
 );
 ```
 
-- [ ] **Step 2: Write failing identity tests**
+- [x] **Step 2: Write failing identity tests**
 
 Create `backend/src/test/java/com/campushub/identity/IdentityServiceIntegrationTest.java` with tests:
 
@@ -339,13 +339,13 @@ class IdentityServiceIntegrationTest {
 }
 ```
 
-- [ ] **Step 3: Run failing identity tests**
+- [x] **Step 3: Run failing identity tests**
 
 Run: `mvn -f backend/pom.xml -Dtest=IdentityServiceIntegrationTest test`
 
 Expected: FAIL because identity package does not exist.
 
-- [ ] **Step 4: Add role constants**
+- [x] **Step 4: Add role constants**
 
 Create `PlatformRoleType.java`:
 
@@ -377,7 +377,7 @@ public enum PlatformRoleType {
 }
 ```
 
-- [ ] **Step 5: Add role application entity and repository**
+- [x] **Step 5: Add role application entity and repository**
 
 Create `RoleApplication.java` with fields matching the migration, `markApproved(User reviewer)`, and getters.
 
@@ -400,7 +400,7 @@ public interface RoleApplicationRepository extends JpaRepository<RoleApplication
 }
 ```
 
-- [ ] **Step 6: Add DTOs**
+- [x] **Step 6: Add DTOs**
 
 Create `ApplyRoleRequest.java`:
 
@@ -415,7 +415,7 @@ public record ApplyRoleRequest(@NotBlank String roleType, String applyNote) {
 
 Create `RoleApplicationSummary.java` with `from(RoleApplication application)` returning id, user id, user nickname, role type, deposit amount, deposit status, review status, apply note, reviewer nickname, created at, reviewed at.
 
-- [ ] **Step 7: Add identity service**
+- [x] **Step 7: Add identity service**
 
 Create `IdentityService.java` implementing:
 
@@ -433,7 +433,7 @@ public RoleApplicationSummary apply(Long userId, ApplyRoleRequest request) {
 }
 ```
 
-- [ ] **Step 8: Add controllers**
+- [x] **Step 8: Add controllers**
 
 Create `IdentityController` under `/api/identity`:
 
@@ -446,13 +446,13 @@ public ApiResponse<RoleApplicationSummary> apply(@PathVariable Long userId, @Val
 
 Create `AdminIdentityController` under `/api/admin/identity` with endpoints to list pending shop merchant applications and approve/reject them.
 
-- [ ] **Step 9: Verify identity tests pass**
+- [x] **Step 9: Verify identity tests pass**
 
 Run: `mvn -f backend/pom.xml -Dtest=IdentityServiceIntegrationTest test`
 
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend/src/main/resources/db/migration/V4__platform_identity_and_notifications.sql backend/src/main/java/com/campushub/identity backend/src/test/java/com/campushub/identity/IdentityServiceIntegrationTest.java
