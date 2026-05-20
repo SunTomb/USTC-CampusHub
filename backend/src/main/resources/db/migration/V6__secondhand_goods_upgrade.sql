@@ -4,8 +4,7 @@ ALTER TABLE goods
     ADD COLUMN delivery_method VARCHAR(40) NOT NULL DEFAULT 'OFFLINE_MEETUP' AFTER contact_visibility,
     ADD COLUMN service_fee_policy VARCHAR(40) NOT NULL DEFAULT 'NONE' AFTER delivery_method,
     ADD COLUMN published_at DATETIME NULL AFTER service_fee_policy,
-    ADD COLUMN updated_at DATETIME NULL AFTER published_at,
-    ADD COLUMN sold_at DATETIME NULL AFTER updated_at,
+    ADD COLUMN sold_at DATETIME NULL AFTER published_at,
     ADD COLUMN sold_to_user_id BIGINT NULL AFTER sold_at,
     ADD CONSTRAINT fk_goods_sold_to_user FOREIGN KEY (sold_to_user_id) REFERENCES users(id);
 
