@@ -48,6 +48,18 @@ public class ReportRecord {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected ReportRecord() {
+    }
+
+    public ReportRecord(User reporter, String targetType, Long targetId, String reason, String description) {
+        this.reporter = reporter;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.reason = reason;
+        this.description = description;
+        this.status = "PENDING";
+    }
+
     public Long getId() {
         return id;
     }

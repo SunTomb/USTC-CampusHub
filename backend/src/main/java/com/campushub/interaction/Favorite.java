@@ -33,6 +33,15 @@ public class Favorite {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected Favorite() {
+    }
+
+    public Favorite(User user, String targetType, Long targetId) {
+        this.user = user;
+        this.targetType = targetType;
+        this.targetId = targetId;
+    }
+
     public Long getId() {
         return id;
     }

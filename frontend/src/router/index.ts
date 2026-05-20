@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HomeView from '@/views/HomeView.vue'
 import GoodsView from '@/views/GoodsView.vue'
+import GoodsPublishView from '@/views/GoodsPublishView.vue'
+import GoodsDetailView from '@/views/GoodsDetailView.vue'
 import TasksView from '@/views/TasksView.vue'
 import TaskWorkspaceView from '@/views/TaskWorkspaceView.vue'
 import ShopsView from '@/views/ShopsView.vue'
@@ -24,6 +26,8 @@ const router = createRouter({
         { path: '', name: 'home', component: HomeView },
         { path: 'auth', name: 'auth', component: AuthView },
         { path: 'goods', name: 'goods', component: GoodsView },
+        { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView },
+        { path: 'goods/:id', name: 'goods-detail', component: GoodsDetailView },
         { path: 'tasks', name: 'tasks', component: TasksView },
         { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView },
         { path: 'shops', name: 'shops', component: ShopsView },

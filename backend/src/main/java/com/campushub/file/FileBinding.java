@@ -38,6 +38,17 @@ public class FileBinding {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected FileBinding() {
+    }
+
+    public FileBinding(FileResource file, String targetType, Long targetId, String usageType, Integer sortOrder) {
+        this.file = file;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.usageType = usageType;
+        this.sortOrder = sortOrder;
+    }
+
     public Long getId() {
         return id;
     }

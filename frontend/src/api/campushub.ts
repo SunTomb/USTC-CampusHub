@@ -30,10 +30,104 @@ export interface GoodsSummary {
   title: string
   description: string
   price: number
+  originalPrice: number | null
+  sellerId: number
   sellerNickname: string
+  sellerCreditScore: number
   tradeLocation: string
+  campusZone: string
   conditionLevel: string
+  status: string
   viewCount: number
+  createdAt: string
+  coverUrl: string | null
+}
+
+export interface FileResourceSummary {
+  id: number
+  uploaderId: number
+  uploaderNickname: string
+  originalName: string
+  storagePath: string
+  contentType: string
+  sizeBytes: number
+  status: string
+  createdAt: string
+}
+
+export interface FileBindingSummary {
+  id: number
+  targetType: string
+  targetId: number
+  usageType: string
+  sortOrder: number
+  file: FileResourceSummary
+  createdAt: string
+}
+
+export interface CommentSummary {
+  id: number
+  userId: number
+  userNickname: string
+  targetType: string
+  targetId: number
+  parentId: number | null
+  content: string
+  status: string
+  createdAt: string
+}
+
+export interface ReviewSummary {
+  id: number
+  reviewerId: number
+  reviewerNickname: string
+  targetUserId: number
+  targetUserNickname: string
+  targetType: string
+  targetId: number
+  rating: number
+  content: string | null
+  createdAt: string
+}
+
+export interface GoodsDetailSummary extends GoodsSummary {
+  deliveryMethod: string
+  contactVisibility: string
+  publishedAt: string | null
+  updatedAt: string | null
+  contactVisible: boolean
+  contactSnapshot: string | null
+  images: FileBindingSummary[]
+  comments: CommentSummary[]
+  sellerReviews: ReviewSummary[]
+  favoriteCount: number
+  favoritedByViewer: boolean
+}
+
+export interface CreateGoodsPayload {
+  categoryId: number
+  title: string
+  description: string
+  price: number
+  originalPrice?: number | null
+  conditionLevel: string
+  campusZone: string
+  tradeLocation: string
+  deliveryMethod: string
+  contactVisibility: string
+}
+
+export interface GoodsIntentSummary {
+  id: number
+  goodsId: number
+  buyerId: number
+  buyerNickname: string
+  sellerId: number
+  sellerNickname: string
+  message: string | null
+  contactSnapshot: string
+  status: string
+  serviceFeeId: number | null
   createdAt: string
 }
 
@@ -282,6 +376,43 @@ export function register(payload: RegisterPayload) {
 
 export function listGoods() {
   return getApi<GoodsSummary[]>('/goods')
+}
+
+export function getGoodsDetail(id: number, viewerId?: number) {
+  const query = viewerId ? `?viewerId=${viewerId}` : ''
+  return getApi<GoodsDetailSummary>(`/goods/${id}${query}`)
+}
+
+export function publishGoods(sellerId: number, payload: CreateGoodsPayload) {
+  return postApi<GoodsDetailSummary>(`/goods?sellerId=${sellerId}`, payload)
+}
+
+export function createGoodsIntent(goodsId: number, buyerId: number, message: string) {
+  return postApi<GoodsIntentSummary>(`/goods/${goodsId}/intents?buyerId=${buyerId}`, { message })
+}
+
+export function markGoodsSold(goodsId: number, userId: number, buyerId?: number) {
+  return postApi<GoodsDetailSummary>(`/goods/${goodsId}/mark-sold`, { userId, buyerId })
+}
+
+export function bindFileToTarget(payload: { fileId: number; targetType: string; targetId: number; usageType: string; sortOrder: number }) {
+  return postApi<FileBindingSummary>('/files/bindings', payload)
+}
+
+export function commentTarget(userId: number, payload: { targetType: string; targetId: number; parentId?: number | null; content: string }) {
+  return postApi<CommentSummary>(`/interactions/comments?userId=${userId}`, payload)
+}
+
+export function favoriteTarget(userId: number, payload: { targetType: string; targetId: number }) {
+  return postApi<void>(`/interactions/favorites?userId=${userId}`, payload)
+}
+
+export function reportTarget(reporterId: number, payload: { targetType: string; targetId: number; reason: string; description: string }) {
+  return postApi<ReportRecordSummary>(`/moderation/reports?reporterId=${reporterId}`, payload)
+}
+
+export function createReview(reviewerId: number, payload: { targetUserId: number; targetType: string; targetId: number; rating: number; content: string }) {
+  return postApi<ReviewSummary>(`/reviews?reviewerId=${reviewerId}`, payload)
 }
 
 export function listTasks() {

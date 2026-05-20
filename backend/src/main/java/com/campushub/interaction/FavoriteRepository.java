@@ -11,4 +11,10 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     @EntityGraph(attributePaths = "user")
     List<Favorite> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    boolean existsByUserIdAndTargetTypeAndTargetId(Long userId, String targetType, Long targetId);
+
+    long countByTargetTypeAndTargetId(String targetType, Long targetId);
+
+    void deleteByUserIdAndTargetTypeAndTargetId(Long userId, String targetType, Long targetId);
 }

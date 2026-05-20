@@ -3,9 +3,13 @@ package com.campushub.moderation;
 import com.campushub.audit.SafetyLogRepository;
 import com.campushub.audit.SafetyLogSummary;
 import com.campushub.common.ApiResponse;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -16,16 +20,19 @@ public class ModerationController {
     private final ReportRecordRepository reportRecordRepository;
     private final ViolationRecordRepository violationRecordRepository;
     private final SafetyLogRepository safetyLogRepository;
+    private final ModerationService moderationService;
 
     public ModerationController(
             ReviewRecordRepository reviewRecordRepository,
             ReportRecordRepository reportRecordRepository,
             ViolationRecordRepository violationRecordRepository,
-            SafetyLogRepository safetyLogRepository) {
+            SafetyLogRepository safetyLogRepository,
+            ModerationService moderationService) {
         this.reviewRecordRepository = reviewRecordRepository;
         this.reportRecordRepository = reportRecordRepository;
         this.violationRecordRepository = violationRecordRepository;
         this.safetyLogRepository = safetyLogRepository;
+        this.moderationService = moderationService;
     }
 
     @GetMapping("/reviews")
@@ -42,6 +49,11 @@ public class ModerationController {
                 .map(ReportRecordSummary::from)
                 .toList();
         return ApiResponse.ok(reports);
+    }
+
+    @PostMapping("/reports")
+    public ApiResponse<ReportRecordSummary> report(@RequestParam Long reporterId, @Valid @RequestBody ReportRequest request) {
+        return ApiResponse.ok(moderationService.report(reporterId, request));
     }
 
     @GetMapping("/violations")

@@ -43,6 +43,18 @@ public class Comment {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected Comment() {
+    }
+
+    public Comment(User user, String targetType, Long targetId, Comment parent, String content) {
+        this.user = user;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.parent = parent;
+        this.content = content;
+        this.status = "VISIBLE";
+    }
+
     public Long getId() {
         return id;
     }

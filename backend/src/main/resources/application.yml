@@ -26,6 +26,10 @@ campushub:
     root: ${CAMPUSHUB_FILE_ROOT:./data/uploads}
   payment:
     provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
+  secondhand:
+    service-fee:
+      enabled: ${CAMPUSHUB_SECONDHAND_SERVICE_FEE_ENABLED:false}
+      intent-amount: ${CAMPUSHUB_SECONDHAND_SERVICE_FEE_INTENT_AMOUNT:0.00}
   mail:
     enabled: ${CAMPUSHUB_MAIL_ENABLED:false}
     provider: ${CAMPUSHUB_MAIL_PROVIDER:mock}

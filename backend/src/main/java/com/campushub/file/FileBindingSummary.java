@@ -21,4 +21,20 @@ public record FileBindingSummary(
                 FileResourceSummary.from(binding.getFile()),
                 binding.getCreatedAt());
     }
+
+    public Long fileId() {
+        return file.id();
+    }
+
+    public String fileName() {
+        return file.originalName();
+    }
+
+    public String storagePath() {
+        return file.storagePath();
+    }
+
+    public String contentType() {
+        return file.contentType();
+    }
 }
