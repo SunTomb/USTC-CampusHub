@@ -38,8 +38,8 @@ INSERT INTO goods_orders (id, order_no, goods_id, buyer_id, seller_id, amount, s
 (1, 'GO202605190001', 2, 1, 2, 35.00, 0.70, 'PAID', '晴天同学 13800000001', CURRENT_TIMESTAMP(6));
 
 INSERT INTO reward_tasks (id, publisher_id, title, description, reward_amount, deposit_amount, task_location, deadline, status) VALUES
-(1, 1, '帮取东区快递', '东区菜鸟驿站取两个小件，送到图书馆自习区。', 6.00, 6.00, '东区菜鸟驿站', TIMESTAMPADD(DAY, 1, CURRENT_TIMESTAMP(6)), 'PUBLISHED'),
-(2, 2, '晚饭代取', '帮忙在二食堂取打包饭，送到西区宿舍楼下。', 5.00, 5.00, '二食堂', TIMESTAMPADD(HOUR, 6, CURRENT_TIMESTAMP(6)), 'PUBLISHED');
+(1, 1, '帮取东区快递', '东区菜鸟驿站取两个小件，送到图书馆自习区。', 6.00, 6.00, '东区菜鸟驿站', DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL 1 DAY), 'PUBLISHED'),
+(2, 2, '晚饭代取', '帮忙在二食堂取打包饭，送到西区宿舍楼下。', 5.00, 5.00, '二食堂', DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL 6 HOUR), 'PUBLISHED');
 
 INSERT INTO task_applications (id, task_id, applicant_id, message, status) VALUES
 (1, 1, 2, '我晚上正好路过东区，可以帮取。', 'APPLIED');
@@ -54,7 +54,7 @@ INSERT INTO service_items (id, shop_id, title, description, price, duration_minu
 (3, 2, '手机贴膜', '自带膜或店主提供普通高清膜。', 15.00, 10, 'AVAILABLE');
 
 INSERT INTO service_orders (id, order_no, service_item_id, customer_id, provider_id, appointment_time, amount, service_fee, status, note, paid_at) VALUES
-(1, 'SO202605190001', 1, 1, 3, TIMESTAMPADD(DAY, 2, CURRENT_TIMESTAMP(6)), 59.00, 1.18, 'PAID', '想在图书馆附近拍摄', CURRENT_TIMESTAMP(6));
+(1, 'SO202605190001', 1, 1, 3, DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL 2 DAY), 59.00, 1.18, 'PAID', '想在图书馆附近拍摄', CURRENT_TIMESTAMP(6));
 
 INSERT INTO project_ads (id, publisher_id, title, description, link_url, contact_info, status, view_count) VALUES
 (1, 1, '数据库课程设计组队招募', '计划做校园交易与微服务平台，寻找前端和测试同学。', NULL, 'alice@campus.example', 'APPROVED', 88),
@@ -104,4 +104,4 @@ INSERT INTO safety_logs (user_id, action, ip_address, user_agent, detail) VALUES
 (4, 'REVIEW_APPROVE', '127.0.0.1', 'CampusHub Demo', '管理员审核通过示例内容');
 
 INSERT INTO login_sessions (user_id, token_id, ip_address, user_agent, expires_at, revoked) VALUES
-(1, 'demo-session-alice', '127.0.0.1', 'CampusHub Demo', TIMESTAMPADD(HOUR, 12, CURRENT_TIMESTAMP(6)), FALSE);
+(1, 'demo-session-alice', '127.0.0.1', 'CampusHub Demo', DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL 12 HOUR), FALSE);
