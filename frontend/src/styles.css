@@ -269,3 +269,57 @@ body {
 .wide {
   width: 100%;
 }
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.role-card :deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deposit-amount {
+  color: #2563eb;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.notification-row {
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  body {
+    min-width: 0;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100% !important;
+  }
+
+  .header,
+  .page-heading,
+  .list-row {
+    align-items: flex-start;
+    flex-direction: column;
+    height: auto;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .dashboard-grid,
+  .shop-grid,
+  .auth-page,
+  .role-grid,
+  .wallet-strip {
+    grid-template-columns: 1fr;
+  }
+}
