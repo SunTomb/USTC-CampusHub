@@ -736,7 +736,7 @@ git commit -m "implement runner task acceptance flow"
 - Create: `backend/src/main/java/com/campushub/ops/OperationsController.java`
 - Test: `backend/src/test/java/com/campushub/task/RunnerTaskFlowIntegrationTest.java`
 
-- [ ] **Step 1: Add failing tests for completion and issues**
+- [x] **Step 1: Add failing tests for completion and issues**
 
 Extend `RunnerTaskFlowIntegrationTest` with:
 
@@ -748,19 +748,19 @@ void completionCodeCompletesLowRiskTask() { ... }
 void reportingIssueMovesTaskToIssueHandling() { ... }
 ```
 
-- [ ] **Step 2: Run failing tests**
+- [x] **Step 2: Run failing tests**
 
 Run: `mvn -f backend/pom.xml -Dtest=RunnerTaskFlowIntegrationTest test`
 
 Expected: FAIL because completion and issue methods are missing.
 
-- [ ] **Step 3: Add issue request and service methods**
+- [x] **Step 3: Add issue request and service methods**
 
 Create `ReportTaskIssueRequest(String issueType, String description)`.
 
 Add `completeWithCode`, `submitDeliveryPhoto`, `confirmCompletion`, and `reportIssue` methods to `RunnerTaskService`.
 
-- [ ] **Step 4: Add controller endpoints**
+- [x] **Step 4: Add controller endpoints**
 
 Add:
 
@@ -770,7 +770,7 @@ Add:
 @PostMapping("/{taskId}/issues")
 ```
 
-- [ ] **Step 5: Add operations controller**
+- [x] **Step 5: Add operations controller**
 
 Create `/api/admin/ops` endpoints:
 
@@ -781,13 +781,13 @@ Create `/api/admin/ops` endpoints:
 @GetMapping("/role-applications")
 ```
 
-- [ ] **Step 6: Verify tests pass**
+- [x] **Step 6: Verify tests pass**
 
 Run: `mvn -f backend/pom.xml -Dtest=RunnerTaskFlowIntegrationTest test`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/src/main/java/com/campushub/task backend/src/main/java/com/campushub/ops backend/src/test/java/com/campushub/task/RunnerTaskFlowIntegrationTest.java
