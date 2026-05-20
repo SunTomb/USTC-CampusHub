@@ -36,6 +36,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "wechat_contact")
+    private String wechatContact;
+
+    @Column(name = "qq_contact")
+    private String qqContact;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 
@@ -100,6 +106,14 @@ public class User {
         return email;
     }
 
+    public String getWechatContact() {
+        return wechatContact;
+    }
+
+    public String getQqContact() {
+        return qqContact;
+    }
+
     public String getAvatarUrl() {
         return avatarUrl;
     }
@@ -110,6 +124,11 @@ public class User {
 
     public String getStatus() {
         return status;
+    }
+
+    public void updateContact(String wechatContact, String qqContact) {
+        this.wechatContact = wechatContact;
+        this.qqContact = qqContact;
     }
 
     public void setCreditScore(Integer creditScore) {

@@ -10,6 +10,8 @@ public record CurrentUserSummary(
         String nickname,
         String phone,
         String email,
+        String wechatContact,
+        String qqContact,
         String avatarUrl,
         Integer creditScore,
         String status) {
@@ -23,6 +25,8 @@ public record CurrentUserSummary(
                 user.getNickname(),
                 user.getPhone(),
                 user.getEmail(),
+                user.getWechatContact(),
+                user.getQqContact(),
                 user.getAvatarUrl(),
                 user.getCreditScore(),
                 user.getStatus());

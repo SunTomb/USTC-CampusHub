@@ -77,6 +77,9 @@ public class RegistrationService {
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         String email = normalizeAndValidateEmail(request.email());
+        String wechatContact = trimToNull(request.wechatContact());
+        String qqContact = trimToNull(request.qqContact());
+        validateCampusContact(wechatContact, qqContact);
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException("该邮箱已注册");
         }
@@ -102,7 +105,7 @@ public class RegistrationService {
 
         String baseName = email.substring(0, email.indexOf('@')).replaceAll("[^a-zA-Z0-9_]", "_");
         String username = uniqueUsername(baseName);
-        User user = userRepository.save(new User(
+        User user = new User(
                 uniqueStudentNo(),
                 username,
                 passwordEncoder.encode(request.password()),
@@ -110,7 +113,9 @@ public class RegistrationService {
                 username,
                 uniquePhonePlaceholder(),
                 email,
-                "ACTIVE"));
+                "ACTIVE");
+        user.updateContact(wechatContact, qqContact);
+        user = userRepository.save(user);
         assignStudentRoleIfPresent(user.getId());
         walletAccountRepository.save(new WalletAccount(user));
         return RegisterResponse.from(user);
@@ -126,6 +131,20 @@ public class RegistrationService {
             throw new BusinessException("注册邮箱必须为 edu.cn 校园邮箱");
         }
         return email;
+    }
+
+    private void validateCampusContact(String wechatContact, String qqContact) {
+        if (wechatContact == null && qqContact == null) {
+            throw new BusinessException("请至少填写微信或 QQ 联系方式");
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String generateCode() {

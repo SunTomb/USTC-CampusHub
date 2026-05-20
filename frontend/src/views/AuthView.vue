@@ -39,6 +39,12 @@
             <el-form-item label="密码">
               <el-input v-model="registerForm.password" type="password" show-password placeholder="至少 8 位" />
             </el-form-item>
+            <el-form-item label="微信号（选填）">
+              <el-input v-model="registerForm.wechatContact" placeholder="用于匹配后的校园联系" />
+            </el-form-item>
+            <el-form-item label="QQ（选填）">
+              <el-input v-model="registerForm.qqContact" placeholder="微信或 QQ 至少填写一个" />
+            </el-form-item>
             <el-button type="primary" class="wide" :loading="loading" @click="handleRegister">注册</el-button>
             <p class="hint" v-if="codeHint">{{ codeHint }}</p>
           </el-form>
@@ -69,6 +75,8 @@ const registerForm = reactive({
   email: '',
   password: '',
   emailCode: '',
+  wechatContact: '',
+  qqContact: '',
 })
 
 async function handleLogin() {
@@ -97,6 +105,10 @@ async function handleSendCode() {
 }
 
 async function handleRegister() {
+  if (!registerForm.wechatContact.trim() && !registerForm.qqContact.trim()) {
+    ElMessage.error('请至少填写微信或 QQ 联系方式')
+    return
+  }
   loading.value = true
   try {
     const result = await register(registerForm)

@@ -9,6 +9,8 @@ export interface RegisterPayload {
   email: string
   password: string
   emailCode: string
+  wechatContact?: string
+  qqContact?: string
 }
 
 export interface RegisterCodeResponse {

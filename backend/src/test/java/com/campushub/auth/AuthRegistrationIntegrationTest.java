@@ -1,5 +1,6 @@
 package com.campushub.auth;
 
+import com.campushub.user.User;
 import com.campushub.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,16 @@ class AuthRegistrationIntegrationTest {
     }
 
     @Test
+    void registerRequiresAtLeastOneCampusContact() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"contact.required@ustc.edu.cn\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("请至少填写微信或 QQ 联系方式"));
+    }
+
+    @Test
     void registerCreatesActiveStudentUserWithWalletAfterCodeVerified() throws Exception {
         mockMvc.perform(post("/api/auth/register/send-code")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -79,14 +90,15 @@ class AuthRegistrationIntegrationTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"REGISTER.OK@USTC.EDU.CN\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\"}"))
+                        .content("{\"email\":\"REGISTER.OK@USTC.EDU.CN\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\",\"wechatContact\":\"  campus-wechat  \"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.email").value("register.ok@ustc.edu.cn"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.creditScore").value(100));
 
-        assertThat(userRepository.findByEmail("register.ok@ustc.edu.cn")).isPresent();
+        User user = userRepository.findByEmail("register.ok@ustc.edu.cn").orElseThrow();
+        assertThat(user.getWechatContact()).isEqualTo("campus-wechat");
         EmailVerificationCode usedCode = emailVerificationCodeRepository.findById(code.getId()).orElseThrow();
         assertThat(usedCode.getUsedAt()).isNotNull();
     }

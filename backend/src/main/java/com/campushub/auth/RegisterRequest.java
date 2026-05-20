@@ -13,5 +13,7 @@ public record RegisterRequest(
         String password,
         @NotBlank
         @Size(min = 6, max = 6)
-        String emailCode) {
+        String emailCode,
+        String wechatContact,
+        String qqContact) {
 }

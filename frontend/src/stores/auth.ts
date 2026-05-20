@@ -5,14 +5,17 @@ export interface CurrentUser {
   id: number
   username: string
   nickname: string
+  email?: string
+  wechatContact?: string | null
+  qqContact?: string | null
   roles: string[]
 }
 
 interface LoginResponse {
   tokenType: string
   accessToken: string
-  expirationMinutes: number
-  currentUser: CurrentUser
+  expiresInMinutes: number
+  user: CurrentUser
 }
 
 interface AuthState {
@@ -28,7 +31,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(username: string, password: string) {
       const session = await postApi<LoginResponse>('/auth/login', { username, password })
-      this.setSession(session.accessToken, session.currentUser)
+      this.setSession(session.accessToken, session.user)
     },
     setSession(token: string, currentUser: CurrentUser) {
       this.token = token
