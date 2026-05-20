@@ -75,4 +75,28 @@ public class RewardTaskController {
             @RequestBody(required = false) TaskActionRequest request) {
         return ApiResponse.ok(runnerTaskService.advance(taskId, actorId, nextStatus, request));
     }
+
+    @PostMapping("/{taskId}/complete-code")
+    public ApiResponse<RewardTaskSummary> completeWithCode(
+            @PathVariable Long taskId,
+            @RequestParam Long runnerId,
+            @RequestBody(required = false) TaskActionRequest request) {
+        return ApiResponse.ok(runnerTaskService.completeWithCode(taskId, runnerId, request));
+    }
+
+    @PostMapping("/{taskId}/confirm")
+    public ApiResponse<RewardTaskSummary> confirmCompletion(
+            @PathVariable Long taskId,
+            @RequestParam Long publisherId,
+            @RequestBody(required = false) TaskActionRequest request) {
+        return ApiResponse.ok(runnerTaskService.confirmCompletion(taskId, publisherId, request));
+    }
+
+    @PostMapping("/{taskId}/issues")
+    public ApiResponse<RewardTaskSummary> reportIssue(
+            @PathVariable Long taskId,
+            @RequestParam Long reporterId,
+            @Valid @RequestBody ReportTaskIssueRequest request) {
+        return ApiResponse.ok(runnerTaskService.reportIssue(taskId, reporterId, request));
+    }
 }

@@ -14,6 +14,7 @@ public class RunnerTaskService {
     private final RewardTaskRepository rewardTaskRepository;
     private final TaskApplicationRepository taskApplicationRepository;
     private final TaskEventRepository taskEventRepository;
+    private final TaskIssueRepository taskIssueRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
@@ -21,11 +22,13 @@ public class RunnerTaskService {
             RewardTaskRepository rewardTaskRepository,
             TaskApplicationRepository taskApplicationRepository,
             TaskEventRepository taskEventRepository,
+            TaskIssueRepository taskIssueRepository,
             UserRepository userRepository,
             NotificationService notificationService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskApplicationRepository = taskApplicationRepository;
         this.taskEventRepository = taskEventRepository;
+        this.taskIssueRepository = taskIssueRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
     }
@@ -117,6 +120,55 @@ public class RunnerTaskService {
         task.moveTo(status.name());
         recordEvent(task, actor, "STATUS_CHANGED", request == null ? null : request.note());
         notificationService.notify(task.getPublisher(), "任务状态已更新", "任务状态更新为 " + status.name(), "TASK", task.getId());
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional
+    public RewardTaskSummary completeWithCode(Long taskId, Long runnerId, TaskActionRequest request) {
+        RewardTask task = findTask(taskId);
+        User runner = findUser(runnerId);
+        task.moveTo(TaskWorkflowStatus.COMPLETED.name());
+        if (task.getAcceptedApplication() != null) {
+            task.getAcceptedApplication().markCompleted();
+        }
+        recordEvent(task, runner, "COMPLETED_WITH_CODE", request == null ? null : request.note());
+        notificationService.notify(task.getPublisher(), "任务已完成", "接单者已提交完成码并完成任务", "TASK", task.getId());
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional
+    public RewardTaskSummary submitDeliveryPhoto(Long taskId, Long runnerId, TaskActionRequest request) {
+        RewardTask task = findTask(taskId);
+        User runner = findUser(runnerId);
+        task.moveTo(TaskWorkflowStatus.PENDING_CONFIRMATION.name());
+        recordEvent(task, runner, "PHOTO_SUBMITTED", request == null ? null : request.note());
+        notificationService.notify(task.getPublisher(), "任务等待确认", "接单者已提交图片凭证", "TASK", task.getId());
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional
+    public RewardTaskSummary confirmCompletion(Long taskId, Long publisherId, TaskActionRequest request) {
+        RewardTask task = findTask(taskId);
+        User publisher = findUser(publisherId);
+        if (!task.getPublisher().getId().equals(publisher.getId())) {
+            throw new BusinessException("只有发布者可以确认完成");
+        }
+        task.moveTo(TaskWorkflowStatus.COMPLETED.name());
+        if (task.getAcceptedApplication() != null) {
+            task.getAcceptedApplication().markCompleted();
+        }
+        recordEvent(task, publisher, "COMPLETION_CONFIRMED", request == null ? null : request.note());
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional
+    public RewardTaskSummary reportIssue(Long taskId, Long reporterId, ReportTaskIssueRequest request) {
+        RewardTask task = findTask(taskId);
+        User reporter = findUser(reporterId);
+        taskIssueRepository.save(new TaskIssue(task, reporter, request.issueType(), request.description()));
+        task.moveTo(TaskWorkflowStatus.ISSUE_HANDLING.name());
+        recordEvent(task, reporter, "ISSUE_REPORTED", request.description());
+        notificationService.notify(task.getPublisher(), "任务异常上报", "任务收到异常上报：" + request.issueType(), "TASK", task.getId());
         return RewardTaskSummary.from(task);
     }
 

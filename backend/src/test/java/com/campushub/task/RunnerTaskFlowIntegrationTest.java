@@ -62,4 +62,46 @@ class RunnerTaskFlowIntegrationTest {
         TaskApplicationSummary accepted = runnerTaskService.acceptApplication(published.id(), application.id(), 1L);
         assertThat(accepted.status()).isEqualTo("ACCEPTED");
     }
+
+    @Test
+    void completionCodeCompletesLowRiskTask() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
+                "外卖代取",
+                "帮忙从校门取外卖",
+                new BigDecimal("5.00"),
+                BigDecimal.ZERO,
+                "GRAB",
+                "CENTRAL",
+                "CENTRAL",
+                "校门",
+                "宿舍",
+                LocalDateTime.now().plusHours(2),
+                "COMPLETION_CODE"));
+        runnerTaskService.grab(published.id(), 2L);
+
+        RewardTaskSummary completed = runnerTaskService.completeWithCode(published.id(), 2L, new TaskActionRequest("已送达", "123456"));
+
+        assertThat(completed.workflowStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void reportingIssueMovesTaskToIssueHandling() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
+                "临时帮忙",
+                "帮忙搬物品",
+                new BigDecimal("10.00"),
+                BigDecimal.ZERO,
+                "GRAB",
+                "WEST",
+                "EAST",
+                "西区",
+                "东区",
+                LocalDateTime.now().plusHours(5),
+                "COMPLETION_CODE"));
+        runnerTaskService.grab(published.id(), 2L);
+
+        RewardTaskSummary issue = runnerTaskService.reportIssue(published.id(), 2L, new ReportTaskIssueRequest("LOCATION_ERROR", "地点描述不清"));
+
+        assertThat(issue.workflowStatus()).isEqualTo("ISSUE_HANDLING");
+    }
 }
