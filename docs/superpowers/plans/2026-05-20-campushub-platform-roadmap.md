@@ -800,11 +800,11 @@ git commit -m "add runner task completion and operations monitor"
 - Modify: `frontend/src/api/campushub.ts`
 - Test: `frontend/src/api/client.test.ts`
 
-- [ ] **Step 1: Add API type definitions**
+- [x] **Step 1: Add API type definitions**
 
 In `campushub.ts`, add `CampusZone`, `TaskAcceptanceMode`, `TaskWorkflowStatus`, `RoleApplicationSummary`, `StationNotificationSummary`, `CreateRunnerTaskPayload`, `ApplyTaskPayload`, and `TaskIssuePayload` types.
 
-- [ ] **Step 2: Add API functions**
+- [x] **Step 2: Add API functions**
 
 Add functions:
 
@@ -819,13 +819,13 @@ export function reportRunnerTaskIssue(taskId: number, userId: number, payload: T
 export function getOpsDashboard() { ... }
 ```
 
-- [ ] **Step 3: Run frontend type check/build**
+- [x] **Step 3: Run frontend type check/build**
 
 Run: `npm --prefix frontend run build`
 
 Expected: PASS with existing Element Plus chunk-size warning only.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/api/campushub.ts frontend/src/api/client.test.ts
