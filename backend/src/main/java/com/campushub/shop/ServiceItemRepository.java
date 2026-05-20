@@ -1,11 +1,19 @@
 package com.campushub.shop;
 
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ServiceItemRepository extends JpaRepository<ServiceItem, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = "shop")
+    Optional<ServiceItem> findById(Long id);
+
+    @EntityGraph(attributePaths = "shop")
     List<ServiceItem> findByStatusOrderByCreatedAtDesc(String status);
 
+    @EntityGraph(attributePaths = "shop")
     List<ServiceItem> findByShopIdAndStatusOrderByCreatedAtDesc(Long shopId, String status);
 }
