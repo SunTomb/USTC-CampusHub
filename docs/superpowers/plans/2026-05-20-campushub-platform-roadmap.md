@@ -555,7 +555,7 @@ git commit -m "add station notifications"
 - Create: `backend/src/main/java/com/campushub/task/TaskIssue.java`
 - Create: `backend/src/main/java/com/campushub/task/TaskIssueRepository.java`
 
-- [ ] **Step 1: Create runner workflow migration**
+- [x] **Step 1: Create runner workflow migration**
 
 Create `V5__runner_task_workflow.sql`:
 
@@ -600,7 +600,7 @@ CREATE TABLE task_issues (
 );
 ```
 
-- [ ] **Step 2: Add enum types**
+- [x] **Step 2: Add enum types**
 
 Create `CampusZone.java`:
 
@@ -614,7 +614,7 @@ public enum CampusZone {
 
 Create `TaskAcceptanceMode.java`, `TaskWorkflowStatus.java`, and `TaskVerificationMode.java` with values from the spec.
 
-- [ ] **Step 3: Extend `RewardTask`**
+- [x] **Step 3: Extend `RewardTask`**
 
 Add fields matching migration, getters, and methods:
 
@@ -624,11 +624,11 @@ public void markAccepted(TaskApplication application) { ... }
 public void moveTo(String workflowStatus) { this.workflowStatus = workflowStatus; }
 ```
 
-- [ ] **Step 4: Add event and issue entities**
+- [x] **Step 4: Add event and issue entities**
 
 Implement `TaskEvent` and `TaskIssue` as JPA entities with constructors for new events/issues and getters for all summary fields.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/main/resources/db/migration/V5__runner_task_workflow.sql backend/src/main/java/com/campushub/task
