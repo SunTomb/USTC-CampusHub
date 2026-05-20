@@ -11,6 +11,10 @@ public interface RewardTaskRepository extends JpaRepository<RewardTask, Long> {
     @EntityGraph(attributePaths = "publisher")
     Optional<RewardTask> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = "publisher")
+    List<RewardTask> findAll();
+
     @EntityGraph(attributePaths = "publisher")
     List<RewardTask> findByStatusOrderByDeadlineAsc(String status);
 }
