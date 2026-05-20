@@ -11,6 +11,7 @@ import WalletView from '@/views/WalletView.vue'
 import RoleApplicationsView from '@/views/RoleApplicationsView.vue'
 import NotificationsView from '@/views/NotificationsView.vue'
 import AdminReviewView from '@/views/AdminReviewView.vue'
+import AdminOperationsView from '@/views/AdminOperationsView.vue'
 import AuthView from '@/views/AuthView.vue'
 
 const router = createRouter({
@@ -31,6 +32,7 @@ const router = createRouter({
         { path: 'roles', name: 'roles', component: RoleApplicationsView },
         { path: 'notifications', name: 'notifications', component: NotificationsView },
         { path: 'admin/review', name: 'admin-review', component: AdminReviewView },
+        { path: 'admin/ops', name: 'admin-ops', component: AdminOperationsView },
       ],
     },
   ],

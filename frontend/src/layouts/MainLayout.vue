@@ -16,6 +16,7 @@
         <el-menu-item index="/roles">身份保证金</el-menu-item>
         <el-menu-item index="/notifications">站内通知</el-menu-item>
         <el-menu-item index="/admin/review">审核治理</el-menu-item>
+        <el-menu-item index="/admin/ops">运营后台</el-menu-item>
       </el-menu>
     </el-aside>
 
