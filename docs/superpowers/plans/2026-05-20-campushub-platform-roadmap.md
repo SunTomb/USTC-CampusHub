@@ -915,25 +915,25 @@ git commit -m "upgrade runner task hall and workspace"
 - Modify: `frontend/src/layouts/MainLayout.vue`
 - Modify: `frontend/src/styles.css`
 
-- [ ] **Step 1: Create operations dashboard**
+- [x] **Step 1: Create operations dashboard**
 
 Create tabs for dashboard metrics, task monitor, task issues, role applications, reports, and violations.
 
-- [ ] **Step 2: Wire API calls**
+- [x] **Step 2: Wire API calls**
 
 Use `getOpsDashboard` and existing moderation APIs to populate tables.
 
-- [ ] **Step 3: Add route/nav**
+- [x] **Step 3: Add route/nav**
 
 Add `/admin/ops` route and menu item.
 
-- [ ] **Step 4: Build frontend**
+- [x] **Step 4: Build frontend**
 
 Run: `npm --prefix frontend run build`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/views/AdminOperationsView.vue frontend/src/router/index.ts frontend/src/layouts/MainLayout.vue frontend/src/styles.css
