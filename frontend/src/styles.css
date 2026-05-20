@@ -292,6 +292,64 @@ body {
   align-items: center;
 }
 
+.heading-actions,
+.card-actions,
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-card,
+.workspace-card {
+  border-radius: 18px;
+}
+
+.task-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.runner-card h3 {
+  margin: 0 0 10px;
+}
+
+.runner-card p {
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.route-line,
+.task-meta,
+.two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.route-line {
+  align-items: center;
+  grid-template-columns: 1fr auto 1fr;
+  margin: 14px 0;
+  color: #0f172a;
+}
+
+.task-meta {
+  margin: 14px 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.task-meta strong {
+  color: #2563eb;
+}
+
+.workspace-actions {
+  justify-content: center;
+  margin: 28px 0;
+}
+
 @media (max-width: 900px) {
   body {
     min-width: 0;
@@ -319,6 +377,10 @@ body {
   .shop-grid,
   .auth-page,
   .role-grid,
+  .task-card-grid,
+  .route-line,
+  .task-meta,
+  .two-column,
   .wallet-strip {
     grid-template-columns: 1fr;
   }
