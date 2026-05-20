@@ -945,23 +945,23 @@ git commit -m "add operations dashboard UI"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Update README with real-platform roadmap**
+- [x] **Step 1: Update README with real-platform roadmap**
 
 Add a section documenting Phase 1 errands, role deposits, station notifications, campus zones, and operational boundaries.
 
-- [ ] **Step 2: Run backend tests**
+- [x] **Step 2: Run backend tests**
 
 Run: `mvn -f backend/pom.xml test`
 
 Expected: PASS.
 
-- [ ] **Step 3: Run frontend build**
+- [x] **Step 3: Run frontend build**
 
 Run: `npm --prefix frontend run build`
 
 Expected: PASS with the known chunk-size warning only.
 
-- [ ] **Step 4: Commit docs**
+- [x] **Step 4: Commit docs**
 
 ```bash
 git add README.md
