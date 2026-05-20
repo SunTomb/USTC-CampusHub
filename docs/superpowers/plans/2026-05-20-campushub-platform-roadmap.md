@@ -841,25 +841,25 @@ git commit -m "add runner platform frontend APIs"
 - Modify: `frontend/src/layouts/MainLayout.vue`
 - Modify: `frontend/src/styles.css`
 
-- [ ] **Step 1: Create role applications page**
+- [x] **Step 1: Create role applications page**
 
 Build a page with three cards: 跑腿接单者 5 元, 二手发布者 10 元, 店铺商家 20 元 + 人工审核. Each card calls `applyRole`.
 
-- [ ] **Step 2: Create notifications page**
+- [x] **Step 2: Create notifications page**
 
 Build a notification list showing title, content, target type, created time, read status, and a mark-read action.
 
-- [ ] **Step 3: Add routes and navigation**
+- [x] **Step 3: Add routes and navigation**
 
 Add `/roles` and `/notifications` to `router/index.ts` and `MainLayout.vue`.
 
-- [ ] **Step 4: Build frontend**
+- [x] **Step 4: Build frontend**
 
 Run: `npm --prefix frontend run build`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/views/RoleApplicationsView.vue frontend/src/views/NotificationsView.vue frontend/src/router/index.ts frontend/src/layouts/MainLayout.vue frontend/src/styles.css
