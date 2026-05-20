@@ -37,6 +37,34 @@ export interface GoodsSummary {
   createdAt: string
 }
 
+export type CampusZone =
+  | 'CENTRAL'
+  | 'WEST'
+  | 'EAST'
+  | 'NORTH'
+  | 'SOUTH'
+  | 'HIGH_TECH'
+  | 'ADVANCED_RESEARCH_INSTITUTE'
+  | 'SCIENCE_ISLAND'
+  | 'OTHER'
+
+export type TaskAcceptanceMode = 'GRAB' | 'APPLICATION'
+export type TaskWorkflowStatus =
+  | 'DRAFT'
+  | 'PUBLISHED'
+  | 'ACCEPTED'
+  | 'HEADING_TO_PICKUP'
+  | 'PICKED_UP'
+  | 'DELIVERING'
+  | 'DELIVERED'
+  | 'PENDING_CONFIRMATION'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'ISSUE_HANDLING'
+  | 'DISPUTE_HANDLING'
+
+export type TaskVerificationMode = 'COMPLETION_CODE' | 'PHOTO_AND_CONFIRMATION'
+
 export interface RewardTaskSummary {
   id: number
   title: string
@@ -45,7 +73,108 @@ export interface RewardTaskSummary {
   depositAmount: number
   taskLocation: string
   deadline: string
+  status: string
+  acceptanceMode: TaskAcceptanceMode
+  originZone: CampusZone
+  destinationZone: CampusZone
+  originDetail: string | null
+  destinationDetail: string | null
+  workflowStatus: TaskWorkflowStatus
+  verificationMode: TaskVerificationMode
+  acceptedApplicationId: number | null
+  publisherId: number
   publisherNickname: string
+}
+
+export interface CreateRunnerTaskPayload {
+  title: string
+  description: string
+  rewardAmount: number
+  depositAmount?: number
+  acceptanceMode: TaskAcceptanceMode
+  originZone: CampusZone
+  destinationZone: CampusZone
+  originDetail?: string
+  destinationDetail?: string
+  deadline: string
+  verificationMode: TaskVerificationMode
+}
+
+export interface ApplyTaskPayload {
+  message?: string
+}
+
+export interface TaskActionPayload {
+  note?: string
+  completionCode?: string
+}
+
+export interface TaskIssuePayload {
+  issueType: string
+  description: string
+}
+
+export interface TaskApplicationSummary {
+  id: number
+  taskId: number
+  taskTitle: string
+  applicantId: number
+  applicantNickname: string
+  message: string | null
+  status: string
+  createdAt: string
+  acceptedAt: string | null
+  completedAt: string | null
+}
+
+export interface RoleApplicationSummary {
+  id: number
+  userId: number
+  userNickname: string
+  roleType: string
+  depositAmount: number
+  depositStatus: string
+  reviewStatus: string
+  applyNote: string | null
+  reviewerNickname: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
+export interface ApplyRolePayload {
+  roleType: string
+  applyNote?: string
+}
+
+export interface StationNotificationSummary {
+  id: number
+  recipientId: number
+  title: string
+  content: string
+  targetType: string | null
+  targetId: number | null
+  readAt: string | null
+  createdAt: string
+}
+
+export interface OperationsDashboardSummary {
+  publishedTasks: number
+  acceptedTasks: number
+  completedTasks: number
+  openIssues: number
+  pendingRoleApplications: number
+}
+
+export interface TaskIssueSummary {
+  id: number
+  taskId: number
+  taskTitle: string
+  reporterId: number
+  reporterNickname: string
+  issueType: string
+  description: string
+  status: string
+  createdAt: string
 }
 
 export interface ShopSummary {
@@ -157,6 +286,66 @@ export function listGoods() {
 
 export function listTasks() {
   return getApi<RewardTaskSummary[]>('/tasks')
+}
+
+export function publishRunnerTask(payload: CreateRunnerTaskPayload, publisherId = 1) {
+  return postApi<RewardTaskSummary>(`/tasks?publisherId=${publisherId}`, payload)
+}
+
+export function grabRunnerTask(taskId: number, userId = 1) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/grab?runnerId=${userId}`, {})
+}
+
+export function applyRunnerTask(taskId: number, userId: number, payload: ApplyTaskPayload) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications?applicantId=${userId}`, payload)
+}
+
+export function acceptRunnerTaskApplication(taskId: number, applicationId: number, publisherId = 1) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications/${applicationId}/accept?publisherId=${publisherId}`, {})
+}
+
+export function advanceRunnerTask(taskId: number, userId: number, nextStatus: string, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}?actorId=${userId}`, payload)
+}
+
+export function completeRunnerTaskWithCode(taskId: number, userId: number, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/complete-code?runnerId=${userId}`, payload)
+}
+
+export function confirmRunnerTask(taskId: number, publisherId: number, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/confirm?publisherId=${publisherId}`, payload)
+}
+
+export function reportRunnerTaskIssue(taskId: number, userId: number, payload: TaskIssuePayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues?reporterId=${userId}`, payload)
+}
+
+export function applyRole(userId: number, payload: ApplyRolePayload) {
+  return postApi<RoleApplicationSummary>(`/identity/users/${userId}/roles`, payload)
+}
+
+export function listNotifications(userId: number) {
+  return getApi<StationNotificationSummary[]>(`/users/${userId}/notifications`)
+}
+
+export function markNotificationRead(notificationId: number) {
+  return postApi<StationNotificationSummary>(`/notifications/${notificationId}/read`, {})
+}
+
+export function getOpsDashboard() {
+  return getApi<OperationsDashboardSummary>('/admin/ops/dashboard')
+}
+
+export function listOpsTasks() {
+  return getApi<RewardTaskSummary[]>('/admin/ops/tasks')
+}
+
+export function listOpsTaskIssues() {
+  return getApi<TaskIssueSummary[]>('/admin/ops/task-issues')
+}
+
+export function listOpsRoleApplications() {
+  return getApi<RoleApplicationSummary[]>('/admin/ops/role-applications')
 }
 
 export function listShops() {
