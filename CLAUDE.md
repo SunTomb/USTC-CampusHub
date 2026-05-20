@@ -127,28 +127,51 @@ Production security requirements:
 - `.env.prod.example` is the only env-style production file intended for git.
 - MySQL must not be exposed publicly in production; use internal Docker networking and reverse proxy only web/API traffic.
 
-## Latest deployment handoff, 2026-05-20
+## Latest deployment and planning handoff, 2026-05-20
 
-Pushed commits on `master` during the deployment session:
+Latest deployed commits on `master` include:
 
-- `426cb39` add local payment flow and production deploy config.
-- `ccaca1f` add Docker build ignores.
-- `f414eaf` fix auth controller password encoder injection.
-- `15c44dc` skip test compilation in production image build.
-- `aa06567` fetch goods seller for summary mapping.
+- `0037601` fetch lazy relations for API summaries.
+- `bfb67dc` fix project ads route path.
+- `5a54a8b` add CampusHub platform development design.
+- `e8bfc71` add CampusHub platform roadmap plan.
 
-Server state after `aa06567`:
+Current production state:
 
-- `/opt/campushub` exists and tracks `https://github.com/SunTomb/USTC-CampusHub.git`.
-- `.env` exists on the server, generated with random local deployment secrets; do not print it.
-- `docker compose -f docker-compose.prod.yml up -d --build` succeeded.
-- Running containers: `campushub-campushub-mysql-1` healthy, `campushub-campushub-backend-1` up, `campushub-campushub-web-1` up and bound to `127.0.0.1:18080->80`.
-- Local server check `curl http://127.0.0.1:18080` returns the Vue app.
-- Local server check `curl http://127.0.0.1:18080/api/goods` returns `success: true` after the `GoodsRepository @EntityGraph(attributePaths = "seller")` fix.
+- `/opt/campushub` tracks `https://github.com/SunTomb/USTC-CampusHub.git`.
+- `.env` exists on the server; do not print or read secret contents.
+- Running containers: `campushub-campushub-mysql-1`, `campushub-campushub-backend-1`, `campushub-campushub-web-1`.
+- Public site `https://ustc.suntomb.qzz.io` renders the Vue app.
+- Verified public endpoints return HTTP 200: `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/api/payment/users/1/service-fees`, `/api/wallet/users/1`.
+- Browser verification covered home, tasks, shops, project ads, and wallet pages.
 
-Known remaining issues before public Playwriter verification:
+Current strategic documents:
 
-- `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/payment/users/1/service-fees` returned HTTP 500 on the server. They are likely the same `LazyInitializationException` pattern as `/api/goods`: DTO mappers access lazy `User` / owner / payer relations after the session closes. Minimal fix is to add `@EntityGraph` to the relevant repository query methods for `publisher`, `owner`, and `payer` as appropriate.
-- Frontend currently calls `getWallet(1)` as `/api/wallet/users/1`, but backend only exposes `/api/wallet/accounts` and `/api/wallet/users/{userId}/flows`; either add `GET /api/wallet/users/{userId}` using `WalletAccountRepository.findByUserId`, or change the frontend to use `/wallet/accounts`.
-- The public domain `https://ustc.suntomb.qzz.io` was not yet verified after containers came up. Existing `deploy-web-1` owns host ports 80/443 for the API-Transfer-Station site; integrate CampusHub carefully into that existing reverse proxy, without disrupting `server.suntomb.qzz.io`.
-- The server is only 2 vCPU / 2 GB RAM and already hosts another site. Use small steps, low-frequency checks, and avoid repeated full Docker builds unless necessary.
+- Product/platform design: `docs/superpowers/specs/2026-05-20-campushub-platform-design.md`.
+- Executable roadmap plan: `docs/superpowers/plans/2026-05-20-campushub-platform-roadmap.md`.
+
+Approved product direction:
+
+- CampusHub should become a real campus service platform, not just a course demo.
+- Route: campus errands/running tasks first, then second-hand trading, student shops, project ads, and operations/governance expansion.
+- Phase 1 focuses on running tasks with publisher-selected grab-order vs application modes.
+- Registration must require WeChat or QQ contact information.
+- Platform only charges service fees and role/identity deposits; it does not escrow transaction principal or per-order deposits.
+- Role deposits: runner 5 CNY, goods publisher 10 CNY, shop merchant 20 CNY.
+- Runner and goods-publisher roles auto-approve after deposit; shop merchant requires manual review.
+- Location starts with coarse campus zones: 中校区、西校区、东校区、北校区、南校区、高新校区、先研院、科学岛、其他. Collect real route data before defining detailed POIs or distance-pricing rules.
+- AMap: use Web Service API first if backend distance/route calculation is needed later; JS API is only needed for frontend interactive maps.
+- Notifications: Phase 1 uses station/internal notifications only.
+- Mobile: first make responsive Web good; keep APIs reusable for future WeChat mini-program.
+
+Execution preference for next implementation session:
+
+- Use `subagent-driven-development` against `docs/superpowers/plans/2026-05-20-campushub-platform-roadmap.md`.
+- Do not start implementing on `master` unless explicitly approved in that session; prefer an isolated branch/worktree if available.
+- Fresh subagent per task, then spec-compliance review and code-quality review before moving on.
+- Update the plan checkboxes as tasks complete, and commit each completed task separately.
+
+Known local environment note:
+
+- This Windows session may be invoked via CC Switch + Codex Provider; avoid the PowerShell tool and avoid generating `pwsh` / PowerShell commands because it can crash Claude Code frontend rendering. Prefer dedicated tools and Bash where terminal execution is explicitly needed.
+- Local machine previously lacked `mvn` and has no Maven wrapper. Backend verification may need server-side Docker build or installing Maven locally; do not assume `mvn test` works on this machine.
