@@ -113,7 +113,7 @@ The approved design in `docs/superpowers/specs/2026-05-20-campushub-platform-des
 - Modify: `frontend/src/views/AuthView.vue`
 - Test: `backend/src/test/java/com/campushub/auth/AuthRegistrationIntegrationTest.java`
 
-- [ ] **Step 1: Write failing backend registration test**
+- [x] **Step 1: Write failing backend registration test**
 
 Add this test method to `backend/src/test/java/com/campushub/auth/AuthRegistrationIntegrationTest.java`:
 
@@ -133,13 +133,13 @@ void registerRequiresAtLeastOneCampusContact() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Run the failing registration test**
+- [x] **Step 2: Run the failing registration test**
 
 Run: `mvn -f backend/pom.xml -Dtest=AuthRegistrationIntegrationTest#registerRequiresAtLeastOneCampusContact test`
 
 Expected: FAIL because `RegisterRequest` does not require contact fields yet.
 
-- [ ] **Step 3: Add database columns**
+- [x] **Step 3: Add database columns**
 
 Create `backend/src/main/resources/db/migration/V4__platform_identity_and_notifications.sql` with:
 
@@ -149,7 +149,7 @@ ALTER TABLE users
     ADD COLUMN qq_contact VARCHAR(60) NULL AFTER wechat_contact;
 ```
 
-- [ ] **Step 4: Add fields to `User`**
+- [x] **Step 4: Add fields to `User`**
 
 In `backend/src/main/java/com/campushub/user/User.java`, add fields and getters:
 
@@ -174,7 +174,7 @@ public void updateContact(String wechatContact, String qqContact) {
 }
 ```
 
-- [ ] **Step 5: Extend registration request**
+- [x] **Step 5: Extend registration request**
 
 Change `backend/src/main/java/com/campushub/auth/RegisterRequest.java` to:
 
@@ -194,7 +194,7 @@ public record RegisterRequest(
 }
 ```
 
-- [ ] **Step 6: Validate and persist contact fields**
+- [x] **Step 6: Validate and persist contact fields**
 
 In `RegistrationService`, normalize contact fields and reject requests where both are blank:
 
@@ -226,11 +226,11 @@ private String trimToNull(String value) {
 }
 ```
 
-- [ ] **Step 7: Expose contact in current user summary**
+- [x] **Step 7: Expose contact in current user summary**
 
 Change `CurrentUserSummary` to include `wechatContact` and `qqContact`. Its `from(User user)` must pass `user.getWechatContact()` and `user.getQqContact()`.
 
-- [ ] **Step 8: Add frontend registration fields**
+- [x] **Step 8: Add frontend registration fields**
 
 In `frontend/src/views/AuthView.vue`, add two optional inputs to the register form and require at least one before calling the API:
 
@@ -241,13 +241,13 @@ if (!registerForm.wechatContact && !registerForm.qqContact) {
 }
 ```
 
-- [ ] **Step 9: Verify test passes**
+- [x] **Step 9: Verify test passes**
 
 Run: `mvn -f backend/pom.xml -Dtest=AuthRegistrationIntegrationTest#registerRequiresAtLeastOneCampusContact test`
 
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend/src/main/resources/db/migration/V4__platform_identity_and_notifications.sql backend/src/main/java/com/campushub/user/User.java backend/src/main/java/com/campushub/auth/RegisterRequest.java backend/src/main/java/com/campushub/auth/RegistrationService.java backend/src/main/java/com/campushub/auth/CurrentUserSummary.java backend/src/test/java/com/campushub/auth/AuthRegistrationIntegrationTest.java frontend/src/views/AuthView.vue
