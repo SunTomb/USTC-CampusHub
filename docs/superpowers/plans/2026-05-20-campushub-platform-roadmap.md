@@ -470,7 +470,7 @@ git commit -m "add role deposit applications"
 - Create: `backend/src/main/java/com/campushub/notification/NotificationController.java`
 - Test: `backend/src/test/java/com/campushub/notification/NotificationServiceIntegrationTest.java`
 
-- [ ] **Step 1: Extend migration with notifications**
+- [x] **Step 1: Extend migration with notifications**
 
 Append to `V4__platform_identity_and_notifications.sql`:
 
@@ -489,7 +489,7 @@ CREATE TABLE station_notifications (
 );
 ```
 
-- [ ] **Step 2: Write failing notification test**
+- [x] **Step 2: Write failing notification test**
 
 Create `NotificationServiceIntegrationTest.java`:
 
@@ -513,13 +513,13 @@ class NotificationServiceIntegrationTest {
 }
 ```
 
-- [ ] **Step 3: Run failing notification test**
+- [x] **Step 3: Run failing notification test**
 
 Run: `mvn -f backend/pom.xml -Dtest=NotificationServiceIntegrationTest test`
 
 Expected: FAIL because notification package does not exist.
 
-- [ ] **Step 4: Implement notification entity/repository/service/controller**
+- [x] **Step 4: Implement notification entity/repository/service/controller**
 
 Create focused classes matching the migration. `NotificationService.notify(User recipient, String title, String content, String targetType, Long targetId)` saves an unread notification. `NotificationController` exposes:
 
@@ -528,13 +528,13 @@ Create focused classes matching the migration. `NotificationService.notify(User 
 @PostMapping("/notifications/{id}/read")
 ```
 
-- [ ] **Step 5: Verify notification test passes**
+- [x] **Step 5: Verify notification test passes**
 
 Run: `mvn -f backend/pom.xml -Dtest=NotificationServiceIntegrationTest test`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/main/resources/db/migration/V4__platform_identity_and_notifications.sql backend/src/main/java/com/campushub/notification backend/src/test/java/com/campushub/notification/NotificationServiceIntegrationTest.java
