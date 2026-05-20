@@ -874,33 +874,33 @@ git commit -m "add role and notification pages"
 - Modify: `frontend/src/router/index.ts`
 - Modify: `frontend/src/styles.css`
 
-- [ ] **Step 1: Upgrade task hall**
+- [x] **Step 1: Upgrade task hall**
 
 Replace the simple list with filter controls for origin zone, destination zone, type, acceptance mode, and task cards showing reward, deadline, zones, acceptance mode, verification mode, and publisher credit.
 
-- [ ] **Step 2: Add publish task form**
+- [x] **Step 2: Add publish task form**
 
 Add a drawer or section that posts `CreateRunnerTaskPayload`, including origin/destination zone and detail fields.
 
-- [ ] **Step 3: Add grab/apply actions**
+- [x] **Step 3: Add grab/apply actions**
 
 Task cards should show `立即抢单` for `GRAB` and `申请接单` for `APPLICATION`.
 
-- [ ] **Step 4: Add workspace page**
+- [x] **Step 4: Add workspace page**
 
 Create `TaskWorkspaceView.vue` showing current workflow step, next action buttons, issue reporting form, and contact hints.
 
-- [ ] **Step 5: Add route**
+- [x] **Step 5: Add route**
 
 Add `/tasks/:id/workspace` route.
 
-- [ ] **Step 6: Build frontend**
+- [x] **Step 6: Build frontend**
 
 Run: `npm --prefix frontend run build`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/views/TasksView.vue frontend/src/views/TaskWorkspaceView.vue frontend/src/router/index.ts frontend/src/styles.css
