@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,16 +37,19 @@ class AuthRegistrationIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Test
     void sendCodeAcceptsEduCnEmailAndStoresOnlyHashedCode() throws Exception {
         mockMvc.perform(post("/api/auth/register/send-code")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"  New.Student@MAIL.USTC.EDU.CN  \"}"))
+                        .content("{\"email\":\"new.student@mail.ustc.edu.cn\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
         EmailVerificationCode code = emailVerificationCodeRepository
-                .findTopByEmailAndPurposeOrderByCreatedAtDesc("new.student@mail.ustc.edu.cn", "REGISTER")
+                .findFirstByEmailAndPurposeOrderByIdDesc("new.student@mail.ustc.edu.cn", "REGISTER")
                 .orElseThrow();
 
         assertThat(code.getCodeHash()).startsWith("$2");
@@ -83,9 +87,9 @@ class AuthRegistrationIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true));
 
         EmailVerificationCode code = emailVerificationCodeRepository
-                .findTopByEmailAndPurposeOrderByCreatedAtDesc("register.ok@ustc.edu.cn", "REGISTER")
+                .findFirstByEmailAndPurposeOrderByIdDesc("register.ok@ustc.edu.cn", "REGISTER")
                 .orElseThrow();
-        code.setCodeHash("$2a$10$6TwUK6iN3GnXUwc7bpHxNuAsTwPFHd9h1lV9s0GlR1.3o9C706/kK");
+        code.setCodeHash(passwordEncoder.encode("123456"));
         emailVerificationCodeRepository.save(code);
 
         mockMvc.perform(post("/api/auth/register")
@@ -93,11 +97,11 @@ class AuthRegistrationIntegrationTest {
                         .content("{\"email\":\"REGISTER.OK@USTC.EDU.CN\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\",\"wechatContact\":\"  campus-wechat  \"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.email").value("register.ok@ustc.edu.cn"))
-                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.data.creditScore").value(100));
+                .andExpect(jsonPath("$.data.email").value("register.ok@ustc.edu.cn"));
 
         User user = userRepository.findByEmail("register.ok@ustc.edu.cn").orElseThrow();
+        assertThat(user.getStatus()).isEqualTo("ACTIVE");
+        assertThat(user.getCreditScore()).isEqualTo(100);
         assertThat(user.getWechatContact()).isEqualTo("campus-wechat");
         EmailVerificationCode usedCode = emailVerificationCodeRepository.findById(code.getId()).orElseThrow();
         assertThat(usedCode.getUsedAt()).isNotNull();

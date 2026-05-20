@@ -53,8 +53,16 @@ public class EmailVerificationCode {
         return email;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getCodeHash() {
         return codeHash;
+    }
+
+    public void setCodeHash(String codeHash) {
+        this.codeHash = codeHash;
     }
 
     public Instant getExpiresAt() {

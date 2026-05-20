@@ -2,6 +2,7 @@ package com.campushub.auth;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,13 @@ public class RegisterMailService {
     private final JavaMailSender mailSender;
     private final MailProperties mailProperties;
 
-    public RegisterMailService(JavaMailSender mailSender, MailProperties mailProperties) {
-        this.mailSender = mailSender;
+    public RegisterMailService(ObjectProvider<JavaMailSender> mailSender, MailProperties mailProperties) {
+        this.mailSender = mailSender.getIfAvailable();
         this.mailProperties = mailProperties;
     }
 
     public void sendRegisterCode(String email, String code) {
-        if (!mailProperties.enabled()) {
+        if (!mailProperties.enabled() || mailSender == null) {
             log.info("Registration email verification mock-sent to {}", maskEmail(email));
             return;
         }

@@ -1,13 +1,12 @@
-ALTER TABLE reward_tasks
-    ADD COLUMN acceptance_mode VARCHAR(30) NOT NULL DEFAULT 'GRAB',
-    ADD COLUMN origin_zone VARCHAR(40) NOT NULL DEFAULT 'OTHER',
-    ADD COLUMN destination_zone VARCHAR(40) NOT NULL DEFAULT 'OTHER',
-    ADD COLUMN origin_detail VARCHAR(255) NULL,
-    ADD COLUMN destination_detail VARCHAR(255) NULL,
-    ADD COLUMN workflow_status VARCHAR(40) NOT NULL DEFAULT 'PUBLISHED',
-    ADD COLUMN verification_mode VARCHAR(40) NOT NULL DEFAULT 'COMPLETION_CODE',
-    ADD COLUMN completion_code_hash VARCHAR(120) NULL,
-    ADD COLUMN accepted_application_id BIGINT NULL;
+ALTER TABLE reward_tasks ADD COLUMN acceptance_mode VARCHAR(30) NOT NULL DEFAULT 'GRAB';
+ALTER TABLE reward_tasks ADD COLUMN origin_zone VARCHAR(40) NOT NULL DEFAULT 'OTHER';
+ALTER TABLE reward_tasks ADD COLUMN destination_zone VARCHAR(40) NOT NULL DEFAULT 'OTHER';
+ALTER TABLE reward_tasks ADD COLUMN origin_detail VARCHAR(255) NULL;
+ALTER TABLE reward_tasks ADD COLUMN destination_detail VARCHAR(255) NULL;
+ALTER TABLE reward_tasks ADD COLUMN workflow_status VARCHAR(40) NOT NULL DEFAULT 'PUBLISHED';
+ALTER TABLE reward_tasks ADD COLUMN verification_mode VARCHAR(40) NOT NULL DEFAULT 'COMPLETION_CODE';
+ALTER TABLE reward_tasks ADD COLUMN completion_code_hash VARCHAR(120) NULL;
+ALTER TABLE reward_tasks ADD COLUMN accepted_application_id BIGINT NULL;
 
 CREATE TABLE task_events (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

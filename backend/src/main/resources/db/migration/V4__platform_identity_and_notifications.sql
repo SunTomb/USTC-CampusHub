@@ -1,6 +1,5 @@
-ALTER TABLE users
-    ADD COLUMN wechat_contact VARCHAR(120) NULL AFTER email,
-    ADD COLUMN qq_contact VARCHAR(60) NULL AFTER wechat_contact;
+ALTER TABLE users ADD COLUMN wechat_contact VARCHAR(120) NULL;
+ALTER TABLE users ADD COLUMN qq_contact VARCHAR(60) NULL;
 
 CREATE TABLE role_applications (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
