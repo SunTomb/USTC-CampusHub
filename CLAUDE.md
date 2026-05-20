@@ -127,6 +127,39 @@ Production security requirements:
 - `.env.prod.example` is the only env-style production file intended for git.
 - MySQL must not be exposed publicly in production; use internal Docker networking and reverse proxy only web/API traffic.
 
+## Latest implementation handoff, 2026-05-20
+
+Worktree branch `worktree-campushub-task1-contact-registration` implements the Phase 1 roadmap from `docs/superpowers/plans/2026-05-20-campushub-platform-roadmap.md` through local coding and commits. It has not yet been server-built, deployed, or browser-verified.
+
+Implemented Phase 1 foundation:
+
+- Registration requires at least one contact field: WeChat or QQ; current-user summaries expose these fields.
+- `V4__platform_identity_and_notifications.sql` adds contact fields, role applications, and station notifications.
+- Identity role applications support deposits: runner 5 CNY auto-approved, goods publisher 10 CNY auto-approved, shop merchant 20 CNY pending manual review.
+- Station notifications have persistence, list, and mark-read APIs.
+- `V5__runner_task_workflow.sql` adds runner-task acceptance mode, campus zones, workflow status, verification mode, task events, and task issues.
+- Runner task APIs support publish, grab, apply, accept application, workflow advance, completion-code completion, confirmation, and issue reporting.
+- Operations APIs expose dashboard metrics, task monitor, task issues, and pending role applications.
+- Frontend API types/functions were expanded for identity, notifications, runner tasks, and ops.
+- Frontend pages added/upgraded: role applications, notifications, runner task hall, task workspace, operations dashboard.
+- README now documents the real-platform Phase 1 roadmap and payment boundary.
+
+Important caveats for next session:
+
+- Local Maven was unavailable and frontend dependencies in isolated worktrees were incomplete, so Java tests and Vite build were not actually verified locally after the large implementation batch.
+- Subagent API review attempts hit repeated 429 rate limits mid-session; later tasks were completed in the main session with manual spec/quality checks rather than fresh subagent reviews.
+- Before deployment, run a real build/test pass and expect to fix compile/type issues. Likely commands: `npm --prefix frontend run build`; backend verification may require server-side Docker build or installing Maven because this Windows machine previously lacked `mvn`.
+- Do not push/deploy blindly if verification reveals compile errors; fix locally or on a disposable branch first.
+- Preserve production constraints: never read/print secrets; deploy low-impact on the small shared server.
+
+Recommended next-window sequence:
+
+1. Inspect git status and recent commits.
+2. Run frontend build if dependencies are available; fix TypeScript/Vue issues.
+3. Run backend verification via Maven if available, otherwise use a targeted Docker/backend build on the server with low impact.
+4. Push branch/merge strategy as desired, then deploy with `docker-compose.prod.yml` on `/opt/campushub`.
+5. Use Playwriter/browser verification for registration contact fields, role applications, task hall, publish/grab/apply flow, workspace, notifications, and admin ops.
+
 ## Latest deployment and planning handoff, 2026-05-20
 
 Latest deployed commits on `master` include:
