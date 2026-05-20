@@ -89,6 +89,11 @@ public class RewardTask {
         this.taskLocation = taskLocation;
         this.deadline = deadline;
         this.status = status;
+        this.acceptanceMode = TaskAcceptanceMode.GRAB.name();
+        this.originZone = CampusZone.OTHER.name();
+        this.destinationZone = CampusZone.OTHER.name();
+        this.workflowStatus = TaskWorkflowStatus.PUBLISHED.name();
+        this.verificationMode = TaskVerificationMode.COMPLETION_CODE.name();
     }
 
     public Long getId() {

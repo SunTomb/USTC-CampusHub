@@ -42,6 +42,16 @@ public class TaskApplication {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    protected TaskApplication() {
+    }
+
+    public TaskApplication(RewardTask task, User applicant, String message) {
+        this.task = task;
+        this.applicant = applicant;
+        this.message = message;
+        this.status = "PENDING";
+    }
+
     public Long getId() {
         return id;
     }
@@ -72,5 +82,19 @@ public class TaskApplication {
 
     public LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public void markAccepted() {
+        this.status = "ACCEPTED";
+        this.acceptedAt = LocalDateTime.now();
+    }
+
+    public void markRejected() {
+        this.status = "REJECTED";
+    }
+
+    public void markCompleted() {
+        this.status = "COMPLETED";
+        this.completedAt = LocalDateTime.now();
     }
 }
