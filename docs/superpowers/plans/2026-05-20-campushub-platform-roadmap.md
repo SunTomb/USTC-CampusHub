@@ -646,7 +646,7 @@ git commit -m "add runner task workflow schema"
 - Modify: `backend/src/main/java/com/campushub/task/RewardTaskSummary.java`
 - Test: `backend/src/test/java/com/campushub/task/RunnerTaskFlowIntegrationTest.java`
 
-- [ ] **Step 1: Write failing flow tests**
+- [x] **Step 1: Write failing flow tests**
 
 Create `RunnerTaskFlowIntegrationTest.java` with tests for:
 
@@ -660,13 +660,13 @@ void applicationModeRequiresPublisherToAcceptOneApplicant() { ... }
 
 The first test publishes a `GRAB` task and calls `runnerTaskService.grab(taskId, runnerId)`, expecting status `ACCEPTED`. The second publishes an `APPLICATION` task, applies as a runner, and expects status to remain `PUBLISHED` until publisher accepts.
 
-- [ ] **Step 2: Run failing flow tests**
+- [x] **Step 2: Run failing flow tests**
 
 Run: `mvn -f backend/pom.xml -Dtest=RunnerTaskFlowIntegrationTest test`
 
 Expected: FAIL because service and request DTOs do not exist.
 
-- [ ] **Step 3: Add request DTOs**
+- [x] **Step 3: Add request DTOs**
 
 Create request records with validation annotations:
 
@@ -687,7 +687,7 @@ public record CreateRunnerTaskRequest(
 
 Create `ApplyTaskRequest(String message)` and `TaskActionRequest(String note, String completionCode)`.
 
-- [ ] **Step 4: Implement `RunnerTaskService`**
+- [x] **Step 4: Implement `RunnerTaskService`**
 
 Implement methods:
 
@@ -701,7 +701,7 @@ RewardTaskSummary advance(Long taskId, Long actorId, String nextStatus, TaskActi
 
 Each method writes a `TaskEvent` and creates station notifications for the counterparty.
 
-- [ ] **Step 5: Add controller endpoints**
+- [x] **Step 5: Add controller endpoints**
 
 In `RewardTaskController`, add:
 
@@ -713,13 +713,13 @@ In `RewardTaskController`, add:
 @PostMapping("/{taskId}/workflow/{nextStatus}")
 ```
 
-- [ ] **Step 6: Verify flow tests pass**
+- [x] **Step 6: Verify flow tests pass**
 
 Run: `mvn -f backend/pom.xml -Dtest=RunnerTaskFlowIntegrationTest test`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/src/main/java/com/campushub/task backend/src/test/java/com/campushub/task/RunnerTaskFlowIntegrationTest.java
