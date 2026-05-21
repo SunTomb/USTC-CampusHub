@@ -208,3 +208,41 @@ Known local environment note:
 
 - This Windows session may be invoked via CC Switch + Codex Provider; avoid the PowerShell tool and avoid generating `pwsh` / PowerShell commands because it can crash Claude Code frontend rendering. Prefer dedicated tools and Bash where terminal execution is explicitly needed.
 - Local machine previously lacked `mvn` and has no Maven wrapper. Backend verification may need server-side Docker build or installing Maven locally; do not assume `mvn test` works on this machine.
+
+## Latest Phase 3 deployment and Phase 4 handoff, 2026-05-21
+
+Latest deployed `master` includes Phase 3 student-shop upgrade through commit `ca3b468` (`backfill demo contacts for shop bookings`). Production `/opt/campushub` is back on `master` at `ca3b468` and was rebuilt/restarted successfully after Phase 3.
+
+Implemented Phase 3:
+
+- Preflight UX fixes: `/login` redirects to `/auth`; unknown frontend routes fall back safely to home; unauthenticated task grab/apply actions prompt login; task publish form has visible validation.
+- New Phase 3 docs: `docs/superpowers/specs/2026-05-21-campushub-phase3-shop-design.md` and `docs/superpowers/plans/2026-05-21-campushub-phase3-shop-upgrade.md`.
+- `V7__student_shop_upgrade.sql` extends shops, service items, and service orders for campus zone, contact visibility, opening hours, item category/price unit/cover, booking contact snapshots, cancel reason, and service-fee reference.
+- `V8__backfill_demo_contacts.sql` backfills safe demo WeChat contacts for seeded users so booking/contact snapshot flows work with existing production demo data.
+- Backend shop package now has `ShopService` with merchant-gated shop creation, shop edit/pause/resume/close, service item create/edit/publish/pause/off-shelf, service booking create/accept/reject/start/complete/cancel, contact snapshot reveal after booking, and station notifications.
+- Frontend shop pages upgraded: `/shops` marketplace with filters, `/shops/:id` shop detail and booking dialog, `/shops/merchant` merchant workspace.
+- Operations dashboard adds `/api/admin/ops/shop-orders` and a “店铺预约” tab in `/admin/ops`.
+- README documents Phase 3 and preserves the no-principal-escrow payment boundary.
+
+Verified production after Phase 3:
+
+- Server Docker backend/web builds succeeded; backend Maven package completed inside Docker.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/admin/ops/shop-orders`, `/api/shops`, `/api/shops/1`, `/api/service-items/shop/1`, `/api/service-orders`, `/api/tasks`, and `/api/goods`.
+- Real booking smoke on production: `POST /api/service-items/1/orders?customerId=2` created a `REQUESTED` service order; `/api/shops/1?viewerId=2` returned `contactVisible=true` with contact snapshot; `/api/admin/ops/shop-orders` showed the booking.
+- Browser verification covered `/shops`, `/shops/1`, `/shops/merchant`, `/admin/ops`, `/login`, and an unknown route; pages rendered without white screen and showed shop booking/no-escrow messaging.
+
+Important production constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V8; add V9+ for future schema changes.
+- Deploy carefully: small server, API-Transfer-Station shares the host, so prefer targeted backend/web rebuilds and low-frequency checks.
+
+Recommended Phase 4 start:
+
+1. Verify current git status, latest commits, and production state; trust live state over this handoff if they differ.
+2. Start Phase 4 from a new isolated branch/worktree, not directly on `master`, unless explicitly approved.
+3. Phase 4 should focus on project ads / campus showcase upgrade: project posts, review, contact visibility, expiration, tags, favorites/comments, featured slots, portfolio/showcase pages, and operations visibility.
+4. Preserve product boundaries: no transaction principal escrow, no Alipay key handling, campus-zone-first location, station notifications first, responsive Web first.
+5. Before deployment, run frontend build and backend verification where available; if local Maven is unavailable, use low-impact server Docker build after pushing.
