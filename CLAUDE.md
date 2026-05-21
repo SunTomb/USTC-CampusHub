@@ -248,31 +248,43 @@ Recommended Phase 4 start:
 5. Before deployment, run frontend build and backend verification where available; if local Maven is unavailable, use low-impact server Docker build after pushing.
 
 
-## Phase 4 project ads implementation draft, 2026-05-21
+## Latest Phase 4 deployment and Phase 5 handoff, 2026-05-22
 
-Branch/worktree `worktree-campushub-phase4-project-ads` contains a Phase 4 project-ad/campus-showcase implementation draft. It is based on `origin/master` at `1babc2c` and has not been deployed.
+Latest deployed `master` includes Phase 4 project-ad/campus-showcase upgrade through commit `835e850` (`implement project ads phase 4 showcase`). Production `/opt/campushub` is on `master` at `835e850` and was rebuilt/restarted successfully after Phase 4.
 
-Implemented draft scope:
+Implemented Phase 4:
 
-- New design and implementation plan docs: `docs/superpowers/specs/2026-05-21-campushub-phase4-project-ads-design.md` and `docs/superpowers/plans/2026-05-21-campushub-phase4-project-ads-upgrade.md`.
-- `V9__project_ads_showcase_upgrade.sql` extends `project_ads` with ad type, summary, tags, campus zone, cover file, contact visibility, expiration, featured fields, review note/reviewer/timestamps, and close timestamp. Test migration mirror exists under `backend/src/test/resources/db/test-migration`.
-- Backend project-ad workflow draft supports create, edit, submit, close, approve, reject, feature, unfeature, block, public list, featured list, publisher list, and detail aggregation with view count, favorite/comment counts, file bindings, and contact visibility.
-- `/api/admin/ops/project-ads` and admin action endpoints were added.
-- Frontend project ads were upgraded with showcase list, detail page, publisher management page, and admin operations tab.
-- README documents Phase 4 boundaries: no principal escrow, no ad deposits, no real-time chat, no complex recommendation, no Alipay key handling.
+- New Phase 4 docs: `docs/superpowers/specs/2026-05-21-campushub-phase4-project-ads-design.md` and `docs/superpowers/plans/2026-05-21-campushub-phase4-project-ads-upgrade.md`.
+- `V9__project_ads_showcase_upgrade.sql` extends project ads with ad type, summary, tags, campus zone, cover file, contact visibility, expiration, featured priority, review note/reviewer/timestamps, published time, and closed time.
+- Backend project-ad workflow supports create, edit, submit for review, publisher close, admin approve/reject, feature/unfeature, and block.
+- Public project-ad APIs support public list, featured list, detail aggregation, and publisher management list.
+- Detail aggregation increments view count and returns contact visibility, favorite/comment counts, viewer favorite state, and file bindings for `PROJECT_AD`.
+- Operations dashboard adds `/api/admin/ops/project-ads` and admin project-ad actions.
+- Frontend pages added/upgraded: `/project-ads`, `/project-ads/:id`, `/project-ads/manage`, and admin ops “项目广告” tab.
+- README documents Phase 4 and preserves the no-principal-escrow payment boundary.
 
-Verification status:
+Verified production after Phase 4:
 
-- `git diff --check` passed with only expected Windows LF/CRLF warnings.
-- `npm --prefix frontend run build` could not run in the isolated worktree because `vue-tsc` / frontend dependencies were unavailable there.
-- `mvn -f backend/pom.xml -Dtest=ProjectAdServiceIntegrationTest test` could not run locally because `mvn` is unavailable and there is no Maven wrapper.
-- A review agent found and the implementation fixed obvious blockers: missing `RequestMapping` import, frontend query helper typing, non-public detail visibility, and project-ad edit contact preservation.
+- GitHub `master` was updated to `835e850`; production `/opt/campushub` fast-forwarded to `835e850`.
+- Server Docker backend/web build succeeded; backend Maven package completed inside Docker with `BUILD SUCCESS`.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/project-ads`, `/api/project-ads/featured`, `/api/project-ads/1`, and `/api/admin/ops/project-ads`.
+- Browser/Playwriter verification covered `/project-ads`, `/project-ads/1`, `/project-ads/manage`, and `/admin/ops` project-ad tab. The admin ops tab default `PENDING_REVIEW` filter showed no data; switching to `APPROVED` showed the seeded project ads and action buttons.
+- Mobile viewport 390x844 on `/project-ads` had no obvious horizontal overflow (`scrollWidth` equaled `clientWidth`).
 
-Before merge/deploy:
+Important production constraints remain:
 
-1. Install or link frontend dependencies in this worktree and run `npm --prefix frontend run build`.
-2. Run backend verification with Maven or a low-impact server/Docker build.
-3. Smoke test `/api/project-ads`, `/api/project-ads/featured`, `/api/project-ads/{id}`, and `/api/admin/ops/project-ads`.
-4. Browser-check `/project-ads`, `/project-ads/:id`, `/project-ads/manage`, and `/admin/ops` on desktop/mobile.
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V9; add V10+ for future schema changes.
+- Deploy carefully: small server, API-Transfer-Station shares the host, so prefer targeted backend/web rebuilds and low-frequency checks.
+- This Windows session may run through CC Switch + Codex Provider; avoid PowerShell and use Bash only when terminal execution is explicitly needed.
+- The user does not want local dependency installation for verification; prefer server-side Docker build/API smoke/Playwriter for full verification.
 
-Production constraints remain: do not edit V1-V8 migrations, do not read/print secrets, do not handle Alipay key bodies in CampusHub, and deploy in small low-impact steps on the shared server.
+Recommended Phase 5 start:
+
+1. Verify current git status, latest commits, and production state; trust live state over this handoff if they differ.
+2. Start Phase 5 from a new isolated branch/worktree, not directly on `master`, unless explicitly approved.
+3. Recommended Phase 5 focus: governance/credit/operations consolidation after four business lines are live. Build a unified report handling queue, violation records, credit score adjustments, blacklist/freeze controls, admin action audit, and notification closure.
+4. Alternative Phase 5 directions: cross-business operations analytics/export, or mobile UX/performance polish.
+5. Before deployment, run server-side Docker build where needed, server-local API smoke, and Playwriter browser verification.
