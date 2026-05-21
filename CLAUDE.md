@@ -283,6 +283,7 @@ Important production constraints remain:
 
 Recommended Phase 5 start:
 
+0. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the updated overall Phase 5+ roadmap. It rebalances future phases so each phase is roughly the size of the completed Phase 4 project-ad upgrade.
 1. Verify current git status, latest commits, and production state; trust live state over this handoff if they differ.
 2. Start Phase 5 from a new isolated branch/worktree, not directly on `master`, unless explicitly approved.
 3. Recommended Phase 5 focus: governance/credit/operations consolidation after four business lines are live. Build a unified report handling queue, violation records, credit score adjustments, blacklist/freeze controls, admin action audit, and notification closure.
