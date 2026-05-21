@@ -11,6 +11,8 @@ import ShopsView from '@/views/ShopsView.vue'
 import ShopDetailView from '@/views/ShopDetailView.vue'
 import ShopMerchantView from '@/views/ShopMerchantView.vue'
 import ProjectAdsView from '@/views/ProjectAdsView.vue'
+import ProjectAdDetailView from '@/views/ProjectAdDetailView.vue'
+import ProjectAdManageView from '@/views/ProjectAdManageView.vue'
 import WalletView from '@/views/WalletView.vue'
 import RoleApplicationsView from '@/views/RoleApplicationsView.vue'
 import NotificationsView from '@/views/NotificationsView.vue'
@@ -37,6 +39,8 @@ const router = createRouter({
         { path: 'shops/merchant', name: 'shop-merchant', component: ShopMerchantView },
         { path: 'shops/:id', name: 'shop-detail', component: ShopDetailView },
         { path: 'project-ads', name: 'project-ads', component: ProjectAdsView },
+        { path: 'project-ads/manage', name: 'project-ad-manage', component: ProjectAdManageView },
+        { path: 'project-ads/:id', name: 'project-ad-detail', component: ProjectAdDetailView },
         { path: 'wallet', name: 'wallet', component: WalletView },
         { path: 'roles', name: 'roles', component: RoleApplicationsView },
         { path: 'notifications', name: 'notifications', component: NotificationsView },

@@ -371,15 +371,68 @@ export interface ServiceOrderSummary {
   canceledAt: string | null
 }
 
+export type ProjectAdType = 'TEAM_UP' | 'PORTFOLIO' | 'CLUB_RECRUITMENT' | 'CAMPUS_EVENT' | 'OTHER'
+export type ProjectAdStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'CLOSED' | 'BLOCKED'
+export type ProjectAdContactVisibility = 'PUBLIC' | 'LOGIN_ONLY' | 'INTERACTION_ONLY' | 'HIDDEN'
+
 export interface ProjectAdSummary {
   id: number
   title: string
+  adType: ProjectAdType
+  summary: string | null
   description: string
+  tags: string | null
+  campusZone: string | null
+  coverFileId: number | null
+  publisherId: number
   publisherNickname: string
-  linkUrl: string
-  contactInfo: string
+  linkUrl: string | null
+  contactInfo: string | null
+  contactVisibility: ProjectAdContactVisibility
+  status: ProjectAdStatus
   viewCount: number
+  featured: boolean
+  featuredPriority: number
+  expiresAt: string | null
+  publishedAt: string | null
   createdAt: string
+}
+
+export interface ProjectAdDetailSummary extends ProjectAdSummary {
+  contactVisibility: ProjectAdContactVisibility
+  contactVisible: boolean
+  contactInfo: string | null
+  reviewNote: string | null
+  favoriteCount: number
+  commentCount: number
+  favorited: boolean
+  attachments: FileBindingSummary[]
+}
+
+export interface ProjectAdPayload {
+  title: string
+  adType: ProjectAdType
+  summary?: string | null
+  description: string
+  tags?: string | null
+  campusZone?: string | null
+  coverFileId?: number | null
+  linkUrl?: string | null
+  contactInfo: string
+  contactVisibility: ProjectAdContactVisibility
+  expiresAt?: string | null
+}
+
+export interface ProjectAdReviewPayload {
+  note?: string | null
+  featuredPriority?: number | null
+}
+
+export interface ProjectAdListParams {
+  adType?: ProjectAdType | ''
+  campusZone?: string
+  keyword?: string
+  featured?: boolean
 }
 
 export interface WalletAccountSummary {
@@ -643,8 +696,77 @@ export function cancelServiceOrder(orderId: number, payload: ServiceOrderActionP
   return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/cancel`, payload)
 }
 
-export function listProjectAds() {
-  return getApi<ProjectAdSummary[]>('/project-ads')
+export function listProjectAds(params?: ProjectAdListParams) {
+  const query = buildQuery(params)
+  return getApi<ProjectAdSummary[]>(`/project-ads${query}`)
+}
+
+export function listFeaturedProjectAds() {
+  return getApi<ProjectAdSummary[]>('/project-ads/featured')
+}
+
+export function getProjectAd(id: number, viewerId?: number) {
+  const query = viewerId ? `?viewerId=${viewerId}` : ''
+  return getApi<ProjectAdDetailSummary>(`/project-ads/${id}${query}`)
+}
+
+export function listUserProjectAds(userId: number) {
+  return getApi<ProjectAdSummary[]>(`/project-ads/users/${userId}`)
+}
+
+export function createProjectAd(publisherId: number, payload: ProjectAdPayload) {
+  return postApi<ProjectAdSummary>(`/project-ads?publisherId=${publisherId}`, payload)
+}
+
+export function updateProjectAd(id: number, publisherId: number, payload: ProjectAdPayload) {
+  return putApi<ProjectAdSummary>(`/project-ads/${id}?publisherId=${publisherId}`, payload)
+}
+
+export function submitProjectAd(id: number, publisherId: number) {
+  return postApi<ProjectAdSummary>(`/project-ads/${id}/submit?publisherId=${publisherId}`, {})
+}
+
+export function closeProjectAd(id: number, publisherId: number) {
+  return postApi<ProjectAdSummary>(`/project-ads/${id}/close?publisherId=${publisherId}`, {})
+}
+
+export function listOpsProjectAds(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return getApi<ProjectAdSummary[]>(`/admin/ops/project-ads${query}`)
+}
+
+export function approveProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/approve?adminId=${adminId}`, payload)
+}
+
+export function rejectProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/reject?adminId=${adminId}`, payload)
+}
+
+export function featureProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/feature?adminId=${adminId}`, payload)
+}
+
+export function unfeatureProjectAd(id: number, adminId: number) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/unfeature?adminId=${adminId}`, {})
+}
+
+export function blockProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/block?adminId=${adminId}`, payload)
+}
+
+function buildQuery(params?: object) {
+  if (!params) {
+    return ''
+  }
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      search.set(key, String(value))
+    }
+  })
+  const value = search.toString()
+  return value ? `?${value}` : ''
 }
 
 export function getWallet(userId = 1) {

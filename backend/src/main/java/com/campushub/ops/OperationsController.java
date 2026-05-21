@@ -4,6 +4,9 @@ import com.campushub.common.ApiResponse;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.identity.RoleApplicationSummary;
+import com.campushub.projectad.ProjectAdReviewRequest;
+import com.campushub.projectad.ProjectAdService;
+import com.campushub.projectad.ProjectAdSummary;
 import com.campushub.shop.ServiceOrderRepository;
 import com.campushub.shop.ServiceOrderSummary;
 import com.campushub.task.RewardTask;
@@ -13,7 +16,11 @@ import com.campushub.task.TaskIssueRepository;
 import com.campushub.task.TaskIssueSummary;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,16 +31,19 @@ public class OperationsController {
     private final TaskIssueRepository taskIssueRepository;
     private final RoleApplicationRepository roleApplicationRepository;
     private final ServiceOrderRepository serviceOrderRepository;
+    private final ProjectAdService projectAdService;
 
     public OperationsController(
             RewardTaskRepository rewardTaskRepository,
             TaskIssueRepository taskIssueRepository,
             RoleApplicationRepository roleApplicationRepository,
-            ServiceOrderRepository serviceOrderRepository) {
+            ServiceOrderRepository serviceOrderRepository,
+            ProjectAdService projectAdService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskIssueRepository = taskIssueRepository;
         this.roleApplicationRepository = roleApplicationRepository;
         this.serviceOrderRepository = serviceOrderRepository;
+        this.projectAdService = projectAdService;
     }
 
     @GetMapping("/dashboard")
@@ -73,5 +83,47 @@ public class OperationsController {
         return ApiResponse.ok(serviceOrderRepository.findAll().stream()
                 .map(ServiceOrderSummary::from)
                 .toList());
+    }
+
+    @GetMapping("/project-ads")
+    public ApiResponse<List<ProjectAdSummary>> projectAds(@RequestParam(required = false) String status) {
+        return ApiResponse.ok(projectAdService.listForAdmin(status));
+    }
+
+    @PostMapping("/project-ads/{id}/approve")
+    public ApiResponse<ProjectAdSummary> approveProjectAd(
+            @PathVariable Long id,
+            @RequestParam Long adminId,
+            @RequestBody(required = false) ProjectAdReviewRequest request) {
+        return ApiResponse.ok(projectAdService.approve(id, adminId, request));
+    }
+
+    @PostMapping("/project-ads/{id}/reject")
+    public ApiResponse<ProjectAdSummary> rejectProjectAd(
+            @PathVariable Long id,
+            @RequestParam Long adminId,
+            @RequestBody(required = false) ProjectAdReviewRequest request) {
+        return ApiResponse.ok(projectAdService.reject(id, adminId, request));
+    }
+
+    @PostMapping("/project-ads/{id}/feature")
+    public ApiResponse<ProjectAdSummary> featureProjectAd(
+            @PathVariable Long id,
+            @RequestParam Long adminId,
+            @RequestBody(required = false) ProjectAdReviewRequest request) {
+        return ApiResponse.ok(projectAdService.feature(id, adminId, request));
+    }
+
+    @PostMapping("/project-ads/{id}/unfeature")
+    public ApiResponse<ProjectAdSummary> unfeatureProjectAd(@PathVariable Long id, @RequestParam Long adminId) {
+        return ApiResponse.ok(projectAdService.unfeature(id, adminId));
+    }
+
+    @PostMapping("/project-ads/{id}/block")
+    public ApiResponse<ProjectAdSummary> blockProjectAd(
+            @PathVariable Long id,
+            @RequestParam Long adminId,
+            @RequestBody(required = false) ProjectAdReviewRequest request) {
+        return ApiResponse.ok(projectAdService.block(id, adminId, request));
     }
 }

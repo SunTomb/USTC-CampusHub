@@ -57,6 +57,37 @@
           <el-table-column prop="appointmentTime" label="预约时间" min-width="170" />
         </el-table>
       </el-tab-pane>
+      <el-tab-pane label="项目广告">
+        <div class="ops-toolbar">
+          <el-select v-model="projectStatus" clearable placeholder="状态" @change="loadProjectAds">
+            <el-option label="待审核" value="PENDING_REVIEW" />
+            <el-option label="已公开" value="APPROVED" />
+            <el-option label="已拒绝" value="REJECTED" />
+            <el-option label="已下架" value="CLOSED" />
+            <el-option label="违规下架" value="BLOCKED" />
+          </el-select>
+          <el-button @click="loadProjectAds">刷新项目广告</el-button>
+        </div>
+        <el-table :data="projectAds" stripe>
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="title" label="标题" min-width="180" />
+          <el-table-column prop="adType" label="类型" width="130" />
+          <el-table-column prop="publisherNickname" label="发布者" width="130" />
+          <el-table-column prop="status" label="状态" width="130" />
+          <el-table-column prop="featured" label="精选" width="90">
+            <template #default="{ row }">{{ row.featured ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="360">
+            <template #default="{ row }">
+              <el-button size="small" type="success" @click="approve(row)">通过</el-button>
+              <el-button size="small" type="warning" @click="feature(row)">精选</el-button>
+              <el-button size="small" @click="unfeature(row)">取消精选</el-button>
+              <el-button size="small" type="danger" @click="reject(row)">拒绝</el-button>
+              <el-button size="small" type="danger" @click="block(row)">下架</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-tab-pane>
       <el-tab-pane label="举报与违规">
         <p class="hint">举报处理和违规记录继续复用审核治理页面，后续会统一到运营后台。</p>
       </el-tab-pane>
@@ -68,12 +99,19 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
+  approveProjectAd,
+  blockProjectAd,
+  featureProjectAd,
   getOpsDashboard,
+  listOpsProjectAds,
   listOpsRoleApplications,
   listOpsShopOrders,
   listOpsTaskIssues,
   listOpsTasks,
+  rejectProjectAd,
+  unfeatureProjectAd,
   type OperationsDashboardSummary,
+  type ProjectAdSummary,
   type RewardTaskSummary,
   type RoleApplicationSummary,
   type ServiceOrderSummary,
@@ -86,27 +124,69 @@ const tasks = ref<RewardTaskSummary[]>([])
 const issues = ref<TaskIssueSummary[]>([])
 const roles = ref<RoleApplicationSummary[]>([])
 const shopOrders = ref<ServiceOrderSummary[]>([])
+const projectAds = ref<ProjectAdSummary[]>([])
+const projectStatus = ref('PENDING_REVIEW')
 
 async function load() {
   loading.value = true
   try {
-    const [dashboardData, taskData, issueData, roleData, shopOrderData] = await Promise.all([
+    const [dashboardData, taskData, issueData, roleData, shopOrderData, projectAdData] = await Promise.all([
       getOpsDashboard(),
       listOpsTasks(),
       listOpsTaskIssues(),
       listOpsRoleApplications(),
       listOpsShopOrders(),
+      listOpsProjectAds(projectStatus.value),
     ])
     dashboard.value = dashboardData
     tasks.value = taskData
     issues.value = issueData
     roles.value = roleData
     shopOrders.value = shopOrderData
+    projectAds.value = projectAdData
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '运营数据加载失败')
   } finally {
     loading.value = false
   }
+}
+
+async function loadProjectAds() {
+  try {
+    projectAds.value = await listOpsProjectAds(projectStatus.value)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '项目广告加载失败')
+  }
+}
+
+async function approve(row: ProjectAdSummary) {
+  await approveProjectAd(row.id, 4, { note: '内容完整，允许展示' })
+  ElMessage.success('已通过')
+  await loadProjectAds()
+}
+
+async function reject(row: ProjectAdSummary) {
+  await rejectProjectAd(row.id, 4, { note: '请补充项目说明或联系方式' })
+  ElMessage.success('已拒绝')
+  await loadProjectAds()
+}
+
+async function feature(row: ProjectAdSummary) {
+  await featureProjectAd(row.id, 4, { featuredPriority: 10 })
+  ElMessage.success('已设为精选')
+  await loadProjectAds()
+}
+
+async function unfeature(row: ProjectAdSummary) {
+  await unfeatureProjectAd(row.id, 4)
+  ElMessage.success('已取消精选')
+  await loadProjectAds()
+}
+
+async function block(row: ProjectAdSummary) {
+  await blockProjectAd(row.id, 4, { note: '运营后台下架' })
+  ElMessage.success('已下架')
+  await loadProjectAds()
 }
 
 onMounted(load)

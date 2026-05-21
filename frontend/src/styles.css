@@ -635,3 +635,140 @@ body {
     flex-direction: column;
   }
 }
+
+
+.heading-actions,
+.action-row,
+.ops-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-card {
+  border-radius: 18px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(150px, auto)) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.showcase-card {
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.showcase-cover {
+  display: flex;
+  justify-content: space-between;
+  min-height: 116px;
+  margin: -20px -20px 16px;
+  padding: 18px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8, #0f766e);
+  font-weight: 700;
+}
+
+.showcase-content h3,
+.detail-header h2 {
+  margin: 0;
+}
+
+.card-title-row,
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.showcase-content p,
+.preserve-lines {
+  color: #4b5563;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.tag-list,
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.meta-line,
+.detail-stats {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 18px;
+}
+
+.detail-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.comment-box,
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-gap {
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .filter-grid,
+  .showcase-grid,
+  .detail-layout,
+  .attachment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-title-row,
+  .detail-header,
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-stats {
+    align-items: flex-start;
+  }
+}

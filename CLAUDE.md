@@ -246,3 +246,33 @@ Recommended Phase 4 start:
 3. Phase 4 should focus on project ads / campus showcase upgrade: project posts, review, contact visibility, expiration, tags, favorites/comments, featured slots, portfolio/showcase pages, and operations visibility.
 4. Preserve product boundaries: no transaction principal escrow, no Alipay key handling, campus-zone-first location, station notifications first, responsive Web first.
 5. Before deployment, run frontend build and backend verification where available; if local Maven is unavailable, use low-impact server Docker build after pushing.
+
+
+## Phase 4 project ads implementation draft, 2026-05-21
+
+Branch/worktree `worktree-campushub-phase4-project-ads` contains a Phase 4 project-ad/campus-showcase implementation draft. It is based on `origin/master` at `1babc2c` and has not been deployed.
+
+Implemented draft scope:
+
+- New design and implementation plan docs: `docs/superpowers/specs/2026-05-21-campushub-phase4-project-ads-design.md` and `docs/superpowers/plans/2026-05-21-campushub-phase4-project-ads-upgrade.md`.
+- `V9__project_ads_showcase_upgrade.sql` extends `project_ads` with ad type, summary, tags, campus zone, cover file, contact visibility, expiration, featured fields, review note/reviewer/timestamps, and close timestamp. Test migration mirror exists under `backend/src/test/resources/db/test-migration`.
+- Backend project-ad workflow draft supports create, edit, submit, close, approve, reject, feature, unfeature, block, public list, featured list, publisher list, and detail aggregation with view count, favorite/comment counts, file bindings, and contact visibility.
+- `/api/admin/ops/project-ads` and admin action endpoints were added.
+- Frontend project ads were upgraded with showcase list, detail page, publisher management page, and admin operations tab.
+- README documents Phase 4 boundaries: no principal escrow, no ad deposits, no real-time chat, no complex recommendation, no Alipay key handling.
+
+Verification status:
+
+- `git diff --check` passed with only expected Windows LF/CRLF warnings.
+- `npm --prefix frontend run build` could not run in the isolated worktree because `vue-tsc` / frontend dependencies were unavailable there.
+- `mvn -f backend/pom.xml -Dtest=ProjectAdServiceIntegrationTest test` could not run locally because `mvn` is unavailable and there is no Maven wrapper.
+- A review agent found and the implementation fixed obvious blockers: missing `RequestMapping` import, frontend query helper typing, non-public detail visibility, and project-ad edit contact preservation.
+
+Before merge/deploy:
+
+1. Install or link frontend dependencies in this worktree and run `npm --prefix frontend run build`.
+2. Run backend verification with Maven or a low-impact server/Docker build.
+3. Smoke test `/api/project-ads`, `/api/project-ads/featured`, `/api/project-ads/{id}`, and `/api/admin/ops/project-ads`.
+4. Browser-check `/project-ads`, `/project-ads/:id`, `/project-ads/manage`, and `/admin/ops` on desktop/mobile.
+
+Production constraints remain: do not edit V1-V8 migrations, do not read/print secrets, do not handle Alipay key bodies in CampusHub, and deploy in small low-impact steps on the shared server.

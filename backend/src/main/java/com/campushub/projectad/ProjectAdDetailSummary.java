@@ -1,8 +1,10 @@
 package com.campushub.projectad;
 
+import com.campushub.file.FileBindingSummary;
 import java.time.LocalDateTime;
+import java.util.List;
 
-public record ProjectAdSummary(
+public record ProjectAdDetailSummary(
         Long id,
         String title,
         String adType,
@@ -14,18 +16,30 @@ public record ProjectAdSummary(
         Long publisherId,
         String publisherNickname,
         String linkUrl,
-        String contactInfo,
-        String contactVisibility,
         String status,
         Integer viewCount,
         Boolean featured,
         Integer featuredPriority,
         LocalDateTime expiresAt,
         LocalDateTime publishedAt,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        String contactVisibility,
+        Boolean contactVisible,
+        String contactInfo,
+        String reviewNote,
+        Long favoriteCount,
+        Long commentCount,
+        Boolean favorited,
+        List<FileBindingSummary> attachments) {
 
-    public static ProjectAdSummary from(ProjectAd projectAd) {
-        return new ProjectAdSummary(
+    public static ProjectAdDetailSummary from(
+            ProjectAd projectAd,
+            boolean contactVisible,
+            long favoriteCount,
+            long commentCount,
+            boolean favorited,
+            List<FileBindingSummary> attachments) {
+        return new ProjectAdDetailSummary(
                 projectAd.getId(),
                 projectAd.getTitle(),
                 projectAd.getAdType(),
@@ -37,14 +51,20 @@ public record ProjectAdSummary(
                 projectAd.getPublisher().getId(),
                 projectAd.getPublisher().getNickname(),
                 projectAd.getLinkUrl(),
-                projectAd.getContactInfo(),
-                projectAd.getContactVisibility(),
                 projectAd.getStatus(),
                 projectAd.getViewCount(),
                 projectAd.getFeatured(),
                 projectAd.getFeaturedPriority(),
                 projectAd.getExpiresAt(),
                 projectAd.getPublishedAt(),
-                projectAd.getCreatedAt());
+                projectAd.getCreatedAt(),
+                projectAd.getContactVisibility(),
+                contactVisible,
+                contactVisible ? projectAd.getContactInfo() : null,
+                projectAd.getReviewNote(),
+                favoriteCount,
+                commentCount,
+                favorited,
+                attachments);
     }
 }
