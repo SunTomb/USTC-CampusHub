@@ -46,6 +46,17 @@
           <el-table-column prop="reviewStatus" label="审核" width="160" />
         </el-table>
       </el-tab-pane>
+      <el-tab-pane label="店铺预约">
+        <el-table :data="shopOrders" stripe>
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="shopName" label="店铺" min-width="140" />
+          <el-table-column prop="serviceItemTitle" label="服务" min-width="160" />
+          <el-table-column prop="customerNickname" label="顾客" width="120" />
+          <el-table-column prop="providerNickname" label="商家" width="120" />
+          <el-table-column prop="status" label="状态" width="120" />
+          <el-table-column prop="appointmentTime" label="预约时间" min-width="170" />
+        </el-table>
+      </el-tab-pane>
       <el-tab-pane label="举报与违规">
         <p class="hint">举报处理和违规记录继续复用审核治理页面，后续会统一到运营后台。</p>
       </el-tab-pane>
@@ -59,11 +70,13 @@ import { ElMessage } from 'element-plus'
 import {
   getOpsDashboard,
   listOpsRoleApplications,
+  listOpsShopOrders,
   listOpsTaskIssues,
   listOpsTasks,
   type OperationsDashboardSummary,
   type RewardTaskSummary,
   type RoleApplicationSummary,
+  type ServiceOrderSummary,
   type TaskIssueSummary,
 } from '@/api/campushub'
 
@@ -72,20 +85,23 @@ const dashboard = ref<OperationsDashboardSummary | null>(null)
 const tasks = ref<RewardTaskSummary[]>([])
 const issues = ref<TaskIssueSummary[]>([])
 const roles = ref<RoleApplicationSummary[]>([])
+const shopOrders = ref<ServiceOrderSummary[]>([])
 
 async function load() {
   loading.value = true
   try {
-    const [dashboardData, taskData, issueData, roleData] = await Promise.all([
+    const [dashboardData, taskData, issueData, roleData, shopOrderData] = await Promise.all([
       getOpsDashboard(),
       listOpsTasks(),
       listOpsTaskIssues(),
       listOpsRoleApplications(),
+      listOpsShopOrders(),
     ])
     dashboard.value = dashboardData
     tasks.value = taskData
     issues.value = issueData
     roles.value = roleData
+    shopOrders.value = shopOrderData
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '运营数据加载失败')
   } finally {

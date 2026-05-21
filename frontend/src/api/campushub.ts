@@ -570,6 +570,10 @@ export function listOpsRoleApplications() {
   return getApi<RoleApplicationSummary[]>('/admin/ops/role-applications')
 }
 
+export function listOpsShopOrders() {
+  return getApi<ServiceOrderSummary[]>('/admin/ops/shop-orders')
+}
+
 export function listShops() {
   return getApi<ShopSummary[]>('/shops')
 }

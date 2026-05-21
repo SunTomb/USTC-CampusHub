@@ -4,6 +4,8 @@ import com.campushub.common.ApiResponse;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.identity.RoleApplicationSummary;
+import com.campushub.shop.ServiceOrderRepository;
+import com.campushub.shop.ServiceOrderSummary;
 import com.campushub.task.RewardTask;
 import com.campushub.task.RewardTaskRepository;
 import com.campushub.task.RewardTaskSummary;
@@ -21,14 +23,17 @@ public class OperationsController {
     private final RewardTaskRepository rewardTaskRepository;
     private final TaskIssueRepository taskIssueRepository;
     private final RoleApplicationRepository roleApplicationRepository;
+    private final ServiceOrderRepository serviceOrderRepository;
 
     public OperationsController(
             RewardTaskRepository rewardTaskRepository,
             TaskIssueRepository taskIssueRepository,
-            RoleApplicationRepository roleApplicationRepository) {
+            RoleApplicationRepository roleApplicationRepository,
+            ServiceOrderRepository serviceOrderRepository) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskIssueRepository = taskIssueRepository;
         this.roleApplicationRepository = roleApplicationRepository;
+        this.serviceOrderRepository = serviceOrderRepository;
     }
 
     @GetMapping("/dashboard")
@@ -60,6 +65,13 @@ public class OperationsController {
     public ApiResponse<List<RoleApplicationSummary>> roleApplications() {
         return ApiResponse.ok(roleApplicationRepository.findByReviewStatusOrderByCreatedAtAsc("PENDING_REVIEW").stream()
                 .map(RoleApplicationSummary::from)
+                .toList());
+    }
+
+    @GetMapping("/shop-orders")
+    public ApiResponse<List<ServiceOrderSummary>> shopOrders() {
+        return ApiResponse.ok(serviceOrderRepository.findAll().stream()
+                .map(ServiceOrderSummary::from)
                 .toList());
     }
 }
