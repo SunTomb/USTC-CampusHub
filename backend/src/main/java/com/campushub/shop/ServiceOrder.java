@@ -1,5 +1,6 @@
 package com.campushub.shop;
 
+import com.campushub.payment.ServiceFeeRecord;
 import com.campushub.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "service_orders")
@@ -50,6 +52,16 @@ public class ServiceOrder {
 
     private String note;
 
+    @Column(name = "contact_snapshot")
+    private String contactSnapshot;
+
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_fee_id")
+    private ServiceFeeRecord serviceFeeRecord;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -61,6 +73,25 @@ public class ServiceOrder {
 
     @Column(name = "canceled_at")
     private LocalDateTime canceledAt;
+
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt;
+
+    protected ServiceOrder() {
+    }
+
+    public ServiceOrder(ServiceItem serviceItem, User customer, CreateServiceOrderRequest request, String contactSnapshot) {
+        this.orderNo = "SO" + UUID.randomUUID().toString().replace("-", "").substring(0, 18).toUpperCase();
+        this.serviceItem = serviceItem;
+        this.customer = customer;
+        this.provider = serviceItem.getShop().getOwner();
+        this.appointmentTime = request.appointmentTime();
+        this.amount = request.amount() == null ? serviceItem.getPrice() : request.amount();
+        this.serviceFee = BigDecimal.ZERO;
+        this.status = "REQUESTED";
+        this.note = request.note();
+        this.contactSnapshot = contactSnapshot;
+    }
 
     public Long getId() {
         return id;
@@ -102,6 +133,18 @@ public class ServiceOrder {
         return note;
     }
 
+    public String getContactSnapshot() {
+        return contactSnapshot;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public ServiceFeeRecord getServiceFeeRecord() {
+        return serviceFeeRecord;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -116,5 +159,34 @@ public class ServiceOrder {
 
     public LocalDateTime getCanceledAt() {
         return canceledAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void accept() {
+        this.status = "ACCEPTED";
+    }
+
+    public void reject(String cancelReason) {
+        this.status = "REJECTED";
+        this.cancelReason = cancelReason;
+        this.canceledAt = LocalDateTime.now();
+    }
+
+    public void start() {
+        this.status = "IN_SERVICE";
+    }
+
+    public void complete() {
+        this.status = "COMPLETED";
+        this.completedAt = LocalDateTime.now();
+    }
+
+    public void cancel(String cancelReason) {
+        this.status = "CANCELED";
+        this.cancelReason = cancelReason;
+        this.canceledAt = LocalDateTime.now();
     }
 }

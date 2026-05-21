@@ -13,4 +13,7 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     @EntityGraph(attributePaths = "owner")
     List<Shop> findByStatusOrderByRatingDesc(String status);
+
+    @EntityGraph(attributePaths = "owner")
+    Optional<Shop> findByOwnerId(Long ownerId);
 }

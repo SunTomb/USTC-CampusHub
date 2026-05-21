@@ -62,23 +62,23 @@
     </div>
 
     <el-drawer v-model="publisherOpen" title="发布跑腿任务" size="520px">
-      <el-form label-position="top" :model="publishForm">
-        <el-form-item label="标题"><el-input v-model="publishForm.title" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="publishForm.description" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="报酬"><el-input-number v-model="publishForm.rewardAmount" :min="0" :precision="2" class="wide" /></el-form-item>
-        <el-form-item label="起点/终点校区">
+      <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules">
+        <el-form-item label="标题" prop="title"><el-input v-model="publishForm.title" /></el-form-item>
+        <el-form-item label="描述" prop="description"><el-input v-model="publishForm.description" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item label="报酬" prop="rewardAmount"><el-input-number v-model="publishForm.rewardAmount" :min="0" :precision="2" class="wide" /></el-form-item>
+        <el-form-item label="起点/终点校区" required>
           <div class="two-column">
             <el-select v-model="publishForm.originZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
             <el-select v-model="publishForm.destinationZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
           </div>
         </el-form-item>
-        <el-form-item label="地点详情">
+        <el-form-item label="地点详情" required>
           <div class="two-column">
             <el-input v-model="publishForm.originDetail" placeholder="取件点" />
             <el-input v-model="publishForm.destinationDetail" placeholder="送达点" />
           </div>
         </el-form-item>
-        <el-form-item label="接单与确认方式">
+        <el-form-item label="接单与确认方式" required>
           <div class="two-column">
             <el-select v-model="publishForm.acceptanceMode">
               <el-option label="抢单" value="GRAB" />
@@ -90,7 +90,7 @@
             </el-select>
           </div>
         </el-form-item>
-        <el-form-item label="截止时间"><el-date-picker v-model="deadlineDate" type="datetime" class="wide" /></el-form-item>
+        <el-form-item label="截止时间" prop="deadline"><el-date-picker v-model="deadlineDate" type="datetime" class="wide" /></el-form-item>
         <el-button type="primary" class="wide" :loading="publishing" @click="publish">提交发布</el-button>
       </el-form>
     </el-drawer>
@@ -107,7 +107,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
   applyRunnerTask,
   grabRunnerTask,
@@ -120,6 +121,7 @@ import {
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const auth = useAuthStore()
 const tasks = ref<RewardTaskSummary[]>([])
 const loading = ref(false)
@@ -128,6 +130,7 @@ const publishing = ref(false)
 const applyOpen = ref(false)
 const applyTaskId = ref<number | null>(null)
 const applyMessage = ref('')
+const publishFormRef = ref<FormInstance>()
 const deadlineDate = ref<Date>(new Date(Date.now() + 2 * 60 * 60 * 1000))
 
 const zones: Array<{ label: string; value: CampusZone }> = [
@@ -156,6 +159,22 @@ const publishForm = reactive<CreateRunnerTaskPayload>({
   verificationMode: 'COMPLETION_CODE',
 })
 
+const publishRules: FormRules<CreateRunnerTaskPayload> = {
+  title: [
+    { required: true, message: '请填写任务标题', trigger: 'blur' },
+    { min: 2, max: 80, message: '标题长度应为 2-80 个字符', trigger: 'blur' },
+  ],
+  description: [
+    { required: true, message: '请填写任务描述', trigger: 'blur' },
+    { min: 5, max: 1000, message: '描述长度应为 5-1000 个字符', trigger: 'blur' },
+  ],
+  rewardAmount: [
+    { required: true, message: '请填写任务报酬', trigger: 'change' },
+    { type: 'number', min: 0.01, message: '报酬需大于 0 元', trigger: 'change' },
+  ],
+  deadline: [{ required: true, message: '请选择截止时间', trigger: 'change' }],
+}
+
 const filteredTasks = computed(() => tasks.value.filter((task) => {
   if (filters.originZone && task.originZone !== filters.originZone) return false
   if (filters.destinationZone && task.destinationZone !== filters.destinationZone) return false
@@ -175,9 +194,16 @@ async function loadTasks() {
 }
 
 async function publish() {
+  publishForm.deadline = deadlineDate.value?.toISOString() ?? ''
+  await publishFormRef.value?.validate()
+  if (!publishForm.originDetail?.trim() || !publishForm.destinationDetail?.trim()) {
+    ElMessage.error('请填写起点和终点地点详情')
+    return
+  }
   publishing.value = true
   try {
-    publishForm.deadline = deadlineDate.value.toISOString()
+    publishForm.originDetail = publishForm.originDetail.trim()
+    publishForm.destinationDetail = publishForm.destinationDetail.trim()
     await publishRunnerTask(publishForm, auth.currentUser?.id ?? 1)
     ElMessage.success('任务已发布')
     publisherOpen.value = false
@@ -188,22 +214,33 @@ async function publish() {
 }
 
 async function grab(taskId: number) {
-  await grabRunnerTask(taskId, auth.currentUser?.id ?? 2)
+  if (!requireLogin()) return
+  const user = auth.currentUser
+  if (!user) return
+  await grabRunnerTask(taskId, user.id)
   ElMessage.success('抢单成功')
   await loadTasks()
 }
 
 function openApply(task: RewardTaskSummary) {
+  if (!requireLogin()) return
   applyTaskId.value = task.id
   applyMessage.value = ''
   applyOpen.value = true
 }
 
 async function apply() {
-  if (!applyTaskId.value) return
-  await applyRunnerTask(applyTaskId.value, auth.currentUser?.id ?? 2, { message: applyMessage.value })
+  if (!applyTaskId.value || !auth.currentUser) return
+  await applyRunnerTask(applyTaskId.value, auth.currentUser.id, { message: applyMessage.value })
   ElMessage.success('申请已提交')
   applyOpen.value = false
+}
+
+function requireLogin() {
+  if (auth.currentUser) return true
+  ElMessage.warning('请先登录后再操作任务')
+  router.push({ name: 'auth' })
+  return false
 }
 
 function formatDate(value: string) {

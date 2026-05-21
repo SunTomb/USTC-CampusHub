@@ -1,4 +1,4 @@
-import { getApi, postApi } from './client'
+import { getApi, postApi, putApi } from './client'
 
 export interface LoginPayload {
   username: string
@@ -275,9 +275,100 @@ export interface ShopSummary {
   id: number
   name: string
   description: string
+  ownerId: number
   ownerNickname: string
   serviceArea: string
+  campusZone: CampusZone
+  contactVisibility: string
+  openingHours: string | null
+  coverFileId: number | null
+  status: string
   rating: number
+}
+
+export interface ServiceItemSummary {
+  id: number
+  shopId: number
+  shopName: string
+  category: string
+  title: string
+  description: string
+  price: number
+  minPrice: number | null
+  maxPrice: number | null
+  priceUnit: string
+  coverFileId: number | null
+  durationMinutes: number
+  status: string
+  createdAt: string
+}
+
+export interface ShopDetailSummary extends ShopSummary {
+  ownerCreditScore: number
+  contactVisible: boolean
+  contactSnapshot: string | null
+  serviceItems: ServiceItemSummary[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateShopPayload {
+  name: string
+  description: string
+  serviceArea: string
+  campusZone: CampusZone
+  contactVisibility: string
+  openingHours?: string
+  coverFileId?: number | null
+}
+
+export interface CreateServiceItemPayload {
+  category: string
+  title: string
+  description: string
+  price: number
+  minPrice?: number | null
+  maxPrice?: number | null
+  priceUnit: string
+  durationMinutes: number
+  coverFileId?: number | null
+}
+
+export interface CreateServiceOrderPayload {
+  appointmentTime: string
+  amount?: number | null
+  note?: string
+}
+
+export interface ServiceOrderActionPayload {
+  actorId: number
+  note?: string
+  cancelReason?: string
+}
+
+export interface ServiceOrderSummary {
+  id: number
+  orderNo: string
+  serviceItemId: number
+  serviceItemTitle: string
+  shopId: number
+  shopName: string
+  customerId: number
+  customerNickname: string
+  providerId: number
+  providerNickname: string
+  appointmentTime: string
+  amount: number
+  serviceFee: number
+  status: string
+  note: string | null
+  contactSnapshot: string | null
+  cancelReason: string | null
+  serviceFeeId: number | null
+  createdAt: string
+  paidAt: string | null
+  completedAt: string | null
+  canceledAt: string | null
 }
 
 export interface ProjectAdSummary {
@@ -481,6 +572,71 @@ export function listOpsRoleApplications() {
 
 export function listShops() {
   return getApi<ShopSummary[]>('/shops')
+}
+
+export function getShopDetail(id: number, viewerId?: number) {
+  const query = viewerId ? `?viewerId=${viewerId}` : ''
+  return getApi<ShopDetailSummary>(`/shops/${id}${query}`)
+}
+
+export function getMyShop(ownerId: number) {
+  return getApi<ShopDetailSummary>(`/shops/mine?ownerId=${ownerId}`)
+}
+
+export function createShop(ownerId: number, payload: CreateShopPayload) {
+  return postApi<ShopDetailSummary>(`/shops?ownerId=${ownerId}`, payload)
+}
+
+export function updateShop(shopId: number, ownerId: number, payload: CreateShopPayload) {
+  return putApi<ShopDetailSummary>(`/shops/${shopId}?ownerId=${ownerId}`, payload)
+}
+
+export function createServiceItem(shopId: number, ownerId: number, payload: CreateServiceItemPayload) {
+  return postApi<ServiceItemSummary>(`/service-items/shop/${shopId}?ownerId=${ownerId}`, payload)
+}
+
+export function updateServiceItem(itemId: number, ownerId: number, payload: CreateServiceItemPayload) {
+  return putApi<ServiceItemSummary>(`/service-items/${itemId}?ownerId=${ownerId}`, payload)
+}
+
+export function pauseServiceItem(itemId: number, userId: number) {
+  return postApi<ServiceItemSummary>(`/service-items/${itemId}/pause`, { userId })
+}
+
+export function publishServiceItem(itemId: number, userId: number) {
+  return postApi<ServiceItemSummary>(`/service-items/${itemId}/publish`, { userId })
+}
+
+export function createServiceOrder(itemId: number, customerId: number, payload: CreateServiceOrderPayload) {
+  return postApi<ServiceOrderSummary>(`/service-items/${itemId}/orders?customerId=${customerId}`, payload)
+}
+
+export function listShopOrders(shopId: number, ownerId: number) {
+  return getApi<ServiceOrderSummary[]>(`/shops/${shopId}/orders?ownerId=${ownerId}`)
+}
+
+export function listCustomerServiceOrders(customerId: number) {
+  return getApi<ServiceOrderSummary[]>(`/service-orders/customer/${customerId}`)
+}
+
+export function acceptServiceOrder(orderId: number, payload: ServiceOrderActionPayload) {
+  return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/accept`, payload)
+}
+
+export function rejectServiceOrder(orderId: number, payload: ServiceOrderActionPayload) {
+  return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/reject`, payload)
+}
+
+export function startServiceOrder(orderId: number, payload: ServiceOrderActionPayload) {
+  return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/start`, payload)
+}
+
+export function completeServiceOrder(orderId: number, payload: ServiceOrderActionPayload) {
+  return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/complete`, payload)
+}
+
+export function cancelServiceOrder(orderId: number, payload: ServiceOrderActionPayload) {
+  return postApi<ServiceOrderSummary>(`/service-orders/${orderId}/cancel`, payload)
 }
 
 export function listProjectAds() {

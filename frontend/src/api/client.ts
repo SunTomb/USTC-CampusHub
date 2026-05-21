@@ -36,3 +36,8 @@ export async function postApi<T>(url: string, body?: unknown): Promise<T> {
   const response = await apiClient.post<ApiResponse<T>>(url, body)
   return unwrapApiResponse(response.data)
 }
+
+export async function putApi<T>(url: string, body?: unknown): Promise<T> {
+  const response = await apiClient.put<ApiResponse<T>>(url, body)
+  return unwrapApiResponse(response.data)
+}

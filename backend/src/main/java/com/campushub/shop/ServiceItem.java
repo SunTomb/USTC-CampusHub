@@ -25,6 +25,9 @@ public class ServiceItem {
     private Shop shop;
 
     @Column(nullable = false)
+    private String category;
+
+    @Column(nullable = false)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -32,6 +35,18 @@ public class ServiceItem {
 
     @Column(nullable = false)
     private BigDecimal price;
+
+    @Column(name = "min_price")
+    private BigDecimal minPrice;
+
+    @Column(name = "max_price")
+    private BigDecimal maxPrice;
+
+    @Column(name = "price_unit", nullable = false)
+    private String priceUnit;
+
+    @Column(name = "cover_file_id")
+    private Long coverFileId;
 
     @Column(name = "duration_minutes", nullable = false)
     private Integer durationMinutes;
@@ -42,12 +57,36 @@ public class ServiceItem {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt;
+
+    protected ServiceItem() {
+    }
+
+    public ServiceItem(Shop shop, CreateServiceItemRequest request) {
+        this.shop = shop;
+        this.category = request.category().trim();
+        this.title = request.title().trim();
+        this.description = request.description().trim();
+        this.price = request.price();
+        this.minPrice = request.minPrice();
+        this.maxPrice = request.maxPrice();
+        this.priceUnit = request.priceUnit().trim();
+        this.coverFileId = request.coverFileId();
+        this.durationMinutes = request.durationMinutes();
+        this.status = "PUBLISHED";
+    }
+
     public Long getId() {
         return id;
     }
 
     public Shop getShop() {
         return shop;
+    }
+
+    public String getCategory() {
+        return category;
     }
 
     public String getTitle() {
@@ -62,6 +101,22 @@ public class ServiceItem {
         return price;
     }
 
+    public BigDecimal getMinPrice() {
+        return minPrice;
+    }
+
+    public BigDecimal getMaxPrice() {
+        return maxPrice;
+    }
+
+    public String getPriceUnit() {
+        return priceUnit;
+    }
+
+    public Long getCoverFileId() {
+        return coverFileId;
+    }
+
     public Integer getDurationMinutes() {
         return durationMinutes;
     }
@@ -72,5 +127,33 @@ public class ServiceItem {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void update(UpdateServiceItemRequest request) {
+        this.category = request.category().trim();
+        this.title = request.title().trim();
+        this.description = request.description().trim();
+        this.price = request.price();
+        this.minPrice = request.minPrice();
+        this.maxPrice = request.maxPrice();
+        this.priceUnit = request.priceUnit().trim();
+        this.coverFileId = request.coverFileId();
+        this.durationMinutes = request.durationMinutes();
+    }
+
+    public void publish() {
+        this.status = "PUBLISHED";
+    }
+
+    public void pause() {
+        this.status = "PAUSED";
+    }
+
+    public void offShelf() {
+        this.status = "OFF_SHELF";
     }
 }
