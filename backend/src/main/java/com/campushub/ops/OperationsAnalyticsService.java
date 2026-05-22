@@ -695,10 +695,24 @@ public class OperationsAnalyticsService {
 
     String escapeCsv(String value) {
         String safeValue = value == null ? "" : value;
-        if (safeValue.contains("\"") || safeValue.contains(",") || safeValue.contains("\n") || safeValue.contains("\r")) {
+        boolean neutralizedFormula = startsWithSpreadsheetFormulaTrigger(safeValue);
+        if (neutralizedFormula) {
+            safeValue = "'" + safeValue;
+        }
+        if (neutralizedFormula || safeValue.contains("\"") || safeValue.contains(",") || safeValue.contains("\n") || safeValue.contains("\r")) {
             return "\"" + safeValue.replace("\"", "\"\"") + "\"";
         }
         return safeValue;
+    }
+
+    private boolean startsWithSpreadsheetFormulaTrigger(String value) {
+        if (value.isEmpty()) {
+            return false;
+        }
+        return switch (value.charAt(0)) {
+            case '=', '+', '-', '@', '\t', '\r' -> true;
+            default -> false;
+        };
     }
 
     String text(Object value) {

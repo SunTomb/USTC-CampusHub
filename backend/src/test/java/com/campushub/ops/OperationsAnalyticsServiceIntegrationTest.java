@@ -228,4 +228,39 @@ class OperationsAnalyticsServiceIntegrationTest {
         assertThat(export.body()).doesNotContain("wechat", "qq_contact", "password", "secret", "token");
     }
 
+    @Test
+    void exportsCsvNeutralizesSpreadsheetFormulaValues() {
+        entityManager.createNativeQuery("""
+                        INSERT INTO goods (id, seller_id, category_id, title, description, price, original_price, condition_level,
+                                           trade_location, status, view_count, created_at, updated_at, campus_zone, contact_visibility,
+                                           delivery_method, service_fee_policy, published_at)
+                        VALUES
+                        (9201, 1, 1, '=HYPERLINK(...)', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
+                        (9202, 1, 1, '+cmd', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
+                        (9203, 1, 1, '-1+2', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
+                        (9204, 1, 1, '@SUM(...)', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00')
+                        """)
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+        AnalyticsDateRange range = new AnalyticsDateRange(
+                LocalDate.of(2026, 5, 1),
+                LocalDate.of(2026, 5, 31),
+                LocalDateTime.of(2026, 5, 1, 0, 0),
+                LocalDateTime.of(2026, 6, 1, 0, 0)
+        );
+
+        CsvExport export = analyticsService.exportGoods(range);
+
+        assertThat(export.body()).contains(
+                "\"'=HYPERLINK(...)\"",
+                "\"'+cmd\"",
+                "\"'-1+2\"",
+                "\"'@SUM(...)\"");
+    }
+
 }
