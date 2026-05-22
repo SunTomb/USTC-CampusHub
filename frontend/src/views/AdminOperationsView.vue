@@ -6,7 +6,19 @@
         <h2>运营后台</h2>
         <p>聚合跑腿任务、异常、身份保证金、举报和违规治理入口。</p>
       </div>
-      <el-button :loading="loading" @click="load">刷新</el-button>
+      <div class="ops-heading-actions">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          :clearable="true"
+        />
+        <el-button type="primary" :loading="analyticsLoading" @click="loadAnalytics">刷新分析</el-button>
+        <el-button :loading="loading" @click="load">刷新监控</el-button>
+      </div>
     </div>
 
     <div class="ops-metrics" v-if="dashboard">
@@ -17,7 +29,91 @@
       <div><span>待审身份</span><strong>{{ dashboard.pendingRoleApplications }}</strong></div>
     </div>
 
+    <section class="ops-analytics-panel" v-loading="analyticsLoading">
+      <div class="panel-topline">
+        <span>运营分析</span>
+        <span v-if="overview">{{ overview.startDate }} 至 {{ overview.endDate }}</span>
+      </div>
+      <div class="analytics-grid" v-if="overview">
+        <div v-for="card in overview.cards" :key="card.key">
+          <span>{{ card.label }}</span>
+          <strong>{{ formatMetricValue(card) }}</strong>
+        </div>
+      </div>
+    </section>
+
     <el-tabs class="tabs-surface" v-loading="loading">
+      <el-tab-pane label="业务漏斗">
+        <div class="funnel-grid" v-if="funnels">
+          <div class="funnel-card" v-for="funnel in funnels.funnels" :key="funnel.businessKey">
+            <h3>{{ funnel.businessName }}</h3>
+            <div class="funnel-step" v-for="step in funnel.steps" :key="step.key">
+              <span>{{ step.label }}</span>
+              <strong>{{ formatMetricValue(step) }}</strong>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="校区分析">
+        <div class="zone-grid" v-if="zones">
+          <div class="zone-card" v-for="group in zoneGroups" :key="group.key">
+            <h3>{{ group.title }}</h3>
+            <div v-if="group.items.length">
+              <div class="zone-row" v-for="item in group.items" :key="item.key">
+                <div>
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.count }}</strong>
+                </div>
+                <el-progress :percentage="zonePercentage(item.count, group.items)" :stroke-width="8" />
+              </div>
+            </div>
+            <p class="hint" v-else>暂无数据</p>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="费用与导出">
+        <div class="fee-grid" v-if="fees">
+          <div>
+            <span>服务费记录</span>
+            <strong>{{ fees.serviceFeeCount }}</strong>
+          </div>
+          <div>
+            <span>已付服务费</span>
+            <strong>¥{{ fees.paidServiceFeeAmount }}</strong>
+          </div>
+          <div>
+            <span>待付服务费</span>
+            <strong>¥{{ fees.pendingServiceFeeAmount }}</strong>
+          </div>
+          <div>
+            <span>身份申请</span>
+            <strong>{{ fees.roleApplicationCount }}</strong>
+          </div>
+          <div>
+            <span>身份保证金</span>
+            <strong>¥{{ fees.roleDepositAmount }}</strong>
+          </div>
+        </div>
+        <div class="fee-grid" v-if="fees">
+          <div v-for="card in fees.serviceFeesByTargetType" :key="`fee-${card.key}`">
+            <span>服务费：{{ card.label }}</span>
+            <strong>{{ formatMetricValue(card) }}</strong>
+          </div>
+          <div v-for="card in fees.roleDepositsByType" :key="`deposit-${card.key}`">
+            <span>保证金：{{ card.label }}</span>
+            <strong>{{ formatMetricValue(card) }}</strong>
+          </div>
+        </div>
+        <div class="export-grid">
+          <el-button @click="exportCsv('tasks')">导出跑腿任务 CSV</el-button>
+          <el-button @click="exportCsv('goods')">导出二手商品 CSV</el-button>
+          <el-button @click="exportCsv('shop-orders')">导出店铺预约 CSV</el-button>
+          <el-button @click="exportCsv('project-ads')">导出项目广告 CSV</el-button>
+          <el-button @click="exportCsv('governance')">导出治理记录 CSV</el-button>
+          <el-button @click="exportCsv('fees')">导出费用记录 CSV</el-button>
+        </div>
+        <p class="hint">CSV 导出不包含密钥、令牌、密码、完整联系方式等敏感字段。</p>
+      </el-tab-pane>
       <el-tab-pane label="任务监控">
         <el-table :data="tasks" stripe>
           <el-table-column prop="id" label="ID" width="80" />
@@ -96,12 +192,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   approveProjectAd,
   blockProjectAd,
+  buildOpsExportUrl,
   featureProjectAd,
+  getOpsAnalyticsFees,
+  getOpsAnalyticsFunnels,
+  getOpsAnalyticsOverview,
+  getOpsAnalyticsZones,
   getOpsDashboard,
   listOpsProjectAds,
   listOpsRoleApplications,
@@ -110,13 +211,22 @@ import {
   listOpsTasks,
   rejectProjectAd,
   unfeatureProjectAd,
+  type FeeAnalyticsSummary,
+  type MetricCardSummary,
+  type OperationsAnalyticsOverview,
   type OperationsDashboardSummary,
+  type OperationsFunnelSummary,
+  type OperationsZoneSummary,
+  type OpsAnalyticsParams,
   type ProjectAdSummary,
   type RewardTaskSummary,
   type RoleApplicationSummary,
   type ServiceOrderSummary,
   type TaskIssueSummary,
+  type ZoneMetricSummary,
 } from '@/api/campushub'
+
+type OpsExportKind = 'tasks' | 'goods' | 'shop-orders' | 'project-ads' | 'governance' | 'fees'
 
 const loading = ref(false)
 const dashboard = ref<OperationsDashboardSummary | null>(null)
@@ -126,6 +236,35 @@ const roles = ref<RoleApplicationSummary[]>([])
 const shopOrders = ref<ServiceOrderSummary[]>([])
 const projectAds = ref<ProjectAdSummary[]>([])
 const projectStatus = ref('PENDING_REVIEW')
+const analyticsLoading = ref(false)
+const dateRange = ref<[string, string] | null>(null)
+const overview = ref<OperationsAnalyticsOverview | null>(null)
+const funnels = ref<OperationsFunnelSummary | null>(null)
+const zones = ref<OperationsZoneSummary | null>(null)
+const fees = ref<FeeAnalyticsSummary | null>(null)
+
+const zoneGroups = computed(() => {
+  if (!zones.value) {
+    return []
+  }
+
+  return [
+    { key: 'taskOriginZones', title: '任务起点校区', items: zones.value.taskOriginZones },
+    { key: 'taskDestinationZones', title: '任务终点校区', items: zones.value.taskDestinationZones },
+    { key: 'taskRoutes', title: '任务路线', items: zones.value.taskRoutes },
+    { key: 'goodsZones', title: '二手交易校区', items: zones.value.goodsZones },
+    { key: 'shopZones', title: '学生店铺校区', items: zones.value.shopZones },
+    { key: 'projectAdZones', title: '项目广告校区', items: zones.value.projectAdZones },
+  ]
+})
+
+function analyticsParams(): OpsAnalyticsParams {
+  if (!dateRange.value) {
+    return {}
+  }
+  const [startDate, endDate] = dateRange.value
+  return { startDate, endDate }
+}
 
 async function load() {
   loading.value = true
@@ -149,6 +288,50 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+async function loadAnalytics() {
+  analyticsLoading.value = true
+  try {
+    const params = analyticsParams()
+    const [overviewData, funnelData, zoneData, feeData] = await Promise.all([
+      getOpsAnalyticsOverview(params),
+      getOpsAnalyticsFunnels(params),
+      getOpsAnalyticsZones(params),
+      getOpsAnalyticsFees(params),
+    ])
+    overview.value = overviewData
+    funnels.value = funnelData
+    zones.value = zoneData
+    fees.value = feeData
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '运营分析加载失败')
+  } finally {
+    analyticsLoading.value = false
+  }
+}
+
+function exportCsv(kind: OpsExportKind) {
+  window.open(buildOpsExportUrl(kind, analyticsParams()), '_blank')
+}
+
+function formatMetricValue(card: MetricCardSummary) {
+  if (card.unit === 'CNY') {
+    return `¥${card.value}`
+  }
+  return `${card.value}${card.unit && card.unit !== 'count' ? card.unit : ''}`
+}
+
+function topZoneCount(items: ZoneMetricSummary[]) {
+  return Math.max(0, ...items.map((item) => item.count))
+}
+
+function zonePercentage(count: number, items: ZoneMetricSummary[]) {
+  const topCount = topZoneCount(items)
+  if (topCount === 0) {
+    return 0
+  }
+  return Math.round((count / topCount) * 100)
 }
 
 async function loadProjectAds() {
@@ -189,5 +372,8 @@ async function block(row: ProjectAdSummary) {
   await loadProjectAds()
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadAnalytics()
+})
 </script>

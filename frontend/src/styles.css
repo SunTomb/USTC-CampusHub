@@ -375,6 +375,125 @@ body {
   font-size: 28px;
 }
 
+.ops-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ops-analytics-panel {
+  padding: 18px;
+  border: 1px solid #eef2f7;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.analytics-grid,
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.analytics-grid div,
+.fee-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.analytics-grid span,
+.fee-grid span,
+.funnel-step span,
+.zone-row span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.analytics-grid strong,
+.fee-grid strong,
+.funnel-step strong,
+.zone-row strong {
+  color: #111827;
+  font-size: 22px;
+}
+
+.funnel-grid,
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.funnel-card,
+.zone-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #eef2f7;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.funnel-card h3,
+.zone-card h3 {
+  margin: 0 0 14px;
+}
+
+.funnel-step,
+.zone-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.funnel-step:last-child,
+.zone-row:last-child {
+  border-bottom: 0;
+}
+
+.zone-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(160px, 1fr);
+  align-items: center;
+}
+
+.zone-row div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 10px;
+}
+
+@media (max-width: 900px) {
+  .ops-heading-actions {
+    justify-content: flex-start;
+  }
+
+  .funnel-grid,
+  .zone-grid,
+  .export-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zone-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   body {
     min-width: 0;
