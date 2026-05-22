@@ -331,3 +331,42 @@ Recommended Phase 6 start:
 4. Preserve boundaries: no transaction principal escrow, no per-order deposit freeze, no CampusHub Alipay key handling, no auth/RBAC hardening beyond what analytics needs.
 5. If Phase 6 needs schema changes for export logs or analytics snapshots, use V11+ only.
 
+## Latest Phase 6 deployment and Phase 7 handoff, 2026-05-22
+
+Latest deployed `master` includes Phase 6 operations analytics and CSV export through commit `0964d23` (`add phase 6 operations analytics plan`). Production `/opt/campushub` is on `master` at `0964d23` and was rebuilt/restarted successfully after Phase 6.
+
+Implemented Phase 6:
+
+- New docs: `docs/superpowers/specs/2026-05-22-campushub-phase6-ops-analytics-design.md` and `docs/superpowers/plans/2026-05-22-campushub-phase6-ops-analytics-upgrade.md`.
+- No new Flyway migration was added; Phase 6 reads existing V1-V10 tables only.
+- Backend ops package now exposes analytics overview, business funnels, campus-zone summaries, fee/deposit summaries, and CSV exports under `/api/admin/ops`.
+- CSV exports include operational fields only and harden spreadsheet formula escaping; they intentionally exclude secrets, payment tokens, password hashes, email-code hashes, login tokens, and full WeChat/QQ contacts.
+- Frontend `/admin/ops` now includes date-range analytics, overview cards, business funnel cards, campus-zone distributions, fee/deposit summary, and CSV export buttons.
+- README documents Phase 6 and preserves the no-principal-escrow/no-Alipay-key-handling payment boundary.
+
+Verified production after Phase 6:
+
+- GitHub `master` was updated to `0964d23`; production `/opt/campushub` fast-forwarded to `0964d23`.
+- Server Docker backend build succeeded; backend Maven package completed inside Docker with `BUILD SUCCESS`.
+- Server Docker frontend build succeeded; Vite emitted only the known large chunk warning.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/admin/ops/analytics/overview`, `/api/admin/ops/analytics/funnels`, `/api/admin/ops/analytics/zones`, `/api/admin/ops/analytics/fees`, `/api/admin/ops/exports/goods.csv`, `/api/admin/ops/exports/fees.csv`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/api/admin/governance/dashboard`, and `/api/credit/users/1`.
+- Browser/Playwriter verification covered `/admin/ops`, `/admin/governance`, `/credit`, `/goods`, `/tasks`, `/shops`, and `/project-ads`; pages rendered without white screens or visible Element Plus error messages.
+- `/admin/ops` showed date range controls, operations analytics cards, business funnel tab, fee/deposit summary, and CSV export buttons.
+- Mobile viewport 390x844 on `/admin/ops` had no obvious horizontal overflow (`scrollWidth` equaled `clientWidth`).
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V10; add V11+ only for future schema changes.
+- Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
+- Avoid PowerShell under CC Switch + Codex Provider.
+- Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
+
+Recommended Phase 7 start:
+
+1. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the Phase 7 roadmap source.
+2. Phase 7 should focus on responsive Web and user-experience polish, not payment-center hardening or auth/RBAC hardening.
+3. Keep Phase 7 Phase-4-sized: one design doc, one implementation plan, frontend UX/style work, server Docker verification, Playwriter desktop/mobile checks, README/CLAUDE handoff.
+
