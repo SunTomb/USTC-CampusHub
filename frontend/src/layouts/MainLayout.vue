@@ -1,29 +1,20 @@
 <template>
   <el-container class="app-shell">
-    <el-aside width="240px" class="sidebar">
+    <el-aside width="240px" class="sidebar desktop-sidebar">
       <div class="brand">
         <strong>校集 CampusHub</strong>
         <span>校园二手交易与微服务平台</span>
       </div>
       <el-menu router :default-active="$route.path" class="menu">
-        <el-menu-item index="/">首页总览</el-menu-item>
-        <el-menu-item index="/auth">登录注册</el-menu-item>
-        <el-menu-item index="/goods">二手商品</el-menu-item>
-        <el-menu-item index="/tasks">悬赏任务</el-menu-item>
-        <el-menu-item index="/shops">学生店铺</el-menu-item>
-        <el-menu-item index="/project-ads">项目广告</el-menu-item>
-        <el-menu-item index="/wallet">钱包流水</el-menu-item>
-        <el-menu-item index="/credit">信用中心</el-menu-item>
-        <el-menu-item index="/roles">身份保证金</el-menu-item>
-        <el-menu-item index="/notifications">站内通知</el-menu-item>
-        <el-menu-item index="/admin/review">审核治理</el-menu-item>
-        <el-menu-item index="/admin/ops">运营后台</el-menu-item>
-        <el-menu-item index="/admin/governance">治理台</el-menu-item>
+        <el-menu-item v-for="item in navItems" :key="item.path" :index="item.path">{{ item.label }}</el-menu-item>
       </el-menu>
     </el-aside>
 
     <el-container>
       <el-header class="header">
+        <div class="mobile-nav-trigger">
+          <el-button plain @click="mobileMenuOpen = true">完整目录</el-button>
+        </div>
         <div>
           <h1>CampusHub 本地演示原型</h1>
           <p>二手交易 × 跑腿悬赏 × 学生技能服务 × 信用治理</p>
@@ -35,15 +26,58 @@
           <el-button v-else size="small" type="primary" plain @click="$router.push('/auth')">登录</el-button>
         </div>
       </el-header>
-      <el-main>
+      <el-main class="main-content">
         <RouterView />
       </el-main>
     </el-container>
+
+    <nav class="mobile-tabbar" aria-label="移动端主导航">
+      <RouterLink v-for="item in mobileTabItems" :key="item.path" :to="item.path" class="mobile-tabbar-item">
+        <span class="mobile-tabbar-icon">{{ item.icon }}</span>
+        <span>{{ item.label }}</span>
+      </RouterLink>
+      <button type="button" class="mobile-tabbar-item mobile-tabbar-button" @click="mobileMenuOpen = true">
+        <span class="mobile-tabbar-icon">☰</span>
+        <span>更多</span>
+      </button>
+    </nav>
+
+    <el-drawer v-model="mobileMenuOpen" title="校集 CampusHub" direction="ltr" size="82%" class="mobile-menu-drawer">
+      <el-menu router :default-active="$route.path" class="menu" @select="mobileMenuOpen = false">
+        <el-menu-item v-for="item in navItems" :key="item.path" :index="item.path">{{ item.label }}</el-menu-item>
+      </el-menu>
+    </el-drawer>
   </el-container>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
+const mobileMenuOpen = ref(false)
+
+const navItems = [
+  { path: '/', label: '首页总览' },
+  { path: '/auth', label: '登录注册' },
+  { path: '/goods', label: '二手商品' },
+  { path: '/tasks', label: '悬赏任务' },
+  { path: '/shops', label: '学生店铺' },
+  { path: '/project-ads', label: '项目广告' },
+  { path: '/wallet', label: '钱包流水' },
+  { path: '/credit', label: '信用中心' },
+  { path: '/roles', label: '身份保证金' },
+  { path: '/notifications', label: '站内通知' },
+  { path: '/admin/review', label: '审核治理' },
+  { path: '/admin/ops', label: '运营后台' },
+  { path: '/admin/governance', label: '治理台' }
+]
+
+const mobileTabItems = [
+  { path: '/', label: '首页', icon: '⌂' },
+  { path: '/tasks', label: '跑腿', icon: '↗' },
+  { path: '/goods', label: '二手', icon: '◈' },
+  { path: '/shops', label: '店铺', icon: '✦' },
+  { path: '/notifications', label: '通知', icon: '●' }
+]
 </script>

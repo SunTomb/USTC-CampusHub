@@ -40,7 +40,14 @@
         </div>
         <el-button text type="primary">查看服务与预约</el-button>
       </article>
-      <el-empty v-if="!loading && filteredShops.length === 0" description="暂无符合条件的店铺" />
+      <EmptyState
+        v-if="!loading && filteredShops.length === 0"
+        eyebrow="Student Shops"
+        title="暂时没有符合条件的学生店铺"
+        description="可以调整校区、关键词或服务范围筛选，也可以申请店铺商家身份后创建自己的服务店铺。"
+        action-text="进入商家工作台"
+        @action="goMerchant"
+      />
     </div>
   </section>
 </template>
@@ -51,6 +58,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listShops, type CampusZone, type ShopSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

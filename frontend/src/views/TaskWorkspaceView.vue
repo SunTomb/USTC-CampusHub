@@ -10,6 +10,23 @@
     </div>
 
     <el-card shadow="never" class="workspace-card">
+      <div class="workspace-summary">
+        <div>
+          <span>当前任务</span>
+          <strong>#{{ taskId }}</strong>
+        </div>
+        <div>
+          <span>操作身份</span>
+          <strong>{{ auth.currentUser?.nickname || '演示用户' }}</strong>
+        </div>
+        <div>
+          <span>联系边界</span>
+          <strong>站内留痕 + 私下沟通</strong>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card shadow="never" class="workspace-card">
       <el-steps :active="activeStep" finish-status="success" align-center>
         <el-step title="已接单" />
         <el-step title="前往取件" />

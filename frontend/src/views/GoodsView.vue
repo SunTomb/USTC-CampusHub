@@ -12,7 +12,14 @@
       </div>
     </div>
 
-    <el-empty v-if="!loading && goods.length === 0" description="暂无在售商品" />
+    <EmptyState
+      v-if="!loading && goods.length === 0"
+      eyebrow="Second-hand"
+      title="暂时没有符合条件的二手商品"
+      description="可以调整分类、校区或关键词筛选，也可以在完成二手发布者身份后发布商品。"
+      action-text="发布二手商品"
+      @action="router.push('/goods/publish')"
+    />
 
     <div v-else class="goods-grid" v-loading="loading">
       <article v-for="item in goods" :key="item.id" class="goods-card" @click="router.push(`/goods/${item.id}`)">
@@ -50,6 +57,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listGoods, type GoodsSummary } from '@/api/campushub'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const router = useRouter()
 const goods = ref<GoodsSummary[]>([])

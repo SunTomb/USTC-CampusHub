@@ -9,7 +9,14 @@
       <el-button @click="router.push('/goods')">返回市场</el-button>
     </div>
 
-    <el-empty v-if="!loading && !detail" description="商品不存在" />
+    <EmptyState
+      v-if="!loading && !detail"
+      eyebrow="Goods Detail"
+      title="商品详情暂不可用"
+      description="商品可能已下架、售出或被平台处理。你可以返回二手市场继续浏览。"
+      action-text="返回二手市场"
+      @action="router.push('/goods')"
+    />
 
     <div v-if="detail" class="goods-detail">
       <div class="goods-gallery">
@@ -40,6 +47,7 @@
       <el-card class="seller-panel">
         <template #header>卖家与联系方式</template>
         <p>{{ detail.sellerNickname }} · 信用 {{ detail.sellerCreditScore }}</p>
+        <p class="hint">CampusHub 只提供可信展示、联系意向和治理记录，不托管线下交易本金。</p>
         <el-alert v-if="!detail.contactVisible" title="提交购买意向后可查看微信/QQ 联系方式" type="info" show-icon />
         <el-alert v-else :title="detail.contactSnapshot || '联系方式已开放'" type="success" show-icon />
       </el-card>
@@ -97,6 +105,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { commentTarget, createGoodsIntent, createReview, favoriteTarget, getGoodsDetail, markGoodsSold, reportTarget, type GoodsDetailSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

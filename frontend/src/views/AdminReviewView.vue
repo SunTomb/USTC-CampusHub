@@ -11,23 +11,29 @@
 
     <el-tabs class="tabs-surface">
       <el-tab-pane label="审核记录">
-        <el-table v-loading="loading" :data="reviews" stripe>
-          <el-table-column prop="targetType" label="对象" width="120" />
-          <el-table-column prop="targetId" label="ID" width="90" />
-          <el-table-column prop="result" label="结果" width="120" />
-          <el-table-column prop="reviewerNickname" label="审核人" width="140" />
-          <el-table-column prop="reason" label="原因" min-width="220" />
-        </el-table>
+        <EmptyState v-if="!loading && reviews.length === 0" title="暂无审核记录" description="内容审核结果会在这里汇总展示。" compact />
+        <div v-else class="mobile-table-wrapper">
+          <el-table v-loading="loading" :data="reviews" stripe>
+            <el-table-column prop="targetType" label="对象" width="120" />
+            <el-table-column prop="targetId" label="ID" width="90" />
+            <el-table-column prop="result" label="结果" width="120" />
+            <el-table-column prop="reviewerNickname" label="审核人" width="140" />
+            <el-table-column prop="reason" label="原因" min-width="220" />
+          </el-table>
+        </div>
       </el-tab-pane>
       <el-tab-pane label="举报记录">
-        <el-table v-loading="loading" :data="reports" stripe>
-          <el-table-column prop="targetType" label="对象" width="120" />
-          <el-table-column prop="targetId" label="ID" width="90" />
-          <el-table-column prop="reason" label="原因" width="180" />
-          <el-table-column prop="status" label="状态" width="120" />
-          <el-table-column prop="reporterNickname" label="举报人" width="140" />
-          <el-table-column prop="description" label="描述" min-width="220" />
-        </el-table>
+        <EmptyState v-if="!loading && reports.length === 0" title="暂无举报记录" description="用户举报和治理处理记录会在这里汇总展示。" compact />
+        <div v-else class="mobile-table-wrapper">
+          <el-table v-loading="loading" :data="reports" stripe>
+            <el-table-column prop="targetType" label="对象" width="120" />
+            <el-table-column prop="targetId" label="ID" width="90" />
+            <el-table-column prop="reason" label="原因" width="180" />
+            <el-table-column prop="status" label="状态" width="120" />
+            <el-table-column prop="reporterNickname" label="举报人" width="140" />
+            <el-table-column prop="description" label="描述" min-width="220" />
+          </el-table>
+        </div>
       </el-tab-pane>
     </el-tabs>
   </section>
@@ -42,6 +48,7 @@ import {
   type ReportRecordSummary,
   type ReviewRecordSummary,
 } from '@/api/campushub'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const reviews = ref<ReviewRecordSummary[]>([])
 const reports = ref<ReportRecordSummary[]>([])

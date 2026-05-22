@@ -30,37 +30,54 @@
 
     <el-card shadow="never">
       <template #header>服务费与本地 mock 支付</template>
-      <el-table v-loading="loading" :data="serviceFees" stripe class="data-table">
-        <el-table-column prop="feeNo" label="服务费单号" min-width="170" />
-        <el-table-column prop="targetType" label="业务类型" width="150" />
-        <el-table-column prop="amount" label="金额" width="100">
-          <template #default="{ row }">¥{{ row.amount }}</template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" />
-        <el-table-column prop="paidAt" label="支付时间" min-width="170" />
-        <el-table-column label="操作" width="180">
-          <template #default="{ row }">
-            <el-button v-if="row.status !== 'PAID'" size="small" :loading="payingId === row.id" @click="payFee(row.id)">
-              本地模拟支付
-            </el-button>
-            <el-tag v-else type="success">已支付</el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
+      <EmptyState
+        v-if="!loading && serviceFees.length === 0"
+        eyebrow="Service Fees"
+        title="暂无服务费记录"
+        description="平台服务费和本地 mock 支付单会显示在这里；CampusHub 不托管交易本金。"
+        compact
+      />
+      <div v-else class="mobile-table-wrapper">
+        <el-table v-loading="loading" :data="serviceFees" stripe class="data-table">
+          <el-table-column prop="feeNo" label="服务费单号" min-width="170" />
+          <el-table-column prop="targetType" label="业务类型" width="150" />
+          <el-table-column prop="amount" label="金额" width="100">
+            <template #default="{ row }">¥{{ row.amount }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100" />
+          <el-table-column prop="paidAt" label="支付时间" min-width="170" />
+          <el-table-column label="操作" width="180">
+            <template #default="{ row }">
+              <el-button v-if="row.status !== 'PAID'" size="small" :loading="payingId === row.id" @click="payFee(row.id)">
+                本地模拟支付
+              </el-button>
+              <el-tag v-else type="success">已支付</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
 
-    <el-table v-loading="loading" :data="flows" stripe class="data-table">
-      <el-table-column prop="flowNo" label="流水号" min-width="180" />
-      <el-table-column prop="direction" label="方向" width="90" />
-      <el-table-column prop="businessType" label="业务" width="120" />
-      <el-table-column prop="amount" label="金额" width="110">
-        <template #default="{ row }">¥{{ row.amount }}</template>
-      </el-table-column>
-      <el-table-column prop="balanceAfter" label="余额" width="110">
-        <template #default="{ row }">¥{{ row.balanceAfter }}</template>
-      </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="180" />
-    </el-table>
+    <EmptyState
+      v-if="!loading && flows.length === 0"
+      eyebrow="Wallet"
+      title="暂无钱包流水"
+      description="服务费支付、身份保证金和演示钱包变动会显示在这里。CampusHub 不托管交易本金。"
+    />
+    <div v-else class="mobile-table-wrapper">
+      <el-table v-loading="loading" :data="flows" stripe class="data-table">
+        <el-table-column prop="flowNo" label="流水号" min-width="180" />
+        <el-table-column prop="direction" label="方向" width="90" />
+        <el-table-column prop="businessType" label="业务" width="120" />
+        <el-table-column prop="amount" label="金额" width="110">
+          <template #default="{ row }">¥{{ row.amount }}</template>
+        </el-table-column>
+        <el-table-column prop="balanceAfter" label="余额" width="110">
+          <template #default="{ row }">¥{{ row.balanceAfter }}</template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="180" />
+      </el-table>
+    </div>
   </section>
 </template>
 
@@ -77,6 +94,7 @@ import {
   type WalletAccountSummary,
   type WalletFlowSummary,
 } from '@/api/campushub'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const account = ref<WalletAccountSummary>()
 const flows = ref<WalletFlowSummary[]>([])

@@ -370,3 +370,37 @@ Recommended Phase 7 start:
 2. Phase 7 should focus on responsive Web and user-experience polish, not payment-center hardening or auth/RBAC hardening.
 3. Keep Phase 7 Phase-4-sized: one design doc, one implementation plan, frontend UX/style work, server Docker verification, Playwriter desktop/mobile checks, README/CLAUDE handoff.
 
+## Latest Phase 7 local implementation handoff, 2026-05-23
+
+Current worktree `worktree-campushub-phase7-responsive-ux` contains Phase 7 responsive Web and UX polish work. It has not yet been pushed, server-built, deployed, or browser-verified.
+
+Implemented locally:
+
+- New docs: `docs/superpowers/specs/2026-05-22-campushub-phase7-responsive-ux-design.md` and `docs/superpowers/plans/2026-05-22-campushub-phase7-responsive-ux-upgrade.md`.
+- No Flyway migration was added; Phase 7 is frontend-focused and does not edit V1-V10.
+- Frontend adds shared UX primitives: `EmptyState`, `FormSection`, and `PageActions`.
+- Mobile navigation now uses a drawer menu while preserving desktop sidebar navigation.
+- Account, notifications, wallet, credit, runner tasks, goods, shops, project ads, project management, shop merchant, admin review, and governance pages received responsive/empty-state/form-section polish.
+- README documents Phase 7 and preserves no-principal-escrow/no-Alipay-key-handling boundaries.
+
+Local verification:
+
+- `git diff --check` completed without whitespace/conflict-marker errors.
+- A local frontend build was attempted with `npm --prefix frontend run build`, but this worktree lacks local frontend dependencies (`vue-tsc` unavailable). Per project preference, dependencies were not installed locally.
+- Source-level checks found no shared component import omissions and no obvious Vue tag close imbalance.
+
+Recommended next verification:
+
+1. Review the worktree diff.
+2. Push/merge after approval, then run low-impact server-side Docker frontend build.
+3. Run safe API smoke for goods, tasks, shops, project ads, ops analytics, governance dashboard, and credit center.
+4. Use Playwriter to verify desktop, tablet-ish, and 390x844 mobile viewports on the Phase 7 route matrix.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V10; add V11+ only for future schema changes.
+- Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
+- Avoid PowerShell under CC Switch + Codex Provider.
+

@@ -39,6 +39,7 @@
             <el-form-item label="密码">
               <el-input v-model="registerForm.password" type="password" show-password placeholder="至少 8 位" />
             </el-form-item>
+            <p class="hint">微信和 QQ 至少填写一种。联系方式只在交易、预约或任务达成后按规则展示，不会直接公开在列表页。</p>
             <el-form-item label="微信号（选填）">
               <el-input v-model="registerForm.wechatContact" placeholder="用于匹配后的校园联系" />
             </el-form-item>

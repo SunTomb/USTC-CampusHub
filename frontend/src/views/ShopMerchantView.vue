@@ -25,16 +25,18 @@
 
     <el-card v-if="auth.currentUser" shadow="never" class="workspace-card">
       <template #header>店铺资料</template>
-      <el-form label-position="top" :model="shopForm" class="goods-publish-form">
-        <div class="form-grid">
-          <el-form-item label="店铺名"><el-input v-model="shopForm.name" /></el-form-item>
-          <el-form-item label="服务校区">
-            <el-select v-model="shopForm.campusZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
-          </el-form-item>
-          <el-form-item label="服务范围"><el-input v-model="shopForm.serviceArea" /></el-form-item>
-          <el-form-item label="服务时间"><el-input v-model="shopForm.openingHours" /></el-form-item>
-        </div>
-        <el-form-item label="店铺描述"><el-input v-model="shopForm.description" type="textarea" :rows="3" /></el-form-item>
+      <el-form label-position="top" :model="shopForm" class="goods-publish-form form-section-stack">
+        <FormSection title="店铺资料" description="展示服务范围、校区、营业时间和联系方式规则。">
+          <div class="form-grid">
+            <el-form-item label="店铺名"><el-input v-model="shopForm.name" /></el-form-item>
+            <el-form-item label="服务校区">
+              <el-select v-model="shopForm.campusZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
+            </el-form-item>
+            <el-form-item label="服务范围"><el-input v-model="shopForm.serviceArea" /></el-form-item>
+            <el-form-item label="服务时间"><el-input v-model="shopForm.openingHours" /></el-form-item>
+          </div>
+          <el-form-item label="店铺描述"><el-input v-model="shopForm.description" type="textarea" :rows="3" /></el-form-item>
+        </FormSection>
         <el-button type="primary" :loading="savingShop" @click="saveShop">{{ shop ? '保存店铺资料' : '创建店铺' }}</el-button>
       </el-form>
     </el-card>
@@ -46,25 +48,27 @@
           <el-button type="primary" @click="resetItemForm">新增服务</el-button>
         </div>
       </template>
-      <el-form label-position="top" :model="itemForm" class="goods-publish-form">
-        <div class="form-grid">
-          <el-form-item label="类别">
-            <el-select v-model="itemForm.category">
-              <el-option label="摄影" value="PHOTO" />
-              <el-option label="贴膜" value="FILM" />
-              <el-option label="维修" value="REPAIR" />
-              <el-option label="妆造" value="MAKEUP" />
-              <el-option label="家教" value="TUTORING" />
-              <el-option label="设计" value="DESIGN" />
-              <el-option label="其他" value="OTHER" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="标题"><el-input v-model="itemForm.title" /></el-form-item>
-          <el-form-item label="价格"><el-input-number v-model="itemForm.price" :min="0" :precision="2" class="wide" /></el-form-item>
-          <el-form-item label="单位"><el-input v-model="itemForm.priceUnit" /></el-form-item>
-          <el-form-item label="时长分钟"><el-input-number v-model="itemForm.durationMinutes" :min="1" class="wide" /></el-form-item>
-        </div>
-        <el-form-item label="描述"><el-input v-model="itemForm.description" type="textarea" :rows="3" /></el-form-item>
+      <el-form label-position="top" :model="itemForm" class="goods-publish-form form-section-stack">
+        <FormSection title="服务项目" description="用清晰的价格单位、服务说明和状态管理减少预约前沟通成本。">
+          <div class="form-grid">
+            <el-form-item label="类别">
+              <el-select v-model="itemForm.category">
+                <el-option label="摄影" value="PHOTO" />
+                <el-option label="贴膜" value="FILM" />
+                <el-option label="维修" value="REPAIR" />
+                <el-option label="妆造" value="MAKEUP" />
+                <el-option label="家教" value="TUTORING" />
+                <el-option label="设计" value="DESIGN" />
+                <el-option label="其他" value="OTHER" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="标题"><el-input v-model="itemForm.title" /></el-form-item>
+            <el-form-item label="价格"><el-input-number v-model="itemForm.price" :min="0" :precision="2" class="wide" /></el-form-item>
+            <el-form-item label="单位"><el-input v-model="itemForm.priceUnit" /></el-form-item>
+            <el-form-item label="时长分钟"><el-input-number v-model="itemForm.durationMinutes" :min="1" class="wide" /></el-form-item>
+          </div>
+          <el-form-item label="描述"><el-input v-model="itemForm.description" type="textarea" :rows="3" /></el-form-item>
+        </FormSection>
         <el-button type="primary" :loading="savingItem" @click="saveItem">保存服务项目</el-button>
       </el-form>
 
@@ -86,7 +90,8 @@
 
     <el-card v-if="shop" shadow="never" class="workspace-card">
       <template #header>预约处理</template>
-      <el-table :data="orders" style="width: 100%">
+      <div class="mobile-table-wrapper">
+        <el-table :data="orders" style="width: 100%">
         <el-table-column prop="serviceItemTitle" label="服务" min-width="140" />
         <el-table-column prop="customerNickname" label="顾客" width="120" />
         <el-table-column prop="appointmentTime" label="时间" min-width="170" />
@@ -101,7 +106,8 @@
             </div>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
     </el-card>
   </section>
 </template>
@@ -131,6 +137,7 @@ import {
   type ShopDetailSummary,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import FormSection from '@/components/common/FormSection.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

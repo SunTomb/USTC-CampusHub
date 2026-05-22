@@ -29,15 +29,29 @@
 
     <el-tabs v-if="center" class="tabs-surface">
       <el-tab-pane label="当前限制">
-        <el-table :data="center.activeRestrictions" stripe empty-text="暂无有效限制">
-          <el-table-column prop="restrictionType" label="类型" width="150" />
-          <el-table-column prop="reason" label="原因" />
-          <el-table-column prop="startsAt" label="开始" width="180" />
-          <el-table-column prop="endsAt" label="结束" width="180" />
-        </el-table>
+        <EmptyState
+          v-if="center.activeRestrictions.length === 0"
+          title="暂无有效限制"
+          description="当前账号没有发布、服务或内容限制。"
+          compact
+        />
+        <div v-else class="mobile-table-wrapper">
+          <el-table :data="center.activeRestrictions" stripe>
+            <el-table-column prop="restrictionType" label="类型" width="150" />
+            <el-table-column prop="reason" label="原因" />
+            <el-table-column prop="startsAt" label="开始" width="180" />
+            <el-table-column prop="endsAt" label="结束" width="180" />
+          </el-table>
+        </div>
       </el-tab-pane>
       <el-tab-pane label="信用记录">
-        <el-timeline class="credit-timeline">
+        <EmptyState
+          v-if="center.creditAdjustments.length === 0"
+          title="暂无信用变动"
+          description="管理员处理举报、违规或申诉后，信用变化会显示在这里。"
+          compact
+        />
+        <el-timeline v-else class="credit-timeline">
           <el-timeline-item v-for="item in center.creditAdjustments" :key="item.id" :timestamp="item.createdAt">
             <strong>{{ item.deltaScore > 0 ? '+' : '' }}{{ item.deltaScore }}</strong>
             <span>：{{ item.reason }}（{{ item.beforeScore }} → {{ item.afterScore }}）</span>
@@ -45,22 +59,38 @@
         </el-timeline>
       </el-tab-pane>
       <el-tab-pane label="违规记录">
-        <el-table :data="center.violations" stripe empty-text="暂无违规记录">
-          <el-table-column prop="violationType" label="类型" width="150" />
-          <el-table-column prop="severity" label="严重程度" width="120" />
-          <el-table-column prop="penaltyType" label="处罚" width="150" />
-          <el-table-column prop="creditDelta" label="信用变化" width="110" />
-          <el-table-column prop="description" label="说明" />
-        </el-table>
+        <EmptyState
+          v-if="center.violations.length === 0"
+          title="暂无违规记录"
+          description="保持良好履约和沟通记录，有助于提升校园交易可信度。"
+          compact
+        />
+        <div v-else class="mobile-table-wrapper">
+          <el-table :data="center.violations" stripe>
+            <el-table-column prop="violationType" label="类型" width="150" />
+            <el-table-column prop="severity" label="严重程度" width="120" />
+            <el-table-column prop="penaltyType" label="处罚" width="150" />
+            <el-table-column prop="creditDelta" label="信用变化" width="110" />
+            <el-table-column prop="description" label="说明" />
+          </el-table>
+        </div>
       </el-tab-pane>
       <el-tab-pane label="我的举报">
-        <el-table :data="center.myReports" stripe empty-text="暂无举报">
-          <el-table-column prop="targetType" label="对象" width="130" />
-          <el-table-column prop="targetId" label="对象ID" width="100" />
-          <el-table-column prop="reason" label="原因" />
-          <el-table-column prop="status" label="状态" width="130" />
-          <el-table-column prop="reviewNote" label="处理说明" />
-        </el-table>
+        <EmptyState
+          v-if="center.myReports.length === 0"
+          title="暂无我的举报"
+          description="你提交的举报处理进度会汇总在这里。"
+          compact
+        />
+        <div v-else class="mobile-table-wrapper">
+          <el-table :data="center.myReports" stripe>
+            <el-table-column prop="targetType" label="对象" width="130" />
+            <el-table-column prop="targetId" label="对象ID" width="100" />
+            <el-table-column prop="reason" label="原因" />
+            <el-table-column prop="status" label="状态" width="130" />
+            <el-table-column prop="reviewNote" label="处理说明" />
+          </el-table>
+        </div>
       </el-tab-pane>
     </el-tabs>
   </section>
@@ -70,6 +100,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { getCreditCenter, type CreditCenterSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)

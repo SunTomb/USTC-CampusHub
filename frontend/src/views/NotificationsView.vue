@@ -10,7 +10,14 @@
     </div>
 
     <div class="list-surface">
-      <el-empty v-if="!loading && notifications.length === 0" description="暂无通知" />
+      <EmptyState
+        v-if="!loading && notifications.length === 0"
+        eyebrow="Notifications"
+        title="暂时没有站内通知"
+        description="任务状态、身份审核、预约处理和治理结果会在这里提醒你。"
+        action-text="刷新通知"
+        @action="load"
+      />
       <div v-for="item in notifications" :key="item.id" class="list-row notification-row">
         <div>
           <h3>{{ item.title }}</h3>
@@ -31,6 +38,7 @@ import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listNotifications, markNotificationRead, type StationNotificationSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)

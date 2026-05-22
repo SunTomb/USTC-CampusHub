@@ -2,6 +2,15 @@
   <section class="page-stack" v-loading="loading">
     <el-button text @click="router.push({ name: 'project-ads' })">返回项目广告</el-button>
 
+    <EmptyState
+      v-if="!loading && !project"
+      eyebrow="Project Detail"
+      title="项目详情暂不可用"
+      description="内容可能已过期、下架或正在审核。你可以返回校园展示继续浏览。"
+      action-text="返回校园展示"
+      @action="router.push('/project-ads')"
+    />
+
     <el-card v-if="project" class="detail-hero" shadow="never">
       <div class="detail-header">
         <div>
@@ -80,6 +89,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { commentTarget, favoriteTarget, getProjectAd, reportTarget, type ProjectAdDetailSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

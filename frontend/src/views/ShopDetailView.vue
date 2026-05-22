@@ -9,6 +9,15 @@
       <el-button @click="router.push({ name: 'shops' })">返回店铺</el-button>
     </div>
 
+    <EmptyState
+      v-if="!loading && !shop"
+      eyebrow="Shop Detail"
+      title="店铺详情暂不可用"
+      description="店铺可能已暂停、关闭或被平台处理。你可以返回学生店铺继续浏览。"
+      action-text="返回学生店铺"
+      @action="router.push('/shops')"
+    />
+
     <template v-if="shop">
       <el-card shadow="never" class="shop-hero">
         <div>
@@ -59,6 +68,7 @@
           <el-input v-model="bookingForm.note" type="textarea" :rows="3" placeholder="说明地点、需求细节或可联系时间" />
         </el-form-item>
       </el-form>
+      <p class="hint">预约后系统会按规则保存商家联系方式快照；服务本金仍由双方线下自行协商，平台不托管。</p>
       <template #footer>
         <el-button @click="bookingOpen = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitBooking">提交预约</el-button>
@@ -79,6 +89,7 @@ import {
   type ShopDetailSummary,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

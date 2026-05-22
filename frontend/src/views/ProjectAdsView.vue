@@ -27,7 +27,14 @@
     </el-card>
 
     <div v-loading="loading" class="showcase-grid">
-      <el-empty v-if="!loading && projects.length === 0" description="暂无公开项目广告，欢迎发布你的作品或招募信息" />
+      <EmptyState
+        v-if="!loading && projects.length === 0"
+        eyebrow="Campus Showcase"
+        title="暂时没有符合条件的项目广告"
+        description="可以调整类型、校区、精选或关键词筛选，也可以提交项目、社团或活动展示。"
+        action-text="管理我的项目广告"
+        @action="goManage"
+      />
       <el-card v-for="project in projects" :key="project.id" class="showcase-card" shadow="hover" @click="goDetail(project.id)">
         <div class="showcase-cover">
           <span>{{ typeLabel(project.adType) }}</span>
@@ -59,6 +66,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listProjectAds, type ProjectAdListParams, type ProjectAdSummary, type ProjectAdType } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

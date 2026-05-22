@@ -38,7 +38,8 @@
         <el-button @click="loadReports">筛选</el-button>
       </div>
 
-      <el-table :data="reports" stripe v-loading="loading">
+      <div class="mobile-table-wrapper">
+        <el-table :data="reports" stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="targetType" label="对象" width="130" />
         <el-table-column prop="targetId" label="对象ID" width="100" />
@@ -57,19 +58,22 @@
             </div>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
     </el-card>
 
     <el-card shadow="never" class="surface-card">
       <template #header>管理员操作审计</template>
-      <el-table :data="auditLogs" stripe>
+      <div class="mobile-table-wrapper">
+        <el-table :data="auditLogs" stripe>
         <el-table-column prop="createdAt" label="时间" width="180" />
         <el-table-column prop="adminNickname" label="管理员" width="120" />
         <el-table-column prop="actionType" label="动作" width="180" />
         <el-table-column prop="targetType" label="对象" width="130" />
         <el-table-column prop="targetId" label="对象ID" width="100" />
-        <el-table-column prop="note" label="备注" show-overflow-tooltip />
-      </el-table>
+          <el-table-column prop="note" label="备注" show-overflow-tooltip />
+        </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="violationDialog" title="创建违规记录" width="640px">
@@ -114,6 +118,7 @@
           <el-input v-model="violationForm.description" type="textarea" />
         </el-form-item>
       </el-form>
+      <p class="hint">创建违规会同步影响信用记录、限制状态和站内通知，请确认处理对象与说明准确。</p>
       <template #footer>
         <el-button @click="violationDialog = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitViolation">提交</el-button>

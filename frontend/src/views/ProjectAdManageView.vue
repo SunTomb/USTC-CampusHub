@@ -11,37 +11,45 @@
 
     <el-alert v-if="!auth.currentUser" type="warning" :closable="false" title="请先登录后管理项目广告" />
 
-    <el-table v-else v-loading="loading" :data="projects" class="table-card">
-      <el-table-column prop="title" label="标题" min-width="180" />
-      <el-table-column prop="adType" label="类型" width="130" />
-      <el-table-column prop="status" label="状态" width="130" />
-      <el-table-column prop="featured" label="精选" width="90">
-        <template #default="{ row }">{{ row.featured ? '是' : '否' }}</template>
-      </el-table-column>
-      <el-table-column prop="expiresAt" label="过期时间" width="150">
-        <template #default="{ row }">{{ row.expiresAt ? formatDate(row.expiresAt) : '长期' }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="280">
-        <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" type="primary" @click="submit(row)">提交审核</el-button>
-          <el-button size="small" type="danger" @click="close(row)">下架</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div v-else class="mobile-table-wrapper">
+      <el-table v-loading="loading" :data="projects" class="table-card">
+        <el-table-column prop="title" label="标题" min-width="180" />
+        <el-table-column prop="adType" label="类型" width="130" />
+        <el-table-column prop="status" label="状态" width="130" />
+        <el-table-column prop="featured" label="精选" width="90">
+          <template #default="{ row }">{{ row.featured ? '是' : '否' }}</template>
+        </el-table-column>
+        <el-table-column prop="expiresAt" label="过期时间" width="150">
+          <template #default="{ row }">{{ row.expiresAt ? formatDate(row.expiresAt) : '长期' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="280">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" type="primary" @click="submit(row)">提交审核</el-button>
+            <el-button size="small" type="danger" @click="close(row)">下架</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑项目广告' : '新建项目广告'" width="720px">
-      <el-form :model="form" label-width="120px" class="project-form">
-        <el-form-item label="类型"><el-select v-model="form.adType"><el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-        <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
-        <el-form-item label="摘要"><el-input v-model="form.summary" /></el-form-item>
-        <el-form-item label="详细说明"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item>
-        <el-form-item label="标签"><el-input v-model="form.tags" placeholder="用英文逗号分隔，如 Vue,摄影,招募" /></el-form-item>
-        <el-form-item label="校区"><el-input v-model="form.campusZone" placeholder="EAST / WEST / CENTRAL / OTHER" /></el-form-item>
-        <el-form-item label="外部链接"><el-input v-model="form.linkUrl" /></el-form-item>
-        <el-form-item label="联系方式"><el-input v-model="form.contactInfo" /></el-form-item>
-        <el-form-item label="展示规则"><el-select v-model="form.contactVisibility"><el-option label="公开" value="PUBLIC" /><el-option label="登录后" value="LOGIN_ONLY" /><el-option label="互动后" value="INTERACTION_ONLY" /><el-option label="隐藏" value="HIDDEN" /></el-select></el-form-item>
-        <el-form-item label="过期时间"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
+      <el-form :model="form" label-position="top" class="project-form">
+        <FormSection title="展示内容" description="标题、摘要、类型和标签决定同学是否会继续查看详情。">
+          <el-form-item label="类型"><el-select v-model="form.adType"><el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+          <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
+          <el-form-item label="摘要"><el-input v-model="form.summary" /></el-form-item>
+          <el-form-item label="标签"><el-input v-model="form.tags" placeholder="用英文逗号分隔，如 Vue,摄影,招募" /></el-form-item>
+        </FormSection>
+        <FormSection title="校区、联系方式与有效期" description="联系方式按规则展示；过期内容不会继续出现在公开列表。">
+          <el-form-item label="校区"><el-input v-model="form.campusZone" placeholder="EAST / WEST / CENTRAL / OTHER" /></el-form-item>
+          <el-form-item label="联系方式"><el-input v-model="form.contactInfo" /></el-form-item>
+          <el-form-item label="展示规则"><el-select v-model="form.contactVisibility"><el-option label="公开" value="PUBLIC" /><el-option label="登录后" value="LOGIN_ONLY" /><el-option label="互动后" value="INTERACTION_ONLY" /><el-option label="隐藏" value="HIDDEN" /></el-select></el-form-item>
+          <el-form-item label="过期时间"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
+        </FormSection>
+        <FormSection title="详情与附件" description="说明项目目标、招募要求、作品链接或活动安排。">
+          <el-form-item label="详细说明"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item>
+          <el-form-item label="外部链接"><el-input v-model="form.linkUrl" /></el-form-item>
+        </FormSection>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -65,6 +73,7 @@ import {
   type ProjectAdType,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import FormSection from '@/components/common/FormSection.vue'
 
 const auth = useAuthStore()
 const projects = ref<ProjectAdSummary[]>([])

@@ -8,7 +8,7 @@
       </div>
       <div class="heading-actions">
         <el-button @click="loadTasks" :loading="loading">刷新</el-button>
-        <el-button type="primary" @click="publisherOpen = true">发布任务</el-button>
+        <el-button type="primary" @click="openPublishDialog">发布任务</el-button>
       </div>
     </div>
 
@@ -58,39 +58,53 @@
           <el-button plain @click="$router.push(`/tasks/${task.id}/workspace`) ">工作台</el-button>
         </div>
       </el-card>
-      <el-empty v-if="!loading && filteredTasks.length === 0" description="暂无符合条件的任务" />
+      <EmptyState
+        v-if="!loading && filteredTasks.length === 0"
+        eyebrow="Task Hall"
+        title="当前没有符合条件的跑腿任务"
+        description="可以调整校区、类型或接单模式筛选，也可以发布一个新的校园跑腿需求。"
+        action-text="发布跑腿任务"
+        @action="openPublishDialog"
+      />
     </div>
 
     <el-drawer v-model="publisherOpen" title="发布跑腿任务" size="520px">
-      <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules">
-        <el-form-item label="标题" prop="title"><el-input v-model="publishForm.title" /></el-form-item>
-        <el-form-item label="描述" prop="description"><el-input v-model="publishForm.description" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="报酬" prop="rewardAmount"><el-input-number v-model="publishForm.rewardAmount" :min="0" :precision="2" class="wide" /></el-form-item>
-        <el-form-item label="起点/终点校区" required>
-          <div class="two-column">
-            <el-select v-model="publishForm.originZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
-            <el-select v-model="publishForm.destinationZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
-          </div>
-        </el-form-item>
-        <el-form-item label="地点详情" required>
-          <div class="two-column">
-            <el-input v-model="publishForm.originDetail" placeholder="取件点" />
-            <el-input v-model="publishForm.destinationDetail" placeholder="送达点" />
-          </div>
-        </el-form-item>
-        <el-form-item label="接单与确认方式" required>
-          <div class="two-column">
-            <el-select v-model="publishForm.acceptanceMode">
-              <el-option label="抢单" value="GRAB" />
-              <el-option label="申请" value="APPLICATION" />
-            </el-select>
-            <el-select v-model="publishForm.verificationMode">
-              <el-option label="完成码" value="COMPLETION_CODE" />
-              <el-option label="图片凭证+确认" value="PHOTO_AND_CONFIRMATION" />
-            </el-select>
-          </div>
-        </el-form-item>
-        <el-form-item label="截止时间" prop="deadline"><el-date-picker v-model="deadlineDate" type="datetime" class="wide" /></el-form-item>
+      <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules" class="form-section-stack">
+        <FormSection title="任务信息" description="用一句话说明要帮忙做什么，类型会影响接单者判断。">
+          <el-form-item label="标题" prop="title"><el-input v-model="publishForm.title" /></el-form-item>
+          <el-form-item label="描述" prop="description"><el-input v-model="publishForm.description" type="textarea" :rows="3" /></el-form-item>
+        </FormSection>
+        <FormSection title="路线与时间" description="先使用校区和文字地点，后续根据真实数据再沉淀常用点位。">
+          <el-form-item label="起点/终点校区" required>
+            <div class="two-column">
+              <el-select v-model="publishForm.originZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
+              <el-select v-model="publishForm.destinationZone"><el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" /></el-select>
+            </div>
+          </el-form-item>
+          <el-form-item label="地点详情" required>
+            <div class="two-column">
+              <el-input v-model="publishForm.originDetail" placeholder="取件点" />
+              <el-input v-model="publishForm.destinationDetail" placeholder="送达点" />
+            </div>
+          </el-form-item>
+          <el-form-item label="截止时间" prop="deadline"><el-date-picker v-model="deadlineDate" type="datetime" class="wide" /></el-form-item>
+        </FormSection>
+        <FormSection title="接单与确认" description="抢单适合标准任务；申请模式适合需要筛选人的任务。">
+          <el-form-item label="报酬" prop="rewardAmount"><el-input-number v-model="publishForm.rewardAmount" :min="0" :precision="2" class="wide" /></el-form-item>
+          <el-form-item label="接单与确认方式" required>
+            <div class="two-column">
+              <el-select v-model="publishForm.acceptanceMode">
+                <el-option label="抢单" value="GRAB" />
+                <el-option label="申请" value="APPLICATION" />
+              </el-select>
+              <el-select v-model="publishForm.verificationMode">
+                <el-option label="完成码" value="COMPLETION_CODE" />
+                <el-option label="图片凭证+确认" value="PHOTO_AND_CONFIRMATION" />
+              </el-select>
+            </div>
+          </el-form-item>
+          <p class="hint">平台只收服务费和身份保证金，不托管跑腿报酬本金，也不做逐单保证金冻结。</p>
+        </FormSection>
         <el-button type="primary" class="wide" :loading="publishing" @click="publish">提交发布</el-button>
       </el-form>
     </el-drawer>
@@ -120,6 +134,8 @@ import {
   type TaskAcceptanceMode,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import EmptyState from '@/components/common/EmptyState.vue'
+import FormSection from '@/components/common/FormSection.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -193,6 +209,11 @@ async function loadTasks() {
   }
 }
 
+function openPublishDialog() {
+  if (!requireLogin()) return
+  publisherOpen.value = true
+}
+
 async function publish() {
   publishForm.deadline = deadlineDate.value?.toISOString() ?? ''
   await publishFormRef.value?.validate()
@@ -238,8 +259,8 @@ async function apply() {
 
 function requireLogin() {
   if (auth.currentUser) return true
-  ElMessage.warning('请先登录后再操作任务')
-  router.push({ name: 'auth' })
+  ElMessage.warning('请先登录后再发布、抢单或申请跑腿任务')
+  router.push('/auth')
   return false
 }
 
