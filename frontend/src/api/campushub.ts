@@ -259,6 +259,84 @@ export interface OperationsDashboardSummary {
   pendingRoleApplications: number
 }
 
+export interface MetricCardSummary {
+  key: string
+  label: string
+  value: number
+  unit: string
+}
+
+export interface OperationsAnalyticsOverview {
+  startDate: string
+  endDate: string
+  newUsers: number
+  activeUsers: number
+  newTasks: number
+  completedTasks: number
+  taskIssues: number
+  newGoods: number
+  activeGoods: number
+  goodsIntents: number
+  newShopOrders: number
+  completedShopOrders: number
+  canceledShopOrders: number
+  newProjectAds: number
+  approvedProjectAds: number
+  projectAdViews: number
+  openReports: number
+  pendingRoleApplications: number
+  pendingProjectAds: number
+  paidServiceFeeAmount: number
+  roleDepositAmount: number
+  cards: MetricCardSummary[]
+}
+
+export interface BusinessFunnelSummary {
+  businessKey: string
+  businessName: string
+  steps: MetricCardSummary[]
+}
+
+export interface OperationsFunnelSummary {
+  startDate: string
+  endDate: string
+  funnels: BusinessFunnelSummary[]
+}
+
+export interface ZoneMetricSummary {
+  key: string
+  label: string
+  count: number
+}
+
+export interface OperationsZoneSummary {
+  startDate: string
+  endDate: string
+  taskOriginZones: ZoneMetricSummary[]
+  taskDestinationZones: ZoneMetricSummary[]
+  taskRoutes: ZoneMetricSummary[]
+  goodsZones: ZoneMetricSummary[]
+  shopZones: ZoneMetricSummary[]
+  projectAdZones: ZoneMetricSummary[]
+}
+
+export interface FeeAnalyticsSummary {
+  startDate: string
+  endDate: string
+  serviceFeeCount: number
+  paidServiceFeeAmount: number
+  pendingServiceFeeAmount: number
+  serviceFeesByTargetType: MetricCardSummary[]
+  roleApplicationCount: number
+  roleDepositAmount: number
+  roleDepositsByType: MetricCardSummary[]
+}
+
+export interface OpsAnalyticsParams {
+  startDate?: string
+  endDate?: string
+}
+
 export interface TaskIssueSummary {
   id: number
   taskId: number
@@ -708,6 +786,29 @@ export function markNotificationRead(notificationId: number) {
 
 export function getOpsDashboard() {
   return getApi<OperationsDashboardSummary>('/admin/ops/dashboard')
+}
+
+export function getOpsAnalyticsOverview(params?: OpsAnalyticsParams) {
+  return getApi<OperationsAnalyticsOverview>(`/admin/ops/analytics/overview${buildQuery(params)}`)
+}
+
+export function getOpsAnalyticsFunnels(params?: OpsAnalyticsParams) {
+  return getApi<OperationsFunnelSummary>(`/admin/ops/analytics/funnels${buildQuery(params)}`)
+}
+
+export function getOpsAnalyticsZones(params?: OpsAnalyticsParams) {
+  return getApi<OperationsZoneSummary>(`/admin/ops/analytics/zones${buildQuery(params)}`)
+}
+
+export function getOpsAnalyticsFees(params?: OpsAnalyticsParams) {
+  return getApi<FeeAnalyticsSummary>(`/admin/ops/analytics/fees${buildQuery(params)}`)
+}
+
+export function buildOpsExportUrl(
+  kind: 'tasks' | 'goods' | 'shop-orders' | 'project-ads' | 'governance' | 'fees',
+  params?: OpsAnalyticsParams,
+) {
+  return `/api/admin/ops/exports/${kind}.csv${buildQuery(params)}`
 }
 
 export function listOpsTasks() {
