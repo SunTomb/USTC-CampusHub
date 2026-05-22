@@ -38,6 +38,12 @@ public class ReportRecord {
     @Column(nullable = false)
     private String status;
 
+    @Column(name = "review_note")
+    private String reviewNote;
+
+    @Column(name = "resolution_type")
+    private String resolutionType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "handler_id")
     private User handler;
@@ -48,6 +54,9 @@ public class ReportRecord {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt;
+
     protected ReportRecord() {
     }
 
@@ -57,7 +66,7 @@ public class ReportRecord {
         this.targetId = targetId;
         this.reason = reason;
         this.description = description;
-        this.status = "PENDING";
+        this.status = "OPEN";
     }
 
     public Long getId() {
@@ -88,6 +97,14 @@ public class ReportRecord {
         return status;
     }
 
+    public String getReviewNote() {
+        return reviewNote;
+    }
+
+    public String getResolutionType() {
+        return resolutionType;
+    }
+
     public User getHandler() {
         return handler;
     }
@@ -98,5 +115,39 @@ public class ReportRecord {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void startReview(User handler, String note) {
+        this.handler = handler;
+        this.status = "IN_REVIEW";
+        this.reviewNote = note;
+    }
+
+    public void reject(User handler, String note) {
+        this.handler = handler;
+        this.status = "REJECTED";
+        this.reviewNote = note;
+        this.resolutionType = "NO_ACTION";
+        this.handledAt = LocalDateTime.now();
+    }
+
+    public void resolve(User handler, String resolutionType, String note) {
+        this.handler = handler;
+        this.status = "RESOLVED";
+        this.resolutionType = resolutionType;
+        this.reviewNote = note;
+        this.handledAt = LocalDateTime.now();
+    }
+
+    public void escalate(User handler, String note) {
+        this.handler = handler;
+        this.status = "ESCALATED";
+        this.resolutionType = "ESCALATED";
+        this.reviewNote = note;
+        this.handledAt = LocalDateTime.now();
     }
 }

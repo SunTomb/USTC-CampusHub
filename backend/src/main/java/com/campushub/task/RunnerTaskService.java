@@ -1,6 +1,7 @@
 package com.campushub.task;
 
 import com.campushub.common.BusinessException;
+import com.campushub.moderation.GovernanceService;
 import com.campushub.notification.NotificationService;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
@@ -17,6 +18,7 @@ public class RunnerTaskService {
     private final TaskIssueRepository taskIssueRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final GovernanceService governanceService;
 
     public RunnerTaskService(
             RewardTaskRepository rewardTaskRepository,
@@ -24,18 +26,21 @@ public class RunnerTaskService {
             TaskEventRepository taskEventRepository,
             TaskIssueRepository taskIssueRepository,
             UserRepository userRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            GovernanceService governanceService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskApplicationRepository = taskApplicationRepository;
         this.taskEventRepository = taskEventRepository;
         this.taskIssueRepository = taskIssueRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.governanceService = governanceService;
     }
 
     @Transactional
     public RewardTaskSummary publish(Long publisherId, CreateRunnerTaskRequest request) {
         User publisher = findUser(publisherId);
+        governanceService.ensureCanPost(publisherId);
         validateEnum(TaskAcceptanceMode.class, request.acceptanceMode(), "不支持的接单模式");
         validateEnum(CampusZone.class, request.originZone(), "不支持的起点校区");
         validateEnum(CampusZone.class, request.destinationZone(), "不支持的终点校区");
@@ -66,6 +71,7 @@ public class RunnerTaskService {
     public RewardTaskSummary grab(Long taskId, Long runnerId) {
         RewardTask task = findTask(taskId);
         User runner = findUser(runnerId);
+        governanceService.ensureCanProvideService(runnerId);
         ensureTaskMode(task, TaskAcceptanceMode.GRAB.name());
         ensureTaskPublished(task);
 
@@ -81,6 +87,7 @@ public class RunnerTaskService {
     public TaskApplicationSummary apply(Long taskId, Long applicantId, ApplyTaskRequest request) {
         RewardTask task = findTask(taskId);
         User applicant = findUser(applicantId);
+        governanceService.ensureCanProvideService(applicantId);
         ensureTaskMode(task, TaskAcceptanceMode.APPLICATION.name());
         ensureTaskPublished(task);
 

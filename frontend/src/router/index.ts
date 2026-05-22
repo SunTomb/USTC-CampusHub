@@ -14,10 +14,12 @@ import ProjectAdsView from '@/views/ProjectAdsView.vue'
 import ProjectAdDetailView from '@/views/ProjectAdDetailView.vue'
 import ProjectAdManageView from '@/views/ProjectAdManageView.vue'
 import WalletView from '@/views/WalletView.vue'
+import CreditCenterView from '@/views/CreditCenterView.vue'
 import RoleApplicationsView from '@/views/RoleApplicationsView.vue'
 import NotificationsView from '@/views/NotificationsView.vue'
 import AdminReviewView from '@/views/AdminReviewView.vue'
 import AdminOperationsView from '@/views/AdminOperationsView.vue'
+import AdminGovernanceView from '@/views/AdminGovernanceView.vue'
 import AuthView from '@/views/AuthView.vue'
 
 const router = createRouter({
@@ -42,10 +44,12 @@ const router = createRouter({
         { path: 'project-ads/manage', name: 'project-ad-manage', component: ProjectAdManageView },
         { path: 'project-ads/:id', name: 'project-ad-detail', component: ProjectAdDetailView },
         { path: 'wallet', name: 'wallet', component: WalletView },
+        { path: 'credit', name: 'credit-center', component: CreditCenterView },
         { path: 'roles', name: 'roles', component: RoleApplicationsView },
         { path: 'notifications', name: 'notifications', component: NotificationsView },
         { path: 'admin/review', name: 'admin-review', component: AdminReviewView },
         { path: 'admin/ops', name: 'admin-ops', component: AdminOperationsView },
+        { path: 'admin/governance', name: 'admin-governance', component: AdminGovernanceView },
         { path: ':pathMatch(.*)*', redirect: { name: 'home' } },
       ],
     },

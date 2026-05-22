@@ -13,10 +13,12 @@
         <el-menu-item index="/shops">学生店铺</el-menu-item>
         <el-menu-item index="/project-ads">项目广告</el-menu-item>
         <el-menu-item index="/wallet">钱包流水</el-menu-item>
+        <el-menu-item index="/credit">信用中心</el-menu-item>
         <el-menu-item index="/roles">身份保证金</el-menu-item>
         <el-menu-item index="/notifications">站内通知</el-menu-item>
         <el-menu-item index="/admin/review">审核治理</el-menu-item>
         <el-menu-item index="/admin/ops">运营后台</el-menu-item>
+        <el-menu-item index="/admin/governance">治理台</el-menu-item>
       </el-menu>
     </el-aside>
 

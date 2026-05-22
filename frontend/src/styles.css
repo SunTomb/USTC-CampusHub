@@ -772,3 +772,71 @@ body {
     align-items: flex-start;
   }
 }
+
+.governance-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.governance-metrics div,
+.credit-score-card {
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.governance-metrics span,
+.credit-score-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.governance-metrics strong,
+.credit-score-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #111827;
+  font-size: 28px;
+}
+
+.governance-filters {
+  margin-bottom: 16px;
+}
+
+.governance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.credit-score-card :deep(.el-card__body),
+.credit-score-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.credit-score-card p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.credit-timeline {
+  padding: 18px 8px;
+}
+
+@media (max-width: 900px) {
+  .governance-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .governance-filters,
+  .credit-score-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

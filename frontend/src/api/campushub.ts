@@ -504,10 +504,109 @@ export interface ReportRecordSummary {
   reason: string
   description: string
   status: string
+  reviewNote: string | null
+  resolutionType: string | null
   handlerId: number | null
   handlerNickname: string | null
   handledAt: string | null
   createdAt: string
+  updatedAt: string | null
+}
+
+export interface ViolationRecordSummary {
+  id: number
+  userId: number
+  userNickname: string
+  reportId: number | null
+  targetType: string | null
+  targetId: number | null
+  violationType: string
+  severity: string
+  penaltyType: string
+  description: string
+  creditDelta: number
+  adminId: number | null
+  adminNickname: string | null
+  depositImpactNote: string | null
+  createdAt: string
+}
+
+export interface GovernanceDashboardSummary {
+  openReports: number
+  inReviewReports: number
+  handledReports: number
+  highSeverityViolations: number
+  activeRestrictions: number
+}
+
+export interface GovernanceActionPayload {
+  resolutionType?: string
+  note?: string
+}
+
+export interface CreateViolationPayload {
+  userId: number
+  reportId?: number | null
+  targetType?: string | null
+  targetId?: number | null
+  violationType: string
+  severity: string
+  penaltyType: string
+  description: string
+  creditDelta: number
+  depositImpactNote?: string | null
+  restrictionType?: string | null
+  restrictionDays?: number | null
+}
+
+export interface CreditAdjustmentSummary {
+  id: number
+  userId: number
+  userNickname: string
+  violationId: number | null
+  beforeScore: number
+  deltaScore: number
+  afterScore: number
+  reason: string
+  adminId: number | null
+  adminNickname: string | null
+  createdAt: string
+}
+
+export interface UserRestrictionSummary {
+  id: number
+  userId: number
+  userNickname: string
+  violationId: number | null
+  restrictionType: string
+  reason: string
+  startsAt: string
+  endsAt: string | null
+  active: boolean
+  adminId: number | null
+  adminNickname: string | null
+  createdAt: string
+}
+
+export interface AdminActionLogSummary {
+  id: number
+  adminId: number | null
+  adminNickname: string | null
+  actionType: string
+  targetType: string
+  targetId: number
+  note: string | null
+  createdAt: string
+}
+
+export interface CreditCenterSummary {
+  userId: number
+  nickname: string
+  creditScore: number
+  activeRestrictions: UserRestrictionSummary[]
+  violations: ViolationRecordSummary[]
+  creditAdjustments: CreditAdjustmentSummary[]
+  myReports: ReportRecordSummary[]
 }
 
 export function sendRegisterCode(email: string) {
@@ -753,6 +852,42 @@ export function unfeatureProjectAd(id: number, adminId: number) {
 
 export function blockProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
   return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/block?adminId=${adminId}`, payload)
+}
+
+export function getGovernanceDashboard() {
+  return getApi<GovernanceDashboardSummary>('/admin/governance/dashboard')
+}
+
+export function getGovernanceReports(params?: { status?: string; targetType?: string }) {
+  return getApi<ReportRecordSummary[]>(`/admin/governance/reports${buildQuery(params)}`)
+}
+
+export function startReportReview(reportId: number, adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/start-review?adminId=${adminId}`, payload)
+}
+
+export function rejectReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/reject?adminId=${adminId}`, payload)
+}
+
+export function resolveReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/resolve?adminId=${adminId}`, payload)
+}
+
+export function escalateReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/escalate?adminId=${adminId}`, payload)
+}
+
+export function createViolation(adminId: number, payload: CreateViolationPayload) {
+  return postApi<ViolationRecordSummary>(`/admin/governance/violations?adminId=${adminId}`, payload)
+}
+
+export function getAdminActionLogs() {
+  return getApi<AdminActionLogSummary[]>('/admin/governance/audit-logs')
+}
+
+export function getCreditCenter(userId: number) {
+  return getApi<CreditCenterSummary>(`/credit/users/${userId}`)
 }
 
 function buildQuery(params?: object) {

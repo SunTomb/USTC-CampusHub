@@ -11,10 +11,13 @@ public record ReportRecordSummary(
         String reason,
         String description,
         String status,
+        String reviewNote,
+        String resolutionType,
         Long handlerId,
         String handlerNickname,
         LocalDateTime handledAt,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt) {
 
     public static ReportRecordSummary from(ReportRecord record) {
         return new ReportRecordSummary(
@@ -26,9 +29,12 @@ public record ReportRecordSummary(
                 record.getReason(),
                 record.getDescription(),
                 record.getStatus(),
+                record.getReviewNote(),
+                record.getResolutionType(),
                 record.getHandler() == null ? null : record.getHandler().getId(),
                 record.getHandler() == null ? null : record.getHandler().getNickname(),
                 record.getHandledAt(),
-                record.getCreatedAt());
+                record.getCreatedAt(),
+                record.getUpdatedAt());
     }
 }

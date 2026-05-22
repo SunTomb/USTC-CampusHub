@@ -5,6 +5,7 @@ import com.campushub.file.FileBindingRepository;
 import com.campushub.file.FileBindingSummary;
 import com.campushub.interaction.CommentRepository;
 import com.campushub.interaction.FavoriteRepository;
+import com.campushub.moderation.GovernanceService;
 import com.campushub.notification.NotificationService;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
@@ -25,6 +26,7 @@ public class ProjectAdService {
     private final CommentRepository commentRepository;
     private final FileBindingRepository fileBindingRepository;
     private final NotificationService notificationService;
+    private final GovernanceService governanceService;
 
     public ProjectAdService(
             ProjectAdRepository projectAdRepository,
@@ -32,13 +34,15 @@ public class ProjectAdService {
             FavoriteRepository favoriteRepository,
             CommentRepository commentRepository,
             FileBindingRepository fileBindingRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            GovernanceService governanceService) {
         this.projectAdRepository = projectAdRepository;
         this.userRepository = userRepository;
         this.favoriteRepository = favoriteRepository;
         this.commentRepository = commentRepository;
         this.fileBindingRepository = fileBindingRepository;
         this.notificationService = notificationService;
+        this.governanceService = governanceService;
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +87,7 @@ public class ProjectAdService {
     @Transactional
     public ProjectAdSummary create(Long publisherId, ProjectAdRequest request) {
         User publisher = getUser(publisherId);
+        governanceService.ensureCanPost(publisherId);
         ProjectAd projectAd = projectAdRepository.save(new ProjectAd(publisher, request));
         return ProjectAdSummary.from(projectAd);
     }
@@ -99,6 +104,7 @@ public class ProjectAdService {
     public ProjectAdSummary submit(Long id, Long publisherId) {
         ProjectAd projectAd = getProjectAd(id);
         requirePublisher(projectAd, publisherId);
+        governanceService.ensureCanPost(publisherId);
         projectAd.submit();
         return ProjectAdSummary.from(projectAd);
     }

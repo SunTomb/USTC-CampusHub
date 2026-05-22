@@ -5,6 +5,7 @@ import com.campushub.file.FileBindingRepository;
 import com.campushub.file.FileBindingSummary;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.interaction.CommentRepository;
+import com.campushub.moderation.GovernanceService;
 import com.campushub.interaction.CommentSummary;
 import com.campushub.interaction.FavoriteRepository;
 import com.campushub.notification.NotificationService;
@@ -34,6 +35,7 @@ public class GoodsService {
     private final ReviewRepository reviewRepository;
     private final NotificationService notificationService;
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
+    private final GovernanceService governanceService;
 
     @Value("${campushub.secondhand.service-fee.enabled:false}")
     private boolean secondhandServiceFeeEnabled;
@@ -51,7 +53,8 @@ public class GoodsService {
             FavoriteRepository favoriteRepository,
             ReviewRepository reviewRepository,
             NotificationService notificationService,
-            ServiceFeeRecordRepository serviceFeeRecordRepository) {
+            ServiceFeeRecordRepository serviceFeeRecordRepository,
+            GovernanceService governanceService) {
         this.goodsRepository = goodsRepository;
         this.goodsIntentRepository = goodsIntentRepository;
         this.userRepository = userRepository;
@@ -62,6 +65,7 @@ public class GoodsService {
         this.reviewRepository = reviewRepository;
         this.notificationService = notificationService;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
+        this.governanceService = governanceService;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +78,7 @@ public class GoodsService {
     @Transactional
     public GoodsDetailSummary publish(Long sellerId, CreateGoodsRequest request) {
         User seller = userRepository.findById(sellerId).orElseThrow(() -> new BusinessException("用户不存在"));
+        governanceService.ensureCanPost(sellerId);
         ensureGoodsPublisher(sellerId);
         Goods goods = goodsRepository.save(new Goods(seller, request));
         return detailFor(goods, sellerId);

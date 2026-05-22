@@ -2,6 +2,7 @@ package com.campushub.shop;
 
 import com.campushub.common.BusinessException;
 import com.campushub.identity.RoleApplicationRepository;
+import com.campushub.moderation.GovernanceService;
 import com.campushub.notification.NotificationService;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
@@ -18,6 +19,7 @@ public class ShopService {
     private final UserRepository userRepository;
     private final RoleApplicationRepository roleApplicationRepository;
     private final NotificationService notificationService;
+    private final GovernanceService governanceService;
 
     public ShopService(
             ShopRepository shopRepository,
@@ -25,13 +27,15 @@ public class ShopService {
             ServiceOrderRepository serviceOrderRepository,
             UserRepository userRepository,
             RoleApplicationRepository roleApplicationRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            GovernanceService governanceService) {
         this.shopRepository = shopRepository;
         this.serviceItemRepository = serviceItemRepository;
         this.serviceOrderRepository = serviceOrderRepository;
         this.userRepository = userRepository;
         this.roleApplicationRepository = roleApplicationRepository;
         this.notificationService = notificationService;
+        this.governanceService = governanceService;
     }
 
     @Transactional(readOnly = true)
@@ -56,6 +60,7 @@ public class ShopService {
     @Transactional
     public ShopDetailSummary createShop(Long ownerId, CreateShopRequest request) {
         User owner = userRepository.findById(ownerId).orElseThrow(() -> new BusinessException("用户不存在"));
+        governanceService.ensureCanPost(ownerId);
         ensureShopMerchant(ownerId);
         shopRepository.findByOwnerId(ownerId).ifPresent(existing -> {
             throw new BusinessException("已创建店铺");
@@ -120,6 +125,7 @@ public class ShopService {
     public ServiceItemSummary createItem(Long shopId, Long ownerId, CreateServiceItemRequest request) {
         Shop shop = findShop(shopId);
         ensureOwner(shop, ownerId);
+        governanceService.ensureCanPost(ownerId);
         ensureShopActive(shop);
         return ServiceItemSummary.from(serviceItemRepository.save(new ServiceItem(shop, request)));
     }
@@ -206,6 +212,7 @@ public class ShopService {
     public ServiceOrderSummary acceptOrder(Long orderId, Long actorId) {
         ServiceOrder order = findOrder(orderId);
         ensureProvider(order, actorId);
+        governanceService.ensureCanProvideService(actorId);
         order.accept();
         notificationService.notify(order.getCustomer(), "服务预约已接受", order.getProvider().getNickname() + " 已接受你的预约", "SERVICE_ORDER", order.getId());
         return ServiceOrderSummary.from(order);
@@ -224,6 +231,7 @@ public class ShopService {
     public ServiceOrderSummary startOrder(Long orderId, Long actorId) {
         ServiceOrder order = findOrder(orderId);
         ensureProvider(order, actorId);
+        governanceService.ensureCanProvideService(actorId);
         order.start();
         notificationService.notify(order.getCustomer(), "服务已开始", order.getServiceItem().getTitle() + " 已开始服务", "SERVICE_ORDER", order.getId());
         return ServiceOrderSummary.from(order);

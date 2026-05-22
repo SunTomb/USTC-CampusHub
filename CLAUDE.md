@@ -289,3 +289,30 @@ Recommended Phase 5 start:
 3. Recommended Phase 5 focus: governance/credit/operations consolidation after four business lines are live. Build a unified report handling queue, violation records, credit score adjustments, blacklist/freeze controls, admin action audit, and notification closure.
 4. Alternative Phase 5 directions: cross-business operations analytics/export, or mobile UX/performance polish.
 5. Before deployment, run server-side Docker build where needed, server-local API smoke, and Playwriter browser verification.
+
+## Current Phase 5 local implementation checkpoint, 2026-05-22
+
+Phase 5 governance/credit implementation is locally coded but not yet server-built, pushed, deployed, or browser-verified.
+
+Implemented locally:
+
+- New docs: `docs/superpowers/specs/2026-05-22-campushub-phase5-governance-design.md` and `docs/superpowers/plans/2026-05-22-campushub-phase5-governance-upgrade.md`.
+- `V10__governance_credit_upgrade.sql` adds report workflow fields, violation severity/penalty/target/admin fields, credit adjustment records, user restrictions, and admin action logs.
+- Backend moderation package now has governance service, admin governance APIs, credit center APIs, credit adjustment records, user restrictions, and admin action audit DTOs/repositories/entities.
+- Main action paths check restrictions: runner task publish/grab/apply, goods publish, shop creation/service item creation/service order provider actions, and project ad create/submit.
+- Frontend API types/functions were expanded for governance and credit.
+- Frontend pages added: `/admin/governance` governance workspace and `/credit` credit center; navigation updated.
+- README documents Phase 5.
+
+Verification so far:
+
+- `npm --prefix frontend run build` passed; only the known Element Plus/Vite large chunk warning remains.
+- Backend local package/test could not run because this environment has no `mvn`; verify backend with server-side Docker build before deployment.
+
+Next required verification before deployment claim:
+
+1. Run server-side Docker backend/web build on the small server with low-impact cadence.
+2. Smoke `/api/admin/governance/dashboard`, `/api/admin/governance/reports`, `/api/credit/users/1`, and regression endpoints for goods/tasks/shops/project ads.
+3. Use Playwriter to verify `/admin/governance`, `/credit`, and regressions on `/goods`, `/tasks`, `/shops`, `/project-ads`, `/admin/ops`.
+4. If V10 is applied in production, future schema changes must use V11+.
+
