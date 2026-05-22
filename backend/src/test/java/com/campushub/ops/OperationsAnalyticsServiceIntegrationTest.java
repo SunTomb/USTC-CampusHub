@@ -242,6 +242,10 @@ class OperationsAnalyticsServiceIntegrationTest {
                         (9203, 1, 1, '-1+2', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
                          TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
                         (9204, 1, 1, '@SUM(...)', 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
+                        (9205, 1, 1, CONCAT(CHAR(9), '=TABTRIGGER'), 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
+                         TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00'),
+                        (9206, 1, 1, CONCAT(CHAR(13), '=CRTRIGGER'), 'qa', 10.00, NULL, 'GOOD', '东区', 'PUBLISHED', 0,
                          TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 09:00:00', 'EAST', 'INTENT_ONLY', 'OFFLINE_MEETUP', 'NONE', TIMESTAMP '2026-05-10 09:00:00')
                         """)
                 .executeUpdate();
@@ -260,7 +264,9 @@ class OperationsAnalyticsServiceIntegrationTest {
                 "\"'=HYPERLINK(...)\"",
                 "\"'+cmd\"",
                 "\"'-1+2\"",
-                "\"'@SUM(...)\"");
+                "\"'@SUM(...)\"",
+                "\"'\t=TABTRIGGER\"",
+                "\"'\r=CRTRIGGER\"");
     }
 
 }
