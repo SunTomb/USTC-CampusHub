@@ -60,7 +60,7 @@
             <h3>{{ group.title }}</h3>
             <div v-if="group.items.length">
               <div class="zone-row" v-for="item in group.items" :key="item.key">
-                <div>
+                <div class="zone-row-main">
                   <span>{{ item.label }}</span>
                   <strong>{{ item.count }}</strong>
                 </div>
@@ -112,7 +112,7 @@
           <el-button @click="exportCsv('governance')">导出治理记录 CSV</el-button>
           <el-button @click="exportCsv('fees')">导出费用记录 CSV</el-button>
         </div>
-        <p class="hint">CSV 导出不包含密钥、令牌、密码、完整联系方式等敏感字段。</p>
+        <p class="hint">CSV 导出不会主动包含密钥、令牌、密码、完整联系方式等敏感字段；治理说明、管理员备注等自由文本仍需谨慎填写，避免录入敏感信息。</p>
       </el-tab-pane>
       <el-tab-pane label="任务监控">
         <el-table :data="tasks" stripe>

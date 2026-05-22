@@ -464,7 +464,7 @@ body {
   align-items: center;
 }
 
-.zone-row div {
+.zone-row-main {
   display: flex;
   justify-content: space-between;
   gap: 10px;
