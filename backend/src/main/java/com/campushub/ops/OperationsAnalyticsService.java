@@ -112,9 +112,9 @@ public class OperationsAnalyticsService {
                 .filter(task -> "COMPLETED".equals(task.getWorkflowStatus()))
                 .count();
         long taskIssueCount = taskIssues.stream().filter(issue -> inRange(issue.getCreatedAt(), range)).count();
-        long newGoods = goods.stream().filter(item -> inRange(prefer(item.getCreatedAt(), item.getPublishedAt()), range)).count();
+        long newGoods = goods.stream().filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range)).count();
         long activeGoods = goods.stream()
-                .filter(item -> inRange(prefer(item.getCreatedAt(), item.getPublishedAt()), range))
+                .filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range))
                 .filter(item -> "PUBLISHED".equals(item.getStatus()))
                 .count();
         long goodsIntentCount = goodsIntents.stream().filter(intent -> inRange(intent.getCreatedAt(), range)).count();
@@ -129,11 +129,10 @@ public class OperationsAnalyticsService {
                 .count();
         long newProjectAds = projectAds.stream().filter(ad -> inRange(ad.getCreatedAt(), range)).count();
         long approvedProjectAds = projectAds.stream()
-                .filter(ad -> inRange(prefer(ad.getReviewedAt(), ad.getPublishedAt()), range))
+                .filter(ad -> inRange(projectAdApprovedTime(ad), range))
                 .filter(ad -> "APPROVED".equals(ad.getStatus()))
                 .count();
         long projectAdViews = projectAds.stream()
-                .filter(ad -> inRange(prefer(ad.getUpdatedAt(), ad.getCreatedAt()), range))
                 .map(ProjectAd::getViewCount)
                 .filter(count -> count != null)
                 .mapToLong(Integer::longValue)
@@ -152,10 +151,11 @@ public class OperationsAnalyticsService {
                 .count();
         BigDecimal paidServiceFeeAmount = sumAmounts(serviceFees.stream()
                 .filter(fee -> "PAID".equals(fee.getStatus()))
-                .filter(fee -> inRange(prefer(fee.getPaidAt(), fee.getCreatedAt()), range))
+                .filter(fee -> inRange(serviceFeeBusinessTime(fee), range))
                 .toList());
         BigDecimal roleDepositAmount = sumRoleDeposits(roleApplications.stream()
                 .filter(application -> inRange(application.getCreatedAt(), range))
+                .filter(this::isPaidRoleDeposit)
                 .toList());
         long activeUsers = collectActiveUserIds(tasks, goods, goodsIntents, serviceOrders, projectAds, reports, range).size();
 
@@ -206,7 +206,7 @@ public class OperationsAnalyticsService {
                 .filter(issue -> inRange(issue.getCreatedAt(), range))
                 .toList();
         List<Goods> goods = goodsRepository.findAll().stream()
-                .filter(item -> inRange(prefer(item.getCreatedAt(), item.getPublishedAt()), range))
+                .filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range))
                 .toList();
         List<GoodsIntent> intents = goodsIntentRepository.findAll().stream()
                 .filter(intent -> inRange(intent.getCreatedAt(), range))
@@ -261,7 +261,7 @@ public class OperationsAnalyticsService {
                 card("pending", "待审核", count(projectAds, ad -> "PENDING_REVIEW".equals(ad.getStatus()))),
                 card("approved", "已通过", count(projectAds, ad -> "APPROVED".equals(ad.getStatus()))),
                 card("closed", "已关闭", count(projectAds, ad -> "CLOSED".equals(ad.getStatus()) || "BLOCKED".equals(ad.getStatus()))),
-                card("views", "浏览", projectAds.stream().map(ProjectAd::getViewCount).filter(value -> value != null).mapToLong(Integer::longValue).sum()),
+                card("views", "项目广告累计浏览", projectAds.stream().map(ProjectAd::getViewCount).filter(value -> value != null).mapToLong(Integer::longValue).sum()),
                 card("favorites", "收藏", count(favorites, favorite -> "PROJECT_AD".equals(favorite.getTargetType()))),
                 card("comments", "评论", count(comments, comment -> "PROJECT_AD".equals(comment.getTargetType())))
         ));
@@ -271,7 +271,7 @@ public class OperationsAnalyticsService {
 
     public FeeAnalyticsSummary fees(AnalyticsDateRange range) {
         List<ServiceFeeRecord> serviceFees = serviceFeeRecordRepository.findAll().stream()
-                .filter(fee -> inRange(prefer(fee.getPaidAt(), fee.getCreatedAt()), range))
+                .filter(fee -> inRange(serviceFeeBusinessTime(fee), range))
                 .toList();
         List<RoleApplication> roleApplications = roleApplicationRepository.findAll().stream()
                 .filter(application -> inRange(application.getCreatedAt(), range))
@@ -283,10 +283,14 @@ public class OperationsAnalyticsService {
         BigDecimal pendingServiceFeeAmount = sumAmounts(serviceFees.stream()
                 .filter(fee -> "PENDING".equals(fee.getStatus()))
                 .toList());
-        BigDecimal roleDepositAmount = sumRoleDeposits(roleApplications);
+        BigDecimal roleDepositAmount = sumRoleDeposits(roleApplications.stream()
+                .filter(this::isPaidRoleDeposit)
+                .toList());
 
         Map<String, BigDecimal> feesByTargetType = new LinkedHashMap<>();
-        serviceFees.forEach(fee -> feesByTargetType.merge(fee.getTargetType(), nullSafe(fee.getAmount()), BigDecimal::add));
+        serviceFees.stream()
+                .filter(fee -> "PAID".equals(fee.getStatus()))
+                .forEach(fee -> feesByTargetType.merge(fee.getTargetType(), nullSafe(fee.getAmount()), BigDecimal::add));
         List<MetricCardSummary> serviceFeesByTargetType = feesByTargetType.entrySet().stream()
                 .map(entry -> moneyCard(entry.getKey(), entry.getKey(), entry.getValue()))
                 .toList();
@@ -295,7 +299,9 @@ public class OperationsAnalyticsService {
         for (PlatformRoleType roleType : PlatformRoleType.values()) {
             depositsByType.put(roleType.name(), BigDecimal.ZERO);
         }
-        roleApplications.forEach(application -> depositsByType.merge(application.getRoleType(), nullSafe(application.getDepositAmount()), BigDecimal::add));
+        roleApplications.stream()
+                .filter(this::isPaidRoleDeposit)
+                .forEach(application -> depositsByType.merge(application.getRoleType(), nullSafe(application.getDepositAmount()), BigDecimal::add));
         List<MetricCardSummary> roleDepositsByType = depositsByType.entrySet().stream()
                 .map(entry -> moneyCard(entry.getKey(), entry.getKey(), entry.getValue()))
                 .toList();
@@ -349,7 +355,7 @@ public class OperationsAnalyticsService {
             AnalyticsDateRange range) {
         Set<Long> activeUserIds = new LinkedHashSet<>();
         tasks.stream().filter(task -> inRange(task.getCreatedAt(), range)).map(RewardTask::getPublisher).forEach(user -> addUserId(activeUserIds, user));
-        goods.stream().filter(item -> inRange(prefer(item.getCreatedAt(), item.getPublishedAt()), range)).map(Goods::getSeller).forEach(user -> addUserId(activeUserIds, user));
+        goods.stream().filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range)).map(Goods::getSeller).forEach(user -> addUserId(activeUserIds, user));
         goodsIntents.stream().filter(intent -> inRange(intent.getCreatedAt(), range)).map(GoodsIntent::getBuyer).forEach(user -> addUserId(activeUserIds, user));
         serviceOrders.stream().filter(order -> inRange(order.getCreatedAt(), range)).map(ServiceOrder::getCustomer).forEach(user -> addUserId(activeUserIds, user));
         projectAds.stream().filter(ad -> inRange(ad.getCreatedAt(), range)).map(ProjectAd::getPublisher).forEach(user -> addUserId(activeUserIds, user));
@@ -369,6 +375,25 @@ public class OperationsAnalyticsService {
 
     private LocalDateTime prefer(LocalDateTime primary, LocalDateTime fallback) {
         return primary == null ? fallback : primary;
+    }
+
+    private LocalDateTime businessTime(LocalDateTime preferred, LocalDateTime fallback) {
+        return preferred == null ? fallback : preferred;
+    }
+
+    private LocalDateTime projectAdApprovedTime(ProjectAd ad) {
+        return businessTime(ad.getPublishedAt(), businessTime(ad.getReviewedAt(), ad.getCreatedAt()));
+    }
+
+    private LocalDateTime serviceFeeBusinessTime(ServiceFeeRecord fee) {
+        if ("PAID".equals(fee.getStatus())) {
+            return businessTime(fee.getPaidAt(), fee.getCreatedAt());
+        }
+        return fee.getCreatedAt();
+    }
+
+    private boolean isPaidRoleDeposit(RoleApplication application) {
+        return "PAID".equals(application.getDepositStatus());
     }
 
     private BigDecimal nullSafe(BigDecimal value) {
