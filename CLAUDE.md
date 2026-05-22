@@ -290,29 +290,44 @@ Recommended Phase 5 start:
 4. Alternative Phase 5 directions: cross-business operations analytics/export, or mobile UX/performance polish.
 5. Before deployment, run server-side Docker build where needed, server-local API smoke, and Playwriter browser verification.
 
-## Current Phase 5 local implementation checkpoint, 2026-05-22
+## Latest Phase 5 deployment and Phase 6 handoff, 2026-05-22
 
-Phase 5 governance/credit implementation is locally coded but not yet server-built, pushed, deployed, or browser-verified.
+Latest deployed `master` includes Phase 5 governance/credit/trust-operations upgrade through commit `83377d8` (`implement phase 5 governance trust operations`). Production `/opt/campushub` is on `master` at `83377d8` and was rebuilt/restarted successfully after Phase 5.
 
-Implemented locally:
+Implemented Phase 5:
 
 - New docs: `docs/superpowers/specs/2026-05-22-campushub-phase5-governance-design.md` and `docs/superpowers/plans/2026-05-22-campushub-phase5-governance-upgrade.md`.
 - `V10__governance_credit_upgrade.sql` adds report workflow fields, violation severity/penalty/target/admin fields, credit adjustment records, user restrictions, and admin action logs.
-- Backend moderation package now has governance service, admin governance APIs, credit center APIs, credit adjustment records, user restrictions, and admin action audit DTOs/repositories/entities.
+- Backend moderation package now has `GovernanceService`, admin governance APIs under `/api/admin/governance`, credit center APIs under `/api/credit`, credit adjustment records, user restrictions, and admin action audit DTOs/repositories/entities.
 - Main action paths check restrictions: runner task publish/grab/apply, goods publish, shop creation/service item creation/service order provider actions, and project ad create/submit.
 - Frontend API types/functions were expanded for governance and credit.
 - Frontend pages added: `/admin/governance` governance workspace and `/credit` credit center; navigation updated.
-- README documents Phase 5.
+- README documents Phase 5 and preserves the no-principal-escrow/no-Alipay-key-handling payment boundary.
 
-Verification so far:
+Verified production after Phase 5:
 
-- `npm --prefix frontend run build` passed; only the known Element Plus/Vite large chunk warning remains.
-- Backend local package/test could not run because this environment has no `mvn`; verify backend with server-side Docker build before deployment.
+- GitHub `master` was updated to `83377d8`; production `/opt/campushub` fast-forwarded to `83377d8`.
+- Server Docker backend/web build succeeded; backend Maven package completed inside Docker with `BUILD SUCCESS`.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/admin/governance/dashboard`, `/api/admin/governance/reports`, `/api/credit/users/1`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/admin/ops/dashboard`.
+- Browser/Playwriter verification covered `/admin/governance`, `/credit`, `/goods`, `/tasks`, `/shops`, `/project-ads`, and `/admin/ops`; pages rendered without white screens or visible Element Plus error messages.
+- Mobile viewport 390x844 on `/credit` had no obvious horizontal overflow (`scrollWidth` equaled `clientWidth`).
 
-Next required verification before deployment claim:
+Important production constraints remain:
 
-1. Run server-side Docker backend/web build on the small server with low-impact cadence.
-2. Smoke `/api/admin/governance/dashboard`, `/api/admin/governance/reports`, `/api/credit/users/1`, and regression endpoints for goods/tasks/shops/project ads.
-3. Use Playwriter to verify `/admin/governance`, `/credit`, and regressions on `/goods`, `/tasks`, `/shops`, `/project-ads`, `/admin/ops`.
-4. If V10 is applied in production, future schema changes must use V11+.
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V10; add V11+ for future schema changes.
+- Deploy carefully: small server, API-Transfer-Station shares the host, so prefer targeted backend/web rebuilds and low-frequency checks.
+- This Windows session may run through CC Switch + Codex Provider; avoid PowerShell and use Bash only when terminal execution is explicitly needed.
+- The user does not want local dependency installation for verification; prefer server-side Docker build/API smoke/Playwriter for full verification.
+
+Recommended Phase 6 start:
+
+0. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the updated overall Phase 6+ roadmap.
+1. Verify current git status, latest commits, and production state; trust live state over this handoff if they differ.
+2. The recommended Phase 6 focus is operations analytics and export: cross-business dashboard metrics, business-line funnel tabs, campus-zone analytics, service-fee/deposit summaries, CSV export endpoints, date range filters, and `/admin/ops` refinement.
+3. Keep Phase 6 roughly Phase-4-sized: one design doc, one implementation plan, 6-10 tasks, one major subsystem, backend APIs, frontend/admin UI, README/CLAUDE handoff, server Docker verification, API smoke, and Playwriter verification.
+4. Preserve boundaries: no transaction principal escrow, no per-order deposit freeze, no CampusHub Alipay key handling, no auth/RBAC hardening beyond what analytics needs.
+5. If Phase 6 needs schema changes for export logs or analytics snapshots, use V11+ only.
 
