@@ -11,6 +11,10 @@ public interface ServiceItemRepository extends JpaRepository<ServiceItem, Long> 
     @EntityGraph(attributePaths = {"shop", "shop.owner"})
     Optional<ServiceItem> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = {"shop", "shop.owner"})
+    List<ServiceItem> findAll();
+
     @EntityGraph(attributePaths = {"shop", "shop.owner"})
     List<ServiceItem> findByStatusOrderByCreatedAtDesc(String status);
 

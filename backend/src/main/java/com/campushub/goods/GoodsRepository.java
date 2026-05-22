@@ -11,6 +11,10 @@ public interface GoodsRepository extends JpaRepository<Goods, Long> {
     @EntityGraph(attributePaths = {"seller", "soldToUser"})
     Optional<Goods> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = {"seller", "soldToUser"})
+    List<Goods> findAll();
+
     @EntityGraph(attributePaths = "seller")
     List<Goods> findByStatusOrderByCreatedAtDesc(String status);
 

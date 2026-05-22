@@ -7,6 +7,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface GoodsIntentRepository extends JpaRepository<GoodsIntent, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"goods", "buyer", "seller", "serviceFee"})
+    Optional<GoodsIntent> findById(Long id);
+
+    @Override
+    @EntityGraph(attributePaths = {"goods", "buyer", "seller", "serviceFee"})
+    List<GoodsIntent> findAll();
+
     @EntityGraph(attributePaths = {"goods", "buyer", "seller", "serviceFee"})
     Optional<GoodsIntent> findByGoodsIdAndBuyerId(Long goodsId, Long buyerId);
 

@@ -11,6 +11,10 @@ public interface ProjectAdRepository extends JpaRepository<ProjectAd, Long> {
     @EntityGraph(attributePaths = {"publisher", "reviewedBy"})
     Optional<ProjectAd> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = {"publisher", "reviewedBy"})
+    List<ProjectAd> findAll();
+
     @EntityGraph(attributePaths = {"publisher"})
     List<ProjectAd> findByStatusOrderByCreatedAtDesc(String status);
 

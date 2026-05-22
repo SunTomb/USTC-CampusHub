@@ -1,10 +1,19 @@
 package com.campushub.interaction;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = "user")
+    Optional<Favorite> findById(Long id);
+
+    @Override
+    @EntityGraph(attributePaths = "user")
+    List<Favorite> findAll();
 
     @EntityGraph(attributePaths = "user")
     List<Favorite> findByTargetTypeAndTargetIdOrderByCreatedAtDesc(String targetType, Long targetId);

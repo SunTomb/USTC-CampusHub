@@ -11,6 +11,10 @@ public interface RoleApplicationRepository extends JpaRepository<RoleApplication
     @EntityGraph(attributePaths = {"user", "reviewer"})
     Optional<RoleApplication> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = {"user", "reviewer"})
+    List<RoleApplication> findAll();
+
     @EntityGraph(attributePaths = {"user", "reviewer"})
     Optional<RoleApplication> findByUserIdAndRoleType(Long userId, String roleType);
 

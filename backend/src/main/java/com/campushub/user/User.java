@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -50,6 +51,9 @@ public class User {
 
     @Column(nullable = false)
     private String status;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     protected User() {
     }
@@ -124,6 +128,10 @@ public class User {
 
     public String getStatus() {
         return status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
     public void updateContact(String wechatContact, String qqContact) {

@@ -11,6 +11,10 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     @EntityGraph(attributePaths = "owner")
     Optional<Shop> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = "owner")
+    List<Shop> findAll();
+
     @EntityGraph(attributePaths = "owner")
     List<Shop> findByStatusOrderByRatingDesc(String status);
 
