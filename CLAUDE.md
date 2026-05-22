@@ -370,31 +370,30 @@ Recommended Phase 7 start:
 2. Phase 7 should focus on responsive Web and user-experience polish, not payment-center hardening or auth/RBAC hardening.
 3. Keep Phase 7 Phase-4-sized: one design doc, one implementation plan, frontend UX/style work, server Docker verification, Playwriter desktop/mobile checks, README/CLAUDE handoff.
 
-## Latest Phase 7 local implementation handoff, 2026-05-23
+## Latest Phase 7 deployment and Phase 8 handoff, 2026-05-23
 
-Current worktree `worktree-campushub-phase7-responsive-ux` contains Phase 7 responsive Web and UX polish work. It has not yet been pushed, server-built, deployed, or browser-verified.
+Latest deployed `master` includes Phase 7 responsive Web and UX polish through commit `6d61813` (`implement phase 7 responsive ux polish`). GitHub `master` was pushed to `6d61813`; production `/opt/campushub` fast-forwarded to `6d61813` and the web container was rebuilt/restarted successfully.
 
-Implemented locally:
+Implemented Phase 7:
 
 - New docs: `docs/superpowers/specs/2026-05-22-campushub-phase7-responsive-ux-design.md` and `docs/superpowers/plans/2026-05-22-campushub-phase7-responsive-ux-upgrade.md`.
 - No Flyway migration was added; Phase 7 is frontend-focused and does not edit V1-V10.
 - Frontend adds shared UX primitives: `EmptyState`, `FormSection`, and `PageActions`.
-- Mobile navigation now uses a drawer menu while preserving desktop sidebar navigation.
+- Desktop navigation keeps the left sidebar; mobile navigation now has a bottom tab bar for high-frequency routes: 首页、跑腿、二手、店铺、通知、更多.
+- Mobile “更多” opens the full directory drawer with all routes, including wallet, credit, roles, admin review, ops, and governance.
 - Account, notifications, wallet, credit, runner tasks, goods, shops, project ads, project management, shop merchant, admin review, and governance pages received responsive/empty-state/form-section polish.
 - README documents Phase 7 and preserves no-principal-escrow/no-Alipay-key-handling boundaries.
 
-Local verification:
+Verified production after Phase 7:
 
-- `git diff --check` completed without whitespace/conflict-marker errors.
-- A local frontend build was attempted with `npm --prefix frontend run build`, but this worktree lacks local frontend dependencies (`vue-tsc` unavailable). Per project preference, dependencies were not installed locally.
-- Source-level checks found no shared component import omissions and no obvious Vue tag close imbalance.
-
-Recommended next verification:
-
-1. Review the worktree diff.
-2. Push/merge after approval, then run low-impact server-side Docker frontend build.
-3. Run safe API smoke for goods, tasks, shops, project ads, ops analytics, governance dashboard, and credit center.
-4. Use Playwriter to verify desktop, tablet-ish, and 390x844 mobile viewports on the Phase 7 route matrix.
+- Production `/opt/campushub` is on `master` at `6d61813`.
+- Server Docker frontend build succeeded; Vite emitted only the known large chunk warning and Rollup pure-comment warnings from dependencies.
+- Production web container was recreated and started; backend and MySQL stayed running.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/api/admin/ops/analytics/overview`, `/api/admin/governance/dashboard`, and `/api/credit/users/1`.
+- Playwriter desktop verification covered `/auth`, `/tasks`, `/goods`, `/shops`, `/project-ads`, `/wallet`, `/roles`, `/notifications`, `/credit`, `/admin/ops`, `/admin/governance`, and `/admin/review`; pages rendered.
+- Playwriter mobile viewport 390x844 covered `/`, `/tasks`, `/goods`, `/shops`, `/project-ads`, `/notifications`, `/credit`, and `/admin/ops`; bottom tab bar appeared and tested pages had no document-level horizontal overflow (`scrollWidth === clientWidth`).
+- Playwriter confirmed the mobile “更多” tab opens the complete directory drawer.
 
 Important constraints remain:
 
@@ -403,4 +402,12 @@ Important constraints remain:
 - Do not edit already-applied migrations V1-V10; add V11+ only for future schema changes.
 - Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
 - Avoid PowerShell under CC Switch + Codex Provider.
+- Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
+
+Recommended Phase 8 start:
+
+1. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the Phase 8 roadmap source.
+2. Phase 8 should focus on payment-center integration hardening and service-fee operations.
+3. Preserve the existing boundary: production payment continues through API-Transfer-Station; CampusHub must not read, copy, print, store, or commit Alipay private/public key bodies.
+4. Keep Phase 8 Phase-4-sized: one design doc, one implementation plan, focused payment-provider/API contract work, server Docker verification, safe API smoke, Playwriter checks, README/CLAUDE handoff.
 
