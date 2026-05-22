@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRestrictionRepository extends JpaRepository<UserRestriction, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"user", "violation", "admin"})
+    List<UserRestriction> findAll();
+
     @EntityGraph(attributePaths = {"user", "violation", "admin"})
     List<UserRestriction> findByUserIdOrderByCreatedAtDesc(Long userId);
 

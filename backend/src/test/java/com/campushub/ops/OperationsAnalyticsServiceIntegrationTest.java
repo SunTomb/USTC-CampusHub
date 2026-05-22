@@ -191,4 +191,41 @@ class OperationsAnalyticsServiceIntegrationTest {
                 .isEqualTo("项目广告累计浏览");
     }
 
+    @Test
+    void buildsZoneAnalyticsFromStructuredCampusFields() {
+        AnalyticsDateRange range = new AnalyticsDateRange(
+                LocalDate.of(2020, 1, 1),
+                LocalDate.of(2026, 5, 22),
+                LocalDateTime.of(2020, 1, 1, 0, 0),
+                LocalDateTime.of(2026, 5, 23, 0, 0)
+        );
+
+        OperationsZoneSummary zones = analyticsService.zones(range);
+
+        assertThat(zones.taskOriginZones()).isNotNull();
+        assertThat(zones.taskDestinationZones()).isNotNull();
+        assertThat(zones.taskRoutes()).isNotNull();
+        assertThat(zones.goodsZones()).isNotNull();
+        assertThat(zones.shopZones()).isNotNull();
+        assertThat(zones.projectAdZones()).isNotNull();
+    }
+
+    @Test
+    void exportsCsvWithBomAndWithoutSensitiveContactValues() {
+        AnalyticsDateRange range = new AnalyticsDateRange(
+                LocalDate.of(2020, 1, 1),
+                LocalDate.of(2026, 5, 22),
+                LocalDateTime.of(2020, 1, 1, 0, 0),
+                LocalDateTime.of(2026, 5, 23, 0, 0)
+        );
+
+        CsvExport export = analyticsService.exportGoods(range);
+
+        assertThat(export.fileName()).contains("goods");
+        assertThat(export.contentType()).isEqualTo("text/csv; charset=UTF-8");
+        assertThat(export.body()).startsWith("﻿");
+        assertThat(export.body()).contains("联系方式开放");
+        assertThat(export.body()).doesNotContain("wechat", "qq_contact", "password", "secret", "token");
+    }
+
 }

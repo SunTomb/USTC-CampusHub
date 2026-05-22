@@ -6,6 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AdminActionLogRepository extends JpaRepository<AdminActionLog, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"admin"})
+    List<AdminActionLog> findAll();
+
     @EntityGraph(attributePaths = {"admin"})
     List<AdminActionLog> findTop100ByOrderByCreatedAtDesc();
 

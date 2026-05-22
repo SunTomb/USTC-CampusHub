@@ -11,8 +11,16 @@ import com.campushub.interaction.Comment;
 import com.campushub.interaction.CommentRepository;
 import com.campushub.interaction.Favorite;
 import com.campushub.interaction.FavoriteRepository;
+import com.campushub.moderation.AdminActionLog;
+import com.campushub.moderation.AdminActionLogRepository;
+import com.campushub.moderation.CreditAdjustmentRecord;
+import com.campushub.moderation.CreditAdjustmentRecordRepository;
 import com.campushub.moderation.ReportRecord;
 import com.campushub.moderation.ReportRecordRepository;
+import com.campushub.moderation.UserRestriction;
+import com.campushub.moderation.UserRestrictionRepository;
+import com.campushub.moderation.ViolationRecord;
+import com.campushub.moderation.ViolationRecordRepository;
 import com.campushub.payment.ServiceFeeRecord;
 import com.campushub.payment.ServiceFeeRecordRepository;
 import com.campushub.projectad.ProjectAd;
@@ -33,11 +41,14 @@ import com.campushub.user.User;
 import com.campushub.user.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +71,10 @@ public class OperationsAnalyticsService {
     private final ReportRecordRepository reportRecordRepository;
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
     private final RoleApplicationRepository roleApplicationRepository;
+    private final ViolationRecordRepository violationRecordRepository;
+    private final CreditAdjustmentRecordRepository creditAdjustmentRecordRepository;
+    private final UserRestrictionRepository userRestrictionRepository;
+    private final AdminActionLogRepository adminActionLogRepository;
 
     public OperationsAnalyticsService(
             UserRepository userRepository,
@@ -76,7 +91,11 @@ public class OperationsAnalyticsService {
             CommentRepository commentRepository,
             ReportRecordRepository reportRecordRepository,
             ServiceFeeRecordRepository serviceFeeRecordRepository,
-            RoleApplicationRepository roleApplicationRepository) {
+            RoleApplicationRepository roleApplicationRepository,
+            ViolationRecordRepository violationRecordRepository,
+            CreditAdjustmentRecordRepository creditAdjustmentRecordRepository,
+            UserRestrictionRepository userRestrictionRepository,
+            AdminActionLogRepository adminActionLogRepository) {
         this.userRepository = userRepository;
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskApplicationRepository = taskApplicationRepository;
@@ -92,6 +111,10 @@ public class OperationsAnalyticsService {
         this.reportRecordRepository = reportRecordRepository;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.roleApplicationRepository = roleApplicationRepository;
+        this.violationRecordRepository = violationRecordRepository;
+        this.creditAdjustmentRecordRepository = creditAdjustmentRecordRepository;
+        this.userRestrictionRepository = userRestrictionRepository;
+        this.adminActionLogRepository = adminActionLogRepository;
     }
 
     public OperationsAnalyticsOverview overview(AnalyticsDateRange range) {
@@ -319,6 +342,230 @@ public class OperationsAnalyticsService {
         );
     }
 
+    public OperationsZoneSummary zones(AnalyticsDateRange range) {
+        List<RewardTask> tasks = rewardTaskRepository.findAll().stream()
+                .filter(task -> inRange(task.getCreatedAt(), range))
+                .toList();
+        List<Goods> goods = goodsRepository.findAll().stream()
+                .filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range))
+                .toList();
+        List<Shop> shops = shopRepository.findAll().stream()
+                .filter(shop -> inRange(shop.getCreatedAt(), range))
+                .toList();
+        List<ProjectAd> projectAds = projectAdRepository.findAll().stream()
+                .filter(ad -> inRange(projectAdApprovedTime(ad), range))
+                .toList();
+
+        return new OperationsZoneSummary(
+                range.startDate(),
+                range.endDate(),
+                topZoneMetrics(tasks, RewardTask::getOriginZone),
+                topZoneMetrics(tasks, RewardTask::getDestinationZone),
+                topZoneMetrics(tasks, task -> text(task.getOriginZone()) + " -> " + text(task.getDestinationZone())),
+                topZoneMetrics(goods, Goods::getCampusZone),
+                topZoneMetrics(shops, Shop::getCampusZone),
+                topZoneMetrics(projectAds, ProjectAd::getCampusZone)
+        );
+    }
+
+    public CsvExport exportTasks(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("任务ID", "标题", "发布者昵称", "赏金", "保证金", "发布状态", "流程状态", "接单模式", "起点校区", "终点校区", "截止时间", "创建时间"));
+            rewardTaskRepository.findAll().stream()
+                    .filter(task -> inRange(task.getCreatedAt(), range))
+                    .forEach(task -> row.accept(csv(
+                            task.getId(),
+                            task.getTitle(),
+                            nickname(task.getPublisher()),
+                            task.getRewardAmount(),
+                            task.getDepositAmount(),
+                            task.getStatus(),
+                            task.getWorkflowStatus(),
+                            task.getAcceptanceMode(),
+                            task.getOriginZone(),
+                            task.getDestinationZone(),
+                            task.getDeadline(),
+                            task.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("tasks", range), String.join("\n", rows));
+    }
+
+    public CsvExport exportGoods(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("商品ID", "标题", "卖家昵称", "价格", "原价", "成色", "校区", "交易地点", "配送方式", "状态", "浏览量", "联系方式开放", "发布时间", "创建时间"));
+            goodsRepository.findAll().stream()
+                    .filter(item -> inRange(businessTime(item.getPublishedAt(), item.getCreatedAt()), range))
+                    .forEach(item -> row.accept(csv(
+                            item.getId(),
+                            item.getTitle(),
+                            nickname(item.getSeller()),
+                            item.getPrice(),
+                            item.getOriginalPrice(),
+                            item.getConditionLevel(),
+                            item.getCampusZone(),
+                            item.getTradeLocation(),
+                            item.getDeliveryMethod(),
+                            item.getStatus(),
+                            item.getViewCount(),
+                            contactVisibilityLabel(item.getContactVisibility()),
+                            item.getPublishedAt(),
+                            item.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("goods", range), String.join("\n", rows));
+    }
+
+    public CsvExport exportShopOrders(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("预约ID", "订单号", "服务项目", "店铺", "客户昵称", "服务者昵称", "预约金额", "服务费", "状态", "预约时间", "完成时间", "取消时间", "创建时间"));
+            serviceOrderRepository.findAll().stream()
+                    .filter(order -> inRange(order.getCreatedAt(), range))
+                    .forEach(order -> row.accept(csv(
+                            order.getId(),
+                            order.getOrderNo(),
+                            order.getServiceItem() == null ? null : order.getServiceItem().getTitle(),
+                            order.getServiceItem() == null || order.getServiceItem().getShop() == null ? null : order.getServiceItem().getShop().getName(),
+                            nickname(order.getCustomer()),
+                            nickname(order.getProvider()),
+                            order.getAmount(),
+                            order.getServiceFee(),
+                            order.getStatus(),
+                            order.getAppointmentTime(),
+                            order.getCompletedAt(),
+                            order.getCanceledAt(),
+                            order.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("shop-orders", range), String.join("\n", rows));
+    }
+
+    public CsvExport exportProjectAds(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("项目ID", "标题", "类型", "发布者昵称", "校区", "标签", "状态", "浏览量", "精选", "精选优先级", "联系方式开放", "过期时间", "发布时间", "创建时间"));
+            projectAdRepository.findAll().stream()
+                    .filter(ad -> inRange(projectAdApprovedTime(ad), range))
+                    .forEach(ad -> row.accept(csv(
+                            ad.getId(),
+                            ad.getTitle(),
+                            ad.getAdType(),
+                            nickname(ad.getPublisher()),
+                            ad.getCampusZone(),
+                            ad.getTags(),
+                            ad.getStatus(),
+                            ad.getViewCount(),
+                            yesNo(Boolean.TRUE.equals(ad.getFeatured())),
+                            ad.getFeaturedPriority(),
+                            contactVisibilityLabel(ad.getContactVisibility()),
+                            ad.getExpiresAt(),
+                            ad.getPublishedAt(),
+                            ad.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("project-ads", range), String.join("\n", rows));
+    }
+
+    public CsvExport exportGovernance(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("记录类型", "记录ID", "用户昵称", "目标类型", "目标ID", "状态/等级", "原因/动作", "信用变化", "管理员昵称", "时间"));
+            reportRecordRepository.findAll().stream()
+                    .filter(report -> inRange(report.getCreatedAt(), range))
+                    .forEach(report -> row.accept(csv(
+                            "举报",
+                            report.getId(),
+                            nickname(report.getReporter()),
+                            report.getTargetType(),
+                            report.getTargetId(),
+                            report.getStatus(),
+                            report.getReason(),
+                            null,
+                            nickname(report.getHandler()),
+                            report.getCreatedAt())));
+            violationRecordRepository.findAll().stream()
+                    .filter(violation -> inRange(violation.getCreatedAt(), range))
+                    .forEach(violation -> row.accept(csv(
+                            "违规",
+                            violation.getId(),
+                            nickname(violation.getUser()),
+                            violation.getTargetType(),
+                            violation.getTargetId(),
+                            violation.getSeverity(),
+                            violation.getViolationType(),
+                            violation.getCreditDelta(),
+                            nickname(violation.getAdmin()),
+                            violation.getCreatedAt())));
+            creditAdjustmentRecordRepository.findAll().stream()
+                    .filter(adjustment -> inRange(adjustment.getCreatedAt(), range))
+                    .forEach(adjustment -> row.accept(csv(
+                            "信用调整",
+                            adjustment.getId(),
+                            nickname(adjustment.getUser()),
+                            "USER",
+                            adjustment.getUser() == null ? null : adjustment.getUser().getId(),
+                            text(adjustment.getBeforeScore()) + " -> " + text(adjustment.getAfterScore()),
+                            adjustment.getReason(),
+                            adjustment.getDeltaScore(),
+                            nickname(adjustment.getAdmin()),
+                            adjustment.getCreatedAt())));
+            userRestrictionRepository.findAll().stream()
+                    .filter(restriction -> inRange(restriction.getCreatedAt(), range))
+                    .forEach(restriction -> row.accept(csv(
+                            "限制",
+                            restriction.getId(),
+                            nickname(restriction.getUser()),
+                            "USER",
+                            restriction.getUser() == null ? null : restriction.getUser().getId(),
+                            restriction.getRestrictionType(),
+                            restriction.getReason(),
+                            null,
+                            nickname(restriction.getAdmin()),
+                            restriction.getCreatedAt())));
+            adminActionLogRepository.findAll().stream()
+                    .filter(log -> inRange(log.getCreatedAt(), range))
+                    .forEach(log -> row.accept(csv(
+                            "管理员动作",
+                            log.getId(),
+                            null,
+                            log.getTargetType(),
+                            log.getTargetId(),
+                            log.getActionType(),
+                            log.getNote(),
+                            null,
+                            nickname(log.getAdmin()),
+                            log.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("governance", range), String.join("\n", rows));
+    }
+
+    public CsvExport exportFees(AnalyticsDateRange range) {
+        List<String> rows = csvRows(row -> {
+            row.accept(csv("费用类型", "记录ID", "编号/角色", "用户昵称", "目标类型", "目标ID", "金额", "状态", "支付时间", "创建时间"));
+            serviceFeeRecordRepository.findAll().stream()
+                    .filter(fee -> inRange(serviceFeeBusinessTime(fee), range))
+                    .forEach(fee -> row.accept(csv(
+                            "服务费",
+                            fee.getId(),
+                            fee.getFeeNo(),
+                            nickname(fee.getPayer()),
+                            fee.getTargetType(),
+                            fee.getTargetId(),
+                            fee.getAmount(),
+                            fee.getStatus(),
+                            fee.getPaidAt(),
+                            fee.getCreatedAt())));
+            roleApplicationRepository.findAll().stream()
+                    .filter(application -> inRange(application.getCreatedAt(), range))
+                    .forEach(application -> row.accept(csv(
+                            "角色保证金",
+                            application.getId(),
+                            application.getRoleType(),
+                            nickname(application.getUser()),
+                            "ROLE_APPLICATION",
+                            application.getId(),
+                            application.getDepositAmount(),
+                            application.getDepositStatus() + "/" + application.getReviewStatus(),
+                            application.getReviewedAt(),
+                            application.getCreatedAt())));
+        });
+        return CsvExport.of(fileName("fees", range), String.join("\n", rows));
+    }
+
     boolean inRange(LocalDateTime value, AnalyticsDateRange range) {
         return value != null && !value.isBefore(range.startInclusive()) && value.isBefore(range.endExclusive());
     }
@@ -410,6 +657,73 @@ public class OperationsAnalyticsService {
                 || "COMPLETED".equals(workflowStatus)
                 || "ISSUE_HANDLING".equals(workflowStatus)
                 || "DISPUTE_HANDLING".equals(workflowStatus);
+    }
+
+    private <T> List<ZoneMetricSummary> topZoneMetrics(List<T> items, java.util.function.Function<T, String> keyExtractor) {
+        return items.stream()
+                .map(keyExtractor)
+                .map(this::normalizeZoneKey)
+                .collect(Collectors.groupingBy(key -> key, LinkedHashMap::new, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Comparator
+                        .<Map.Entry<String, Long>>comparingLong(Map.Entry::getValue)
+                        .reversed()
+                        .thenComparing(Map.Entry::getKey))
+                .limit(20)
+                .map(entry -> new ZoneMetricSummary(entry.getKey(), entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private String normalizeZoneKey(String value) {
+        String normalized = text(value).trim();
+        return normalized.isEmpty() ? "UNKNOWN" : normalized;
+    }
+
+    private List<String> csvRows(Consumer<Consumer<String>> writer) {
+        List<String> rows = new java.util.ArrayList<>();
+        writer.accept(rows::add);
+        return rows;
+    }
+
+    String csv(Object... values) {
+        return java.util.Arrays.stream(values)
+                .map(this::text)
+                .map(this::escapeCsv)
+                .collect(Collectors.joining(","));
+    }
+
+    String escapeCsv(String value) {
+        String safeValue = value == null ? "" : value;
+        if (safeValue.contains("\"") || safeValue.contains(",") || safeValue.contains("\n") || safeValue.contains("\r")) {
+            return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+        }
+        return safeValue;
+    }
+
+    String text(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    String yesNo(boolean value) {
+        return value ? "是" : "否";
+    }
+
+    private String contactVisibilityLabel(String contactVisibility) {
+        return switch (text(contactVisibility)) {
+            case "PUBLIC" -> "公开";
+            case "LOGIN_ONLY" -> "登录可见";
+            case "INTENT_ONLY" -> "意向后可见";
+            default -> text(contactVisibility);
+        };
+    }
+
+    private String nickname(User user) {
+        return user == null ? "" : user.getNickname();
+    }
+
+    private String fileName(String prefix, AnalyticsDateRange range) {
+        return "campushub-" + prefix + "-" + range.startDate() + "-" + range.endDate() + ".csv";
     }
 
     private <T> long count(List<T> items, java.util.function.Predicate<T> predicate) {
