@@ -1,7 +1,6 @@
 package com.campushub.ops;
 
 import com.campushub.common.ApiResponse;
-import com.campushub.common.BusinessException;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.identity.RoleApplicationSummary;
@@ -21,7 +20,6 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -210,11 +208,6 @@ public class OperationsController {
         return ApiResponse.ok(projectAdService.block(id, adminId, request));
     }
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(exception.getMessage()));
-    }
-
     private AnalyticsDateRange parseRange(String startDate, String endDate) {
         return analyticsDateRangeParser.parse(startDate, endDate);
     }
@@ -225,7 +218,7 @@ public class OperationsController {
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
-                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .contentType(MediaType.parseMediaType(export.contentType()))
                 .body(export.body());
     }
 }

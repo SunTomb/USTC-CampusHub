@@ -43,9 +43,35 @@ class OperationsAnalyticsControllerIntegrationTest {
         mockMvc.perform(get("/api/admin/ops/analytics/overview")
                         .param("startDate", "2026-05-22")
                         .param("endDate", "2026-05-01"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("结束日期不能早于开始日期"));
+    }
+
+    @Test
+    void returnsAnalyticsSmokeResponses() throws Exception {
+        mockMvc.perform(get("/api/admin/ops/analytics/funnels")
+                        .param("startDate", "2020-01-01")
+                        .param("endDate", "2026-05-22"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.funnels").isArray());
+
+        mockMvc.perform(get("/api/admin/ops/analytics/zones")
+                        .param("startDate", "2020-01-01")
+                        .param("endDate", "2026-05-22"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.taskOriginZones").isArray())
+                .andExpect(jsonPath("$.data.projectAdZones").isArray());
+
+        mockMvc.perform(get("/api/admin/ops/analytics/fees")
+                        .param("startDate", "2020-01-01")
+                        .param("endDate", "2026-05-22"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.serviceFeeCount").exists())
+                .andExpect(jsonPath("$.data.roleApplicationCount").exists());
     }
 
     @Test
@@ -57,5 +83,13 @@ class OperationsAnalyticsControllerIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("text/csv")))
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
                 .andExpect(content().string(containsString("联系方式开放")));
+
+        mockMvc.perform(get("/api/admin/ops/exports/fees.csv")
+                        .param("startDate", "2020-01-01")
+                        .param("endDate", "2026-05-22"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("text/csv")))
+                .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                .andExpect(content().string(containsString("分类")));
     }
 }
