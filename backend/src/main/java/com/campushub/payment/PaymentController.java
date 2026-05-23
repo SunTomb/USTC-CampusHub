@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +16,12 @@ public class PaymentController {
 
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
     private final PaymentService paymentService;
+    private final PaymentCenterProperties paymentCenterProperties;
 
-    public PaymentController(ServiceFeeRecordRepository serviceFeeRecordRepository, PaymentService paymentService) {
+    public PaymentController(ServiceFeeRecordRepository serviceFeeRecordRepository, PaymentService paymentService, PaymentCenterProperties paymentCenterProperties) {
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.paymentService = paymentService;
+        this.paymentCenterProperties = paymentCenterProperties;
     }
 
     @GetMapping("/service-fees")
@@ -34,6 +38,28 @@ public class PaymentController {
                 .map(ServiceFeeSummary::from)
                 .toList();
         return ApiResponse.ok(fees);
+    }
+
+    @PostMapping("/service-fees/{feeId}/pay")
+    public ApiResponse<PaymentCreation> createServiceFeePayment(@PathVariable Long feeId) {
+        return ApiResponse.ok(paymentService.createServiceFeePayment(feeId));
+    }
+
+    @GetMapping("/orders/{orderNo}")
+    public ApiResponse<PaymentOrderSummary> getOrder(@PathVariable String orderNo) {
+        return ApiResponse.ok(paymentService.getOrder(orderNo));
+    }
+
+    @PostMapping("/callbacks/payment-center")
+    public ApiResponse<PaymentStatus> handlePaymentCenterCallback(
+            @RequestHeader(name = "X-CampusHub-Payment-Token", required = false) String token,
+            @RequestHeader(name = "X-CampusHub-Payment-Signature", required = false) String signature,
+            @RequestHeader(name = "X-CampusHub-Payment-Timestamp", required = false) String timestamp,
+            @RequestBody PaymentCenterCallbackRequest request) {
+        return ApiResponse.ok(paymentService.handlePaymentCenterCallback(
+                request,
+                new PaymentCallbackHeaders(token, signature, timestamp),
+                paymentCenterProperties.getCallbackToken()));
     }
 
     @PostMapping("/service-fees/{feeId}/mock-pay")

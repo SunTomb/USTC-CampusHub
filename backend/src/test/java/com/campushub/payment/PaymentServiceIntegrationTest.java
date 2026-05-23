@@ -37,13 +37,14 @@ class PaymentServiceIntegrationTest {
         mockMvc.perform(post("/api/payment/service-fees/3/mock-pay"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.provider").value("LOCAL_MOCK_ALIPAY_READY"))
-                .andExpect(jsonPath("$.data.paymentUrl").value("/api/payment/service-fees/3/mock-success"));
+                .andExpect(jsonPath("$.data.provider").value("MOCK"))
+                .andExpect(jsonPath("$.data.orderNo").exists())
+                .andExpect(jsonPath("$.data.payUrl").exists());
 
         mockMvc.perform(post("/api/payment/service-fees/3/mock-success"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.status").value("PAID"));
 
         ServiceFeeRecord paidFee = serviceFeeRecordRepository.findById(3L).orElseThrow();
         assertThat(paidFee.getStatus()).isEqualTo("PAID");

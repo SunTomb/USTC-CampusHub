@@ -26,6 +26,13 @@ campushub:
     root: ${CAMPUSHUB_FILE_ROOT:./data/uploads}
   payment:
     provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
+    center:
+      base-url: ${CAMPUSHUB_PAYMENT_CENTER_BASE_URL:}
+      create-path: ${CAMPUSHUB_PAYMENT_CENTER_CREATE_PATH:}
+      callback-url: ${CAMPUSHUB_PAYMENT_CENTER_CALLBACK_URL:http://localhost:8080/api/payment/callbacks/payment-center}
+      callback-token: ${CAMPUSHUB_PAYMENT_CENTER_CALLBACK_TOKEN:}
+      signing-secret: ${CAMPUSHUB_PAYMENT_CENTER_SIGNING_SECRET:}
+      expire-minutes: ${CAMPUSHUB_PAYMENT_ORDER_EXPIRE_MINUTES:30}
   secondhand:
     service-fee:
       enabled: ${CAMPUSHUB_SECONDHAND_SERVICE_FEE_ENABLED:false}

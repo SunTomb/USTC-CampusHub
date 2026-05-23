@@ -228,6 +228,7 @@ export interface RoleApplicationSummary {
   roleType: string
   depositAmount: number
   depositStatus: string
+  depositPaymentOrderNo: string | null
   reviewStatus: string
   applyNote: string | null
   reviewerNickname: string | null
@@ -543,23 +544,67 @@ export interface ServiceFeeSummary {
   targetId: number
   amount: number
   status: string
+  paymentOrderNo: string | null
+  paymentProvider: string | null
+  paymentCenterOrderNo: string | null
+  payUrl: string | null
   createdAt: string
   paidAt: string | null
+  expiresAt: string | null
+  failedAt: string | null
+  failureReason: string | null
 }
 
 export interface PaymentCreation {
   provider: string
-  tradeNo: string
-  paymentUrl: string
+  orderNo: string
+  providerOrderNo: string
+  payUrl: string
   status: string
+  expiresAt: string | null
   message: string
 }
 
 export interface PaymentStatus {
   provider: string
-  tradeNo: string
+  orderNo: string
+  providerOrderNo: string | null
   status: string
+  paidAt: string | null
+  failureReason: string | null
   message: string
+}
+
+export interface PaymentOrderSummary {
+  id: number
+  orderNo: string
+  businessType: string
+  businessId: number
+  payerId: number
+  payerNickname: string
+  amount: number
+  provider: string
+  providerOrderNo: string | null
+  payUrl: string | null
+  status: string
+  expiresAt: string | null
+  paidAt: string | null
+  failedAt: string | null
+  failureReason: string | null
+  createdAt: string | null
+}
+
+export interface PaymentCallbackEventSummary {
+  id: number
+  eventId: string
+  orderNo: string
+  providerOrderNo: string | null
+  status: string
+  amount: number
+  verified: boolean
+  handled: boolean
+  failureReason: string | null
+  createdAt: string | null
 }
 
 export interface ReviewRecordSummary {
@@ -1015,6 +1060,27 @@ export function listWalletFlows(userId = 1) {
 
 export function listServiceFees(userId = 1) {
   return getApi<ServiceFeeSummary[]>(`/payment/users/${userId}/service-fees`)
+}
+
+export function createServiceFeePayment(feeId: number) {
+  return postApi<PaymentCreation>(`/payment/service-fees/${feeId}/pay`, {})
+}
+
+export function getPaymentOrder(orderNo: string) {
+  return getApi<PaymentOrderSummary>(`/payment/orders/${orderNo}`)
+}
+
+export function createRoleDepositPayment(applicationId: number) {
+  return postApi<PaymentCreation>(`/identity/roles/${applicationId}/deposit-pay`, {})
+}
+
+export function listAdminPaymentOrders(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return getApi<PaymentOrderSummary[]>(`/admin/payment/orders${query}`)
+}
+
+export function listAdminPaymentCallbackEvents() {
+  return getApi<PaymentCallbackEventSummary[]>('/admin/payment/callback-events')
 }
 
 export function createMockServiceFeePayment(feeId: number) {

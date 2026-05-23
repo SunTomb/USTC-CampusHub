@@ -70,7 +70,8 @@ const navItems = [
   { path: '/notifications', label: '站内通知' },
   { path: '/admin/review', label: '审核治理' },
   { path: '/admin/ops', label: '运营后台' },
-  { path: '/admin/governance', label: '治理台' }
+  { path: '/admin/governance', label: '治理台' },
+  { path: '/admin/payment', label: '支付监控' }
 ]
 
 const mobileTabItems = [

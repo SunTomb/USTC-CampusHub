@@ -408,6 +408,8 @@ Recommended Phase 8 start:
 
 1. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the Phase 8 roadmap source.
 2. Phase 8 should focus on payment-center integration hardening and service-fee operations.
-3. Preserve the existing boundary: production payment continues through API-Transfer-Station; CampusHub must not read, copy, print, store, or commit Alipay private/public key bodies.
+3. Preserve the existing boundary for this phase: production payment continues through API-Transfer-Station; CampusHub must not read, copy, print, store, or commit Alipay private/public key bodies.
 4. Keep Phase 8 Phase-4-sized: one design doc, one implementation plan, focused payment-provider/API contract work, server Docker verification, safe API smoke, Playwriter checks, README/CLAUDE handoff.
+5. Updated future payment direction from 2026-05-23: CampusHub should later support recharge channel fees, offline transaction service-fee thresholds, online escrow-style balance freezing/transfer, and balance withdrawals. This is larger than Phase 8 and should become a later standalone Phase because it touches wallet ledger design, frozen balances, transaction order state machines, withdrawal operations, and risk controls.
+6. Future fee model to carry into that later Phase: Alipay recharge is real-time and charges 0.6%; WeChat recharge has no fee but requires manual review; offline WeChat/QQ transaction amounts below 50 CNY are free; offline amounts of 50 CNY or more charge 1% service fee capped at 2 CNY; online platform transaction freezes payer balance first and transfers frozen amount to the counterparty after successful confirmation.
 

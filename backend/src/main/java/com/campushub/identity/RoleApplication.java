@@ -34,6 +34,9 @@ public class RoleApplication {
     @Column(name = "deposit_status", nullable = false)
     private String depositStatus;
 
+    @Column(name = "deposit_payment_order_no")
+    private String depositPaymentOrderNo;
+
     @Column(name = "review_status", nullable = false)
     private String reviewStatus;
 
@@ -60,8 +63,8 @@ public class RoleApplication {
         this.user = user;
         this.roleType = roleType.name();
         this.depositAmount = roleType.depositAmount();
-        this.depositStatus = "PAID";
-        this.reviewStatus = roleType.manualReviewRequired() ? "PENDING_REVIEW" : "APPROVED";
+        this.depositStatus = "PENDING";
+        this.reviewStatus = "PENDING_PAYMENT";
         this.applyNote = applyNote;
     }
 
@@ -83,6 +86,10 @@ public class RoleApplication {
 
     public String getDepositStatus() {
         return depositStatus;
+    }
+
+    public String getDepositPaymentOrderNo() {
+        return depositPaymentOrderNo;
     }
 
     public String getReviewStatus() {
@@ -107,6 +114,20 @@ public class RoleApplication {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void attachDepositPaymentOrder(String orderNo) {
+        this.depositPaymentOrderNo = orderNo;
+    }
+
+    public void markDepositPaid() {
+        this.depositStatus = "PAID";
+        if (PlatformRoleType.SHOP_MERCHANT.name().equals(roleType)) {
+            this.reviewStatus = "PENDING_REVIEW";
+        } else {
+            this.reviewStatus = "APPROVED";
+            this.reviewedAt = LocalDateTime.now();
+        }
     }
 
     public void markApproved(User reviewer) {

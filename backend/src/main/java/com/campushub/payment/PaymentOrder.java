@@ -14,52 +14,46 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "service_fee_records")
-public class ServiceFeeRecord {
+@Table(name = "payment_orders")
+public class PaymentOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "fee_no", nullable = false)
-    private String feeNo;
+    @Column(name = "order_no", nullable = false)
+    private String orderNo;
+
+    @Column(name = "business_type", nullable = false)
+    private String businessType;
+
+    @Column(name = "business_id", nullable = false)
+    private Long businessId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payer_id", nullable = false)
     private User payer;
 
-    @Column(name = "target_type", nullable = false)
-    private String targetType;
-
-    @Column(name = "target_id", nullable = false)
-    private Long targetId;
-
     @Column(nullable = false)
     private BigDecimal amount;
 
     @Column(nullable = false)
-    private String status;
+    private String provider;
 
-    @Column(name = "payment_order_no")
-    private String paymentOrderNo;
-
-    @Column(name = "payment_provider")
-    private String paymentProvider;
-
-    @Column(name = "payment_center_order_no")
-    private String paymentCenterOrderNo;
+    @Column(name = "provider_order_no")
+    private String providerOrderNo;
 
     @Column(name = "pay_url")
     private String payUrl;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "paid_at")
-    private LocalDateTime paidAt;
+    @Column(nullable = false)
+    private String status;
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
 
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
@@ -67,75 +61,72 @@ public class ServiceFeeRecord {
     @Column(name = "failure_reason")
     private String failureReason;
 
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    protected ServiceFeeRecord() {
+    protected PaymentOrder() {
     }
 
-    public ServiceFeeRecord(String feeNo, User payer, String targetType, Long targetId, BigDecimal amount) {
-        this.feeNo = feeNo;
+    public PaymentOrder(String orderNo, String businessType, Long businessId, User payer, BigDecimal amount, String provider, LocalDateTime expiresAt) {
+        this.orderNo = orderNo;
+        this.businessType = businessType;
+        this.businessId = businessId;
         this.payer = payer;
-        this.targetType = targetType;
-        this.targetId = targetId;
         this.amount = amount;
+        this.provider = provider;
         this.status = "PENDING";
+        this.expiresAt = expiresAt;
     }
 
     public Long getId() {
         return id;
     }
 
-    public String getFeeNo() {
-        return feeNo;
+    public String getOrderNo() {
+        return orderNo;
+    }
+
+    public String getBusinessType() {
+        return businessType;
+    }
+
+    public Long getBusinessId() {
+        return businessId;
     }
 
     public User getPayer() {
         return payer;
     }
 
-    public String getTargetType() {
-        return targetType;
-    }
-
-    public Long getTargetId() {
-        return targetId;
-    }
-
     public BigDecimal getAmount() {
         return amount;
     }
 
-    public String getStatus() {
-        return status;
+    public String getProvider() {
+        return provider;
     }
 
-    public String getPaymentOrderNo() {
-        return paymentOrderNo;
-    }
-
-    public String getPaymentProvider() {
-        return paymentProvider;
-    }
-
-    public String getPaymentCenterOrderNo() {
-        return paymentCenterOrderNo;
+    public String getProviderOrderNo() {
+        return providerOrderNo;
     }
 
     public String getPayUrl() {
         return payUrl;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getPaidAt() {
-        return paidAt;
+    public String getStatus() {
+        return status;
     }
 
     public LocalDateTime getExpiresAt() {
         return expiresAt;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
     }
 
     public LocalDateTime getFailedAt() {
@@ -146,21 +137,23 @@ public class ServiceFeeRecord {
         return failureReason;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void attachPaymentOrder(String paymentOrderNo, String paymentProvider, String paymentCenterOrderNo, String payUrl, LocalDateTime expiresAt) {
-        this.paymentOrderNo = paymentOrderNo;
-        this.paymentProvider = paymentProvider;
-        this.paymentCenterOrderNo = paymentCenterOrderNo;
+    public void attachProviderOrder(String providerOrderNo, String payUrl) {
+        this.providerOrderNo = providerOrderNo;
         this.payUrl = payUrl;
-        this.expiresAt = expiresAt;
     }
 
     public void markPaid(LocalDateTime paidAt) {
         this.status = "PAID";
         this.paidAt = paidAt;
+        this.failureReason = null;
     }
 
     public void markFailed(LocalDateTime failedAt, String failureReason) {

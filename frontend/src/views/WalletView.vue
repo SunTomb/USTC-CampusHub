@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">Wallet</p>
         <h2>钱包流水</h2>
-        <p>演示平台保证金、服务费和本地 mock 支付流水，不直接处理真实支付密钥。</p>
+        <p>演示平台保证金、服务费和支付中心订单状态，不直接处理真实支付密钥。</p>
       </div>
       <el-button :loading="loading" @click="loadWallet">刷新</el-button>
     </div>
@@ -29,12 +29,12 @@
     </div>
 
     <el-card shadow="never">
-      <template #header>服务费与本地 mock 支付</template>
+      <template #header>服务费与支付订单</template>
       <EmptyState
         v-if="!loading && serviceFees.length === 0"
         eyebrow="Service Fees"
         title="暂无服务费记录"
-        description="平台服务费和本地 mock 支付单会显示在这里；CampusHub 不托管交易本金。"
+        description="平台服务费和支付中心订单会显示在这里；CampusHub 当前 Phase 不托管交易本金。"
         compact
       />
       <div v-else class="mobile-table-wrapper">
@@ -45,11 +45,13 @@
             <template #default="{ row }">¥{{ row.amount }}</template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="100" />
+          <el-table-column prop="paymentProvider" label="Provider" width="130" />
+          <el-table-column prop="paymentOrderNo" label="支付订单" min-width="180" />
           <el-table-column prop="paidAt" label="支付时间" min-width="170" />
           <el-table-column label="操作" width="180">
             <template #default="{ row }">
               <el-button v-if="row.status !== 'PAID'" size="small" :loading="payingId === row.id" @click="payFee(row.id)">
-                本地模拟支付
+                创建支付单
               </el-button>
               <el-tag v-else type="success">已支付</el-tag>
             </template>
@@ -85,11 +87,10 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  createMockServiceFeePayment,
+  createServiceFeePayment,
   getWallet,
   listServiceFees,
   listWalletFlows,
-  markMockServiceFeeSuccess,
   type ServiceFeeSummary,
   type WalletAccountSummary,
   type WalletFlowSummary,
@@ -119,9 +120,11 @@ async function loadWallet() {
 async function payFee(feeId: number) {
   payingId.value = feeId
   try {
-    const payment = await createMockServiceFeePayment(feeId)
-    const status = await markMockServiceFeeSuccess(feeId)
-    ElMessage.success(`${payment.provider}: ${status.message}`)
+    const payment = await createServiceFeePayment(feeId)
+    ElMessage.success(payment.message || '支付单已创建')
+    if (payment.payUrl && !payment.payUrl.startsWith('mock://')) {
+      window.open(payment.payUrl, '_blank', 'noopener,noreferrer')
+    }
     await loadWallet()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '本地支付失败')

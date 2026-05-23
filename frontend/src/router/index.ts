@@ -20,6 +20,7 @@ import NotificationsView from '@/views/NotificationsView.vue'
 import AdminReviewView from '@/views/AdminReviewView.vue'
 import AdminOperationsView from '@/views/AdminOperationsView.vue'
 import AdminGovernanceView from '@/views/AdminGovernanceView.vue'
+import AdminPaymentView from '@/views/AdminPaymentView.vue'
 import AuthView from '@/views/AuthView.vue'
 
 const router = createRouter({
@@ -50,6 +51,7 @@ const router = createRouter({
         { path: 'admin/review', name: 'admin-review', component: AdminReviewView },
         { path: 'admin/ops', name: 'admin-ops', component: AdminOperationsView },
         { path: 'admin/governance', name: 'admin-governance', component: AdminGovernanceView },
+        { path: 'admin/payment', name: 'admin-payment', component: AdminPaymentView },
         { path: ':pathMatch(.*)*', redirect: { name: 'home' } },
       ],
     },

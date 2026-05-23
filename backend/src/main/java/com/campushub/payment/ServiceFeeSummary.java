@@ -12,8 +12,15 @@ public record ServiceFeeSummary(
         Long targetId,
         BigDecimal amount,
         String status,
+        String paymentOrderNo,
+        String paymentProvider,
+        String paymentCenterOrderNo,
+        String payUrl,
         LocalDateTime createdAt,
-        LocalDateTime paidAt) {
+        LocalDateTime paidAt,
+        LocalDateTime expiresAt,
+        LocalDateTime failedAt,
+        String failureReason) {
 
     public static ServiceFeeSummary from(ServiceFeeRecord fee) {
         return new ServiceFeeSummary(
@@ -25,7 +32,14 @@ public record ServiceFeeSummary(
                 fee.getTargetId(),
                 fee.getAmount(),
                 fee.getStatus(),
+                fee.getPaymentOrderNo(),
+                fee.getPaymentProvider(),
+                fee.getPaymentCenterOrderNo(),
+                fee.getPayUrl(),
                 fee.getCreatedAt(),
-                fee.getPaidAt());
+                fee.getPaidAt(),
+                fee.getExpiresAt(),
+                fee.getFailedAt(),
+                fee.getFailureReason());
     }
 }

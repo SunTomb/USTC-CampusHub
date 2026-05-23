@@ -3,8 +3,13 @@ package com.campushub.payment;
 import java.math.BigDecimal;
 
 public record PaymentRequest(
-        Long serviceFeeId,
-        String tradeNo,
+        String orderNo,
+        String businessType,
+        Long businessId,
+        Long payerId,
+        String businessNo,
         BigDecimal amount,
-        String subject) {
+        String subject,
+        String callbackUrl,
+        int expireMinutes) {
 }

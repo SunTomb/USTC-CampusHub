@@ -22,6 +22,19 @@
         <el-button type="primary" :loading="loadingRole === role.roleType" @click="submit(role.roleType)">
           申请开通
         </el-button>
+        <div v-if="applications[role.roleType]" class="payment-meta">
+          <span>保证金状态：{{ depositStatusText[applications[role.roleType].depositStatus] ?? applications[role.roleType].depositStatus }}</span>
+          <span>审核状态：{{ applications[role.roleType].reviewStatus }}</span>
+          <span v-if="applications[role.roleType].depositPaymentOrderNo">支付单：{{ applications[role.roleType].depositPaymentOrderNo }}</span>
+          <el-button
+            v-if="applications[role.roleType].depositStatus !== 'PAID'"
+            size="small"
+            :loading="payingApplicationId === applications[role.roleType].id"
+            @click="payDeposit(applications[role.roleType].id)"
+          >
+            支付保证金
+          </el-button>
+        </div>
       </el-card>
     </div>
   </section>
@@ -30,11 +43,19 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { applyRole } from '@/api/campushub'
+import { applyRole, createRoleDepositPayment, type RoleApplicationSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const loadingRole = ref<string | null>(null)
+const payingApplicationId = ref<number | null>(null)
+const applications = reactive<Record<string, RoleApplicationSummary>>({})
+const depositStatusText: Record<string, string> = {
+  PENDING: '待支付',
+  PAID: '已支付',
+  FAILED: '支付失败',
+  EXPIRED: '已过期'
+}
 const notes = reactive<Record<string, string>>({
   RUNNER: '',
   GOODS_PUBLISHER: '',
@@ -70,9 +91,23 @@ async function submit(roleType: string) {
   loadingRole.value = roleType
   try {
     const result = await applyRole(userId, { roleType, applyNote: notes[roleType] })
-    ElMessage.success(result.reviewStatus === 'PENDING_REVIEW' ? '申请已提交，等待审核' : '身份已开通')
+    applications[roleType] = result
+    ElMessage.success(result.depositStatus === 'PENDING' ? '申请已提交，请继续支付保证金' : '申请已提交')
   } finally {
     loadingRole.value = null
+  }
+}
+
+async function payDeposit(applicationId: number) {
+  payingApplicationId.value = applicationId
+  try {
+    const result = await createRoleDepositPayment(applicationId)
+    ElMessage.success(result.message || '保证金支付单已创建')
+    if (result.payUrl && !result.payUrl.startsWith('mock://')) {
+      window.open(result.payUrl, '_blank', 'noopener,noreferrer')
+    }
+  } finally {
+    payingApplicationId.value = null
   }
 }
 </script>
