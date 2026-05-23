@@ -40,6 +40,9 @@ class WalletServiceIntegrationTest {
     @Autowired
     private WalletRechargeOrderRepository walletRechargeOrderRepository;
 
+    @Autowired
+    private WalletWithdrawalRequestRepository walletWithdrawalRequestRepository;
+
     @Test
     void walletAccountAndFlowExposePhase9LedgerFields() {
         WalletAccount wallet = walletAccountRepository.findByUserId(1L).orElseThrow();
@@ -118,6 +121,28 @@ class WalletServiceIntegrationTest {
         WalletRechargeOrder order = walletRechargeOrderRepository.findById(summary.id()).orElseThrow();
         assertThat(wallet.getBalance()).isEqualByComparingTo("230.00");
         assertThat(order.getStatus()).isEqualTo("PAID");
+    }
+
+    @Test
+    void withdrawalFreezesBalanceThenRejectUnfreezesAndCompleteDeductsFrozenBalance() {
+        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User admin = userRepository.findByEmail("admin@mail.ustc.edu.cn").orElseThrow();
+        walletService.credit(user.getId(), new BigDecimal("100.00"), "TEST", 10L, "withdraw-credit", "SYSTEM", null, "提现测试入账");
+
+        WalletWithdrawalSummary rejected = walletOperationService.createWithdrawal(user.getId(), new CreateWithdrawalRequest(new BigDecimal("30.00"), "WECHAT", "微信昵称：同学A"));
+        walletOperationService.rejectWithdrawal(rejected.id(), admin.getId(), "资料不完整");
+        WalletAccount afterReject = walletAccountRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(afterReject.getBalance()).isEqualByComparingTo("300.00");
+        assertThat(afterReject.getFrozenBalance()).isEqualByComparingTo("0.00");
+
+        WalletWithdrawalSummary approved = walletOperationService.createWithdrawal(user.getId(), new CreateWithdrawalRequest(new BigDecimal("40.00"), "WECHAT", "微信昵称：同学A"));
+        walletOperationService.approveWithdrawal(approved.id(), admin.getId(), "审核通过");
+        walletOperationService.completeWithdrawal(approved.id(), admin.getId(), "已人工打款");
+        WalletAccount afterComplete = walletAccountRepository.findByUserId(user.getId()).orElseThrow();
+        WalletWithdrawalRequest completed = walletWithdrawalRequestRepository.findById(approved.id()).orElseThrow();
+        assertThat(afterComplete.getBalance()).isEqualByComparingTo("220.00");
+        assertThat(afterComplete.getFrozenBalance()).isEqualByComparingTo("0.00");
+        assertThat(completed.getStatus()).isEqualTo("COMPLETED");
     }
 
     @Test

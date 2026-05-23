@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WalletOperationService {
 
     private final WalletRechargeOrderRepository rechargeOrderRepository;
+    private final WalletWithdrawalRequestRepository withdrawalRequestRepository;
     private final UserRepository userRepository;
     private final FeePolicyService feePolicyService;
     private final PaymentProvider paymentProvider;
@@ -28,6 +29,7 @@ public class WalletOperationService {
 
     public WalletOperationService(
             WalletRechargeOrderRepository rechargeOrderRepository,
+            WalletWithdrawalRequestRepository withdrawalRequestRepository,
             UserRepository userRepository,
             FeePolicyService feePolicyService,
             PaymentProvider paymentProvider,
@@ -35,6 +37,7 @@ public class WalletOperationService {
             PaymentCenterProperties paymentCenterProperties,
             WalletService walletService) {
         this.rechargeOrderRepository = rechargeOrderRepository;
+        this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.userRepository = userRepository;
         this.feePolicyService = feePolicyService;
         this.paymentProvider = paymentProvider;
@@ -103,6 +106,64 @@ public class WalletOperationService {
                 ? rechargeOrderRepository.findTop200ByOrderByCreatedAtDesc()
                 : rechargeOrderRepository.findTop200ByStatusOrderByCreatedAtDesc(status);
         return orders.stream().map(WalletRechargeSummary::from).toList();
+    }
+
+    @Transactional
+    public WalletWithdrawalSummary createWithdrawal(Long userId, CreateWithdrawalRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在"));
+        WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.save(new WalletWithdrawalRequest(nextNo("WW"), user, request.amount(), request.channel(), request.accountSnapshot()));
+        walletService.freeze(userId, request.amount(), "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-freeze:" + withdrawal.getId(), "USER", userId, "提现申请冻结余额");
+        return WalletWithdrawalSummary.from(withdrawal);
+    }
+
+    @Transactional
+    public WalletWithdrawalSummary approveWithdrawal(Long withdrawalId, Long adminId, String note) {
+        WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
+        User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
+        if (!"PENDING_REVIEW".equals(withdrawal.getStatus())) {
+            throw new BusinessException("提现申请状态不可审核通过");
+        }
+        withdrawal.approve(admin, note);
+        return WalletWithdrawalSummary.from(withdrawal);
+    }
+
+    @Transactional
+    public WalletWithdrawalSummary rejectWithdrawal(Long withdrawalId, Long adminId, String note) {
+        WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
+        User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
+        if (!"PENDING_REVIEW".equals(withdrawal.getStatus())) {
+            throw new BusinessException("提现申请状态不可拒绝");
+        }
+        withdrawal.reject(admin, note);
+        walletService.unfreeze(withdrawal.getUser().getId(), withdrawal.getAmount(), "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-reject:" + withdrawal.getId(), "ADMIN", adminId, "提现拒绝解冻余额");
+        return WalletWithdrawalSummary.from(withdrawal);
+    }
+
+    @Transactional
+    public WalletWithdrawalSummary completeWithdrawal(Long withdrawalId, Long adminId, String note) {
+        WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
+        User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
+        if (!"APPROVED".equals(withdrawal.getStatus())) {
+            throw new BusinessException("提现申请状态不可完成");
+        }
+        walletService.debit(withdrawal.getUser().getId(), withdrawal.getAmount(), "WITHDRAW", "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-complete:" + withdrawal.getId(), "ADMIN", adminId, "提现人工打款完成");
+        withdrawal.complete(admin, note);
+        return WalletWithdrawalSummary.from(withdrawal);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletWithdrawalSummary> listUserWithdrawals(Long userId) {
+        return withdrawalRequestRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(WalletWithdrawalSummary::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletWithdrawalSummary> listAdminWithdrawals(String status) {
+        List<WalletWithdrawalRequest> requests = status == null || status.isBlank()
+                ? withdrawalRequestRepository.findTop200ByOrderByCreatedAtDesc()
+                : withdrawalRequestRepository.findTop200ByStatusOrderByCreatedAtDesc(status);
+        return requests.stream().map(WalletWithdrawalSummary::from).toList();
     }
 
     private WalletRechargeSummary createAlipayRecharge(User user, BigDecimal amount) {

@@ -57,4 +57,14 @@ public class WalletController {
     public ApiResponse<List<WalletRechargeSummary>> listRecharges(@PathVariable Long userId) {
         return ApiResponse.ok(walletOperationService.listUserRecharges(userId));
     }
+
+    @PostMapping("/users/{userId}/withdrawals")
+    public ApiResponse<WalletWithdrawalSummary> createWithdrawal(@PathVariable Long userId, @Valid @RequestBody CreateWithdrawalRequest request) {
+        return ApiResponse.ok(walletOperationService.createWithdrawal(userId, request));
+    }
+
+    @GetMapping("/users/{userId}/withdrawals")
+    public ApiResponse<List<WalletWithdrawalSummary>> listWithdrawals(@PathVariable Long userId) {
+        return ApiResponse.ok(walletOperationService.listUserWithdrawals(userId));
+    }
 }
