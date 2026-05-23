@@ -2,17 +2,21 @@ package com.campushub.wallet;
 
 import java.math.BigDecimal;
 
+import com.campushub.user.User;
+import com.campushub.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Transactional
 class WalletServiceIntegrationTest {
 
     @Autowired
@@ -20,6 +24,15 @@ class WalletServiceIntegrationTest {
 
     @Autowired
     private WalletFlowRepository walletFlowRepository;
+
+    @Autowired
+    private WalletService walletService;
+
+    @Autowired
+    private FeePolicyService feePolicyService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void walletAccountAndFlowExposePhase9LedgerFields() {
@@ -53,5 +66,35 @@ class WalletServiceIntegrationTest {
         assertThat(flow.getAvailableBalanceAfter()).isEqualByComparingTo(new BigDecimal("215.50"));
         assertThat(flow.getFrozenBalanceAfter()).isEqualByComparingTo(new BigDecimal("10.00"));
         assertThat(flow.getIdempotencyKey()).isEqualTo("P9-LEDGER-001");
+    }
+
+    @Test
+    void walletServiceCreditsFreezesUnfreezesAndTransfersFrozenFundsIdempotently() {
+        User buyer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User seller = userRepository.findByEmail("student2@mail.ustc.edu.cn").orElseThrow();
+
+        walletService.credit(buyer.getId(), new BigDecimal("100.00"), "TEST", 1L, "credit-1", "SYSTEM", null, "测试入账");
+        walletService.credit(buyer.getId(), new BigDecimal("100.00"), "TEST", 1L, "credit-1", "SYSTEM", null, "测试入账");
+        walletService.freeze(buyer.getId(), new BigDecimal("30.00"), "GOODS_ESCROW", 2L, "freeze-1", "SYSTEM", null, "冻结托管");
+        walletService.unfreeze(buyer.getId(), new BigDecimal("10.00"), "GOODS_ESCROW", 2L, "unfreeze-1", "SYSTEM", null, "部分解冻");
+        walletService.transferFrozen(buyer.getId(), seller.getId(), new BigDecimal("20.00"), "GOODS_ESCROW", 2L, "release-1", "SYSTEM", null, "托管划转");
+
+        WalletAccount buyerWallet = walletAccountRepository.findByUserId(buyer.getId()).orElseThrow();
+        WalletAccount sellerWallet = walletAccountRepository.findByUserId(seller.getId()).orElseThrow();
+
+        assertThat(buyerWallet.getBalance()).isEqualByComparingTo("290.00");
+        assertThat(buyerWallet.getFrozenBalance()).isEqualByComparingTo("0.00");
+        assertThat(sellerWallet.getBalance()).isEqualByComparingTo("220.00");
+        assertThat(walletFlowRepository.findByIdempotencyKey("credit-1")).isPresent();
+    }
+
+    @Test
+    void feePolicyCalculatesRechargeOfflineAndOnlineFees() {
+        assertThat(feePolicyService.calculateAlipayRechargeFee(new BigDecimal("100.00"))).isEqualByComparingTo("0.60");
+        assertThat(feePolicyService.calculateOfflineTradeFee(new BigDecimal("49.99"))).isEqualByComparingTo("0.00");
+        assertThat(feePolicyService.calculateOfflineTradeFee(new BigDecimal("80.00"))).isEqualByComparingTo("0.80");
+        assertThat(feePolicyService.calculateOfflineTradeFee(new BigDecimal("500.00"))).isEqualByComparingTo("2.00");
+        assertThat(feePolicyService.calculateOnlineEscrowFee(new BigDecimal("80.00"))).isEqualByComparingTo("0.80");
+        assertThat(feePolicyService.calculateOnlineEscrowFee(new BigDecimal("500.00"))).isEqualByComparingTo("3.00");
     }
 }
