@@ -15,7 +15,6 @@ import {
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const loading = ref(false)
-const adminId = ref(1)
 const rechargeStatus = ref('')
 const withdrawalStatus = ref('')
 const recharges = ref<WalletRechargeSummary[]>([])
@@ -38,31 +37,31 @@ async function loadAll() {
 }
 
 async function approveRecharge(id: number) {
-  await approveAdminWalletRecharge(id, adminId.value, '微信充值人工审核通过')
+  await approveAdminWalletRecharge(id, 0, '微信充值人工审核通过')
   ElMessage.success('充值已审核通过')
   await loadAll()
 }
 
 async function rejectRecharge(id: number) {
-  await rejectAdminWalletRecharge(id, adminId.value, '微信充值审核拒绝')
+  await rejectAdminWalletRecharge(id, 0, '微信充值审核拒绝')
   ElMessage.success('充值已拒绝')
   await loadAll()
 }
 
 async function approveWithdrawal(id: number) {
-  await approveAdminWalletWithdrawal(id, adminId.value, '提现审核通过')
+  await approveAdminWalletWithdrawal(id, 0, '提现审核通过')
   ElMessage.success('提现已审核通过')
   await loadAll()
 }
 
 async function completeWithdrawal(id: number) {
-  await completeAdminWalletWithdrawal(id, adminId.value, '提现已人工打款')
+  await completeAdminWalletWithdrawal(id, 0, '提现已人工打款')
   ElMessage.success('提现已完成')
   await loadAll()
 }
 
 async function rejectWithdrawal(id: number) {
-  await rejectAdminWalletWithdrawal(id, adminId.value, '提现审核拒绝')
+  await rejectAdminWalletWithdrawal(id, 0, '提现审核拒绝')
   ElMessage.success('提现已拒绝并解冻')
   await loadAll()
 }
@@ -79,7 +78,6 @@ onMounted(loadAll)
         <p>处理微信充值审核、提现审核和钱包资金运营；不显示 token、secret 或支付宝密钥。</p>
       </div>
       <div class="payment-actions">
-        <el-input-number v-model="adminId" :min="1" />
         <el-button :loading="loading" @click="loadAll">刷新</el-button>
       </div>
     </div>

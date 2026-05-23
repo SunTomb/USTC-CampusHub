@@ -87,7 +87,11 @@ const roles = [
 ]
 
 async function submit(roleType: string) {
-  const userId = auth.currentUser?.id ?? 1
+  const userId = auth.currentUser?.id
+  if (!userId) {
+    ElMessage.warning('请先登录')
+    return
+  }
   loadingRole.value = roleType
   try {
     const result = await applyRole(userId, { roleType, applyNote: notes[roleType] })

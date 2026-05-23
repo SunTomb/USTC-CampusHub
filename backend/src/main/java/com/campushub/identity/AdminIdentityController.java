@@ -1,5 +1,6 @@
 package com.campushub.identity;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,9 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminIdentityController {
 
     private final IdentityService identityService;
+    private final CurrentUserService currentUserService;
 
-    public AdminIdentityController(IdentityService identityService) {
+    public AdminIdentityController(IdentityService identityService, CurrentUserService currentUserService) {
         this.identityService = identityService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/shop-merchant-applications/pending")
@@ -27,14 +30,14 @@ public class AdminIdentityController {
     @PostMapping("/role-applications/{applicationId}/approve")
     public ApiResponse<RoleApplicationSummary> approveRoleApplication(
             @PathVariable Long applicationId,
-            @RequestParam Long reviewerId) {
-        return ApiResponse.ok(identityService.approve(applicationId, reviewerId));
+            @RequestParam(required = false) Long reviewerId) {
+        return ApiResponse.ok(identityService.approve(applicationId, currentUserService.requireAdminId()));
     }
 
     @PostMapping("/role-applications/{applicationId}/reject")
     public ApiResponse<RoleApplicationSummary> rejectRoleApplication(
             @PathVariable Long applicationId,
-            @RequestParam Long reviewerId) {
-        return ApiResponse.ok(identityService.reject(applicationId, reviewerId));
+            @RequestParam(required = false) Long reviewerId) {
+        return ApiResponse.ok(identityService.reject(applicationId, currentUserService.requireAdminId()));
     }
 }

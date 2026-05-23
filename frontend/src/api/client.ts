@@ -27,6 +27,20 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      useAuthStore().clearSession()
+      return Promise.reject(new Error('登录已过期，请重新登录'))
+    }
+    if (error.response?.status === 403) {
+      return Promise.reject(new Error('当前账号无权限执行此操作'))
+    }
+    return Promise.reject(error)
+  },
+)
+
 export async function getApi<T>(url: string): Promise<T> {
   const response = await apiClient.get<ApiResponse<T>>(url)
   return unwrapApiResponse(response.data)

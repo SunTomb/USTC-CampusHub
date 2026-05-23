@@ -1,6 +1,7 @@
 package com.campushub.auth;
 
 import com.campushub.user.User;
+import java.util.List;
 
 public record CurrentUserSummary(
         Long id,
@@ -14,9 +15,10 @@ public record CurrentUserSummary(
         String qqContact,
         String avatarUrl,
         Integer creditScore,
-        String status) {
+        String status,
+        List<String> roles) {
 
-    public static CurrentUserSummary from(User user) {
+    public static CurrentUserSummary from(User user, List<String> roles) {
         return new CurrentUserSummary(
                 user.getId(),
                 user.getStudentNo(),
@@ -29,6 +31,7 @@ public record CurrentUserSummary(
                 user.getQqContact(),
                 user.getAvatarUrl(),
                 user.getCreditScore(),
-                user.getStatus());
+                user.getStatus(),
+                roles);
     }
 }

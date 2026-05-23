@@ -286,7 +286,10 @@ async function mutateOrder(action: () => Promise<unknown>) {
 }
 
 function actionPayload() {
-  return { actorId: auth.currentUser?.id ?? 0 }
+  if (!auth.currentUser) {
+    throw new Error('请先登录')
+  }
+  return { actorId: auth.currentUser.id }
 }
 
 onMounted(loadWorkspace)

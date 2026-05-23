@@ -145,7 +145,6 @@ import {
   type ReportRecordSummary,
 } from '@/api/campushub'
 
-const adminId = 1
 const loading = ref(false)
 const submitting = ref(false)
 const dashboard = ref<GovernanceDashboardSummary>()
@@ -197,28 +196,28 @@ async function askNote(title: string) {
 
 async function handleStart(report: ReportRecordSummary) {
   const note = await askNote('受理举报')
-  await startReportReview(report.id, adminId, { note })
+  await startReportReview(report.id, 0, { note })
   ElMessage.success('已受理')
   await load()
 }
 
 async function handleResolve(report: ReportRecordSummary) {
   const note = await askNote('解决举报')
-  await resolveReport(report.id, adminId, { resolutionType: 'CONTENT_REMOVED', note })
+  await resolveReport(report.id, 0, { resolutionType: 'CONTENT_REMOVED', note })
   ElMessage.success('已解决')
   await load()
 }
 
 async function handleReject(report: ReportRecordSummary) {
   const note = await askNote('驳回举报')
-  await rejectReport(report.id, adminId, { note })
+  await rejectReport(report.id, 0, { note })
   ElMessage.success('已驳回')
   await load()
 }
 
 async function handleEscalate(report: ReportRecordSummary) {
   const note = await askNote('升级举报')
-  await escalateReport(report.id, adminId, { note })
+  await escalateReport(report.id, 0, { note })
   ElMessage.success('已升级')
   await load()
 }
@@ -235,7 +234,7 @@ function openViolation(report: ReportRecordSummary) {
 async function submitViolation() {
   submitting.value = true
   try {
-    await createViolation(adminId, { ...violationForm })
+    await createViolation(0, { ...violationForm })
     ElMessage.success('违规记录已创建')
     violationDialog.value = false
     await load()

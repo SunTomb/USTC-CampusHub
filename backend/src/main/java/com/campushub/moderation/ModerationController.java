@@ -1,5 +1,6 @@
 package com.campushub.moderation;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.audit.SafetyLogRepository;
 import com.campushub.audit.SafetyLogSummary;
 import com.campushub.common.ApiResponse;
@@ -21,18 +22,21 @@ public class ModerationController {
     private final ViolationRecordRepository violationRecordRepository;
     private final SafetyLogRepository safetyLogRepository;
     private final ModerationService moderationService;
+    private final CurrentUserService currentUserService;
 
     public ModerationController(
             ReviewRecordRepository reviewRecordRepository,
             ReportRecordRepository reportRecordRepository,
             ViolationRecordRepository violationRecordRepository,
             SafetyLogRepository safetyLogRepository,
-            ModerationService moderationService) {
+            ModerationService moderationService,
+            CurrentUserService currentUserService) {
         this.reviewRecordRepository = reviewRecordRepository;
         this.reportRecordRepository = reportRecordRepository;
         this.violationRecordRepository = violationRecordRepository;
         this.safetyLogRepository = safetyLogRepository;
         this.moderationService = moderationService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/reviews")
@@ -52,8 +56,9 @@ public class ModerationController {
     }
 
     @PostMapping("/reports")
-    public ApiResponse<ReportRecordSummary> report(@RequestParam Long reporterId, @Valid @RequestBody ReportRequest request) {
-        return ApiResponse.ok(moderationService.report(reporterId, request));
+    public ApiResponse<ReportRecordSummary> report(@RequestParam(required = false) Long reporterId, @Valid @RequestBody ReportRequest request) {
+        Long effectiveReporterId = reporterId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(reporterId);
+        return ApiResponse.ok(moderationService.report(effectiveReporterId, request));
     }
 
     @GetMapping("/violations")

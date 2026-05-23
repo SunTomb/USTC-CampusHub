@@ -25,6 +25,16 @@ export interface RegisterResponse {
   email: string
 }
 
+export interface CurrentUser {
+  id: number
+  username: string
+  nickname: string
+  email?: string
+  wechatContact?: string | null
+  qqContact?: string | null
+  roles: string[]
+}
+
 export interface GoodsSummary {
   id: number
   title: string
@@ -822,6 +832,10 @@ export function register(payload: RegisterPayload) {
   return postApi<RegisterResponse>('/auth/register', payload)
 }
 
+export function getCurrentUser() {
+  return getApi<CurrentUser>('/auth/me')
+}
+
 export function listGoods() {
   return getApi<GoodsSummary[]>('/goods')
 }
@@ -831,84 +845,84 @@ export function getGoodsDetail(id: number, viewerId?: number) {
   return getApi<GoodsDetailSummary>(`/goods/${id}${query}`)
 }
 
-export function publishGoods(sellerId: number, payload: CreateGoodsPayload) {
-  return postApi<GoodsDetailSummary>(`/goods?sellerId=${sellerId}`, payload)
+export function publishGoods(_sellerId: number, payload: CreateGoodsPayload) {
+  return postApi<GoodsDetailSummary>('/goods', payload)
 }
 
-export function createGoodsIntent(goodsId: number, buyerId: number, message: string) {
-  return postApi<GoodsIntentSummary>(`/goods/${goodsId}/intents?buyerId=${buyerId}`, { message })
+export function createGoodsIntent(goodsId: number, _buyerId: number, message: string) {
+  return postApi<GoodsIntentSummary>(`/goods/${goodsId}/intents`, { message })
 }
 
 export function markGoodsSold(goodsId: number, userId: number, buyerId?: number) {
   return postApi<GoodsDetailSummary>(`/goods/${goodsId}/mark-sold`, { userId, buyerId })
 }
 
-export function createGoodsEscrowOrder(goodsId: number, buyerId: number) {
-  return postApi<GoodsOrderSummary>(`/goods/${goodsId}/orders/escrow?buyerId=${buyerId}`, {})
+export function createGoodsEscrowOrder(goodsId: number, _buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/${goodsId}/orders/escrow`, {})
 }
 
-export function freezeGoodsEscrow(orderId: number, buyerId: number) {
-  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/freeze?buyerId=${buyerId}`, {})
+export function freezeGoodsEscrow(orderId: number, _buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/freeze`, {})
 }
 
-export function confirmGoodsEscrow(orderId: number, buyerId: number) {
-  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/confirm?buyerId=${buyerId}`, {})
+export function confirmGoodsEscrow(orderId: number, _buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/confirm`, {})
 }
 
 export function bindFileToTarget(payload: { fileId: number; targetType: string; targetId: number; usageType: string; sortOrder: number }) {
   return postApi<FileBindingSummary>('/files/bindings', payload)
 }
 
-export function commentTarget(userId: number, payload: { targetType: string; targetId: number; parentId?: number | null; content: string }) {
-  return postApi<CommentSummary>(`/interactions/comments?userId=${userId}`, payload)
+export function commentTarget(_userId: number, payload: { targetType: string; targetId: number; parentId?: number | null; content: string }) {
+  return postApi<CommentSummary>('/interactions/comments', payload)
 }
 
-export function favoriteTarget(userId: number, payload: { targetType: string; targetId: number }) {
-  return postApi<void>(`/interactions/favorites?userId=${userId}`, payload)
+export function favoriteTarget(_userId: number, payload: { targetType: string; targetId: number }) {
+  return postApi<void>('/interactions/favorites', payload)
 }
 
-export function reportTarget(reporterId: number, payload: { targetType: string; targetId: number; reason: string; description: string }) {
-  return postApi<ReportRecordSummary>(`/moderation/reports?reporterId=${reporterId}`, payload)
+export function reportTarget(_reporterId: number, payload: { targetType: string; targetId: number; reason: string; description: string }) {
+  return postApi<ReportRecordSummary>('/moderation/reports', payload)
 }
 
-export function createReview(reviewerId: number, payload: { targetUserId: number; targetType: string; targetId: number; rating: number; content: string }) {
-  return postApi<ReviewSummary>(`/reviews?reviewerId=${reviewerId}`, payload)
+export function createReview(_reviewerId: number, payload: { targetUserId: number; targetType: string; targetId: number; rating: number; content: string }) {
+  return postApi<ReviewSummary>('/reviews', payload)
 }
 
 export function listTasks() {
   return getApi<RewardTaskSummary[]>('/tasks')
 }
 
-export function publishRunnerTask(payload: CreateRunnerTaskPayload, publisherId = 1) {
-  return postApi<RewardTaskSummary>(`/tasks?publisherId=${publisherId}`, payload)
+export function publishRunnerTask(payload: CreateRunnerTaskPayload, _publisherId?: number) {
+  return postApi<RewardTaskSummary>('/tasks', payload)
 }
 
-export function grabRunnerTask(taskId: number, userId = 1) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/grab?runnerId=${userId}`, {})
+export function grabRunnerTask(taskId: number, _userId?: number) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/grab`, {})
 }
 
-export function applyRunnerTask(taskId: number, userId: number, payload: ApplyTaskPayload) {
-  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications?applicantId=${userId}`, payload)
+export function applyRunnerTask(taskId: number, _userId: number, payload: ApplyTaskPayload) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications`, payload)
 }
 
-export function acceptRunnerTaskApplication(taskId: number, applicationId: number, publisherId = 1) {
-  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications/${applicationId}/accept?publisherId=${publisherId}`, {})
+export function acceptRunnerTaskApplication(taskId: number, applicationId: number, _publisherId?: number) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications/${applicationId}/accept`, {})
 }
 
-export function advanceRunnerTask(taskId: number, userId: number, nextStatus: string, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}?actorId=${userId}`, payload)
+export function advanceRunnerTask(taskId: number, _userId: number, nextStatus: string, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}`, payload)
 }
 
-export function completeRunnerTaskWithCode(taskId: number, userId: number, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/complete-code?runnerId=${userId}`, payload)
+export function completeRunnerTaskWithCode(taskId: number, _userId: number, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/complete-code`, payload)
 }
 
-export function confirmRunnerTask(taskId: number, publisherId: number, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/confirm?publisherId=${publisherId}`, payload)
+export function confirmRunnerTask(taskId: number, _publisherId: number, payload: TaskActionPayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/confirm`, payload)
 }
 
-export function reportRunnerTaskIssue(taskId: number, userId: number, payload: TaskIssuePayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues?reporterId=${userId}`, payload)
+export function reportRunnerTaskIssue(taskId: number, _userId: number, payload: TaskIssuePayload) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues`, payload)
 }
 
 export function applyRole(userId: number, payload: ApplyRolePayload) {
@@ -1074,24 +1088,24 @@ export function listOpsProjectAds(status?: string) {
   return getApi<ProjectAdSummary[]>(`/admin/ops/project-ads${query}`)
 }
 
-export function approveProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
-  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/approve?adminId=${adminId}`, payload)
+export function approveProjectAd(id: number, _adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/approve`, payload)
 }
 
-export function rejectProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
-  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/reject?adminId=${adminId}`, payload)
+export function rejectProjectAd(id: number, _adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/reject`, payload)
 }
 
-export function featureProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
-  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/feature?adminId=${adminId}`, payload)
+export function featureProjectAd(id: number, _adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/feature`, payload)
 }
 
-export function unfeatureProjectAd(id: number, adminId: number) {
-  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/unfeature?adminId=${adminId}`, {})
+export function unfeatureProjectAd(id: number, _adminId: number) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/unfeature`, {})
 }
 
-export function blockProjectAd(id: number, adminId: number, payload: ProjectAdReviewPayload) {
-  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/block?adminId=${adminId}`, payload)
+export function blockProjectAd(id: number, _adminId: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/ops/project-ads/${id}/block`, payload)
 }
 
 export function getGovernanceDashboard() {
@@ -1102,24 +1116,24 @@ export function getGovernanceReports(params?: { status?: string; targetType?: st
   return getApi<ReportRecordSummary[]>(`/admin/governance/reports${buildQuery(params)}`)
 }
 
-export function startReportReview(reportId: number, adminId: number, payload: GovernanceActionPayload) {
-  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/start-review?adminId=${adminId}`, payload)
+export function startReportReview(reportId: number, _adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/start-review`, payload)
 }
 
-export function rejectReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
-  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/reject?adminId=${adminId}`, payload)
+export function rejectReport(reportId: number, _adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/reject`, payload)
 }
 
-export function resolveReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
-  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/resolve?adminId=${adminId}`, payload)
+export function resolveReport(reportId: number, _adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/resolve`, payload)
 }
 
-export function escalateReport(reportId: number, adminId: number, payload: GovernanceActionPayload) {
-  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/escalate?adminId=${adminId}`, payload)
+export function escalateReport(reportId: number, _adminId: number, payload: GovernanceActionPayload) {
+  return postApi<ReportRecordSummary>(`/admin/governance/reports/${reportId}/escalate`, payload)
 }
 
-export function createViolation(adminId: number, payload: CreateViolationPayload) {
-  return postApi<ViolationRecordSummary>(`/admin/governance/violations?adminId=${adminId}`, payload)
+export function createViolation(_adminId: number, payload: CreateViolationPayload) {
+  return postApi<ViolationRecordSummary>('/admin/governance/violations', payload)
 }
 
 export function getAdminActionLogs() {
@@ -1144,11 +1158,11 @@ function buildQuery(params?: object) {
   return value ? `?${value}` : ''
 }
 
-export function getWallet(userId = 1) {
+export function getWallet(userId: number) {
   return getApi<WalletAccountSummary>(`/wallet/users/${userId}`)
 }
 
-export function listWalletFlows(userId = 1) {
+export function listWalletFlows(userId: number) {
   return getApi<WalletFlowSummary[]>(`/wallet/users/${userId}/flows`)
 }
 
@@ -1156,7 +1170,7 @@ export function createWalletRecharge(userId: number, payload: { channel: string;
   return postApi<WalletRechargeSummary>(`/wallet/users/${userId}/recharges`, payload)
 }
 
-export function listWalletRecharges(userId = 1) {
+export function listWalletRecharges(userId: number) {
   return getApi<WalletRechargeSummary[]>(`/wallet/users/${userId}/recharges`)
 }
 
@@ -1164,15 +1178,15 @@ export function createWalletWithdrawal(userId: number, payload: { amount: number
   return postApi<WalletWithdrawalSummary>(`/wallet/users/${userId}/withdrawals`, payload)
 }
 
-export function listWalletWithdrawals(userId = 1) {
+export function listWalletWithdrawals(userId: number) {
   return getApi<WalletWithdrawalSummary[]>(`/wallet/users/${userId}/withdrawals`)
 }
 
-export function listWalletFrozenItems(userId = 1) {
+export function listWalletFrozenItems(userId: number) {
   return getApi<WalletFrozenRecordSummary[]>(`/wallet/users/${userId}/frozen-items`)
 }
 
-export function listServiceFees(userId = 1) {
+export function listServiceFees(userId: number) {
   return getApi<ServiceFeeSummary[]>(`/payment/users/${userId}/service-fees`)
 }
 
@@ -1193,12 +1207,12 @@ export function listAdminWalletRecharges(status?: string) {
   return getApi<WalletRechargeSummary[]>(`/admin/wallet/recharges${query}`)
 }
 
-export function approveAdminWalletRecharge(id: number, adminId: number, note: string) {
-  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/approve?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+export function approveAdminWalletRecharge(id: number, _adminId: number, note: string) {
+  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/approve?note=${encodeURIComponent(note)}`, {})
 }
 
-export function rejectAdminWalletRecharge(id: number, adminId: number, note: string) {
-  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/reject?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+export function rejectAdminWalletRecharge(id: number, _adminId: number, note: string) {
+  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/reject?note=${encodeURIComponent(note)}`, {})
 }
 
 export function listAdminWalletWithdrawals(status?: string) {
@@ -1206,16 +1220,16 @@ export function listAdminWalletWithdrawals(status?: string) {
   return getApi<WalletWithdrawalSummary[]>(`/admin/wallet/withdrawals${query}`)
 }
 
-export function approveAdminWalletWithdrawal(id: number, adminId: number, note: string) {
-  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/approve?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+export function approveAdminWalletWithdrawal(id: number, _adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/approve?note=${encodeURIComponent(note)}`, {})
 }
 
-export function completeAdminWalletWithdrawal(id: number, adminId: number, note: string) {
-  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/complete?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+export function completeAdminWalletWithdrawal(id: number, _adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/complete?note=${encodeURIComponent(note)}`, {})
 }
 
-export function rejectAdminWalletWithdrawal(id: number, adminId: number, note: string) {
-  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/reject?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+export function rejectAdminWalletWithdrawal(id: number, _adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/reject?note=${encodeURIComponent(note)}`, {})
 }
 
 export function listAdminPaymentOrders(status?: string) {

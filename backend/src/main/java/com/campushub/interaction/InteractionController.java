@@ -1,5 +1,6 @@
 package com.campushub.interaction;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -19,11 +20,17 @@ public class InteractionController {
     private final CommentRepository commentRepository;
     private final FavoriteRepository favoriteRepository;
     private final InteractionService interactionService;
+    private final CurrentUserService currentUserService;
 
-    public InteractionController(CommentRepository commentRepository, FavoriteRepository favoriteRepository, InteractionService interactionService) {
+    public InteractionController(
+            CommentRepository commentRepository,
+            FavoriteRepository favoriteRepository,
+            InteractionService interactionService,
+            CurrentUserService currentUserService) {
         this.commentRepository = commentRepository;
         this.favoriteRepository = favoriteRepository;
         this.interactionService = interactionService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/{targetType}/{targetId}/comments")
@@ -45,25 +52,29 @@ public class InteractionController {
     }
 
     @PostMapping("/comments")
-    public ApiResponse<CommentSummary> comment(@RequestParam Long userId, @Valid @RequestBody CommentRequest request) {
-        return ApiResponse.ok(interactionService.comment(userId, request));
+    public ApiResponse<CommentSummary> comment(@RequestParam(required = false) Long userId, @Valid @RequestBody CommentRequest request) {
+        Long effectiveUserId = userId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(userId);
+        return ApiResponse.ok(interactionService.comment(effectiveUserId, request));
     }
 
     @PostMapping("/favorites")
-    public ApiResponse<Void> favorite(@RequestParam Long userId, @Valid @RequestBody FavoriteRequest request) {
-        interactionService.favorite(userId, request);
+    public ApiResponse<Void> favorite(@RequestParam(required = false) Long userId, @Valid @RequestBody FavoriteRequest request) {
+        Long effectiveUserId = userId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(userId);
+        interactionService.favorite(effectiveUserId, request);
         return ApiResponse.ok(null);
     }
 
     @DeleteMapping("/favorites")
-    public ApiResponse<Void> unfavorite(@RequestParam Long userId, @Valid @RequestBody FavoriteRequest request) {
-        interactionService.unfavorite(userId, request);
+    public ApiResponse<Void> unfavorite(@RequestParam(required = false) Long userId, @Valid @RequestBody FavoriteRequest request) {
+        Long effectiveUserId = userId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(userId);
+        interactionService.unfavorite(effectiveUserId, request);
         return ApiResponse.ok(null);
     }
 
     @GetMapping("/users/{userId}/comments")
     public ApiResponse<List<CommentSummary>> listUserComments(@PathVariable Long userId) {
-        List<CommentSummary> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        Long effectiveUserId = currentUserService.requireSameUser(userId);
+        List<CommentSummary> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(effectiveUserId).stream()
                 .map(CommentSummary::from)
                 .toList();
         return ApiResponse.ok(comments);
@@ -71,7 +82,8 @@ public class InteractionController {
 
     @GetMapping("/users/{userId}/favorites")
     public ApiResponse<List<FavoriteSummary>> listUserFavorites(@PathVariable Long userId) {
-        List<FavoriteSummary> favorites = favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        Long effectiveUserId = currentUserService.requireSameUser(userId);
+        List<FavoriteSummary> favorites = favoriteRepository.findByUserIdOrderByCreatedAtDesc(effectiveUserId).stream()
                 .map(FavoriteSummary::from)
                 .toList();
         return ApiResponse.ok(favorites);

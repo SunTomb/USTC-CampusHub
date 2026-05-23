@@ -225,7 +225,8 @@ async function publish() {
   try {
     publishForm.originDetail = publishForm.originDetail.trim()
     publishForm.destinationDetail = publishForm.destinationDetail.trim()
-    await publishRunnerTask(publishForm, auth.currentUser?.id ?? 1)
+    if (!auth.currentUser) return
+    await publishRunnerTask(publishForm, auth.currentUser.id)
     ElMessage.success('任务已发布')
     publisherOpen.value = false
     await loadTasks()

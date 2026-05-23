@@ -1,5 +1,6 @@
 package com.campushub.shop;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ServiceItemController {
 
     private final ShopService shopService;
+    private final CurrentUserService currentUserService;
 
-    public ServiceItemController(ShopService shopService) {
+    public ServiceItemController(ShopService shopService, CurrentUserService currentUserService) {
         this.shopService = shopService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -38,32 +41,35 @@ public class ServiceItemController {
     }
 
     @PostMapping("/shop/{shopId}")
-    public ApiResponse<ServiceItemSummary> createItem(@PathVariable Long shopId, @RequestParam Long ownerId, @Valid @RequestBody CreateServiceItemRequest request) {
-        return ApiResponse.ok(shopService.createItem(shopId, ownerId, request));
+    public ApiResponse<ServiceItemSummary> createItem(@PathVariable Long shopId, @RequestParam(required = false) Long ownerId, @Valid @RequestBody CreateServiceItemRequest request) {
+        Long effectiveOwnerId = ownerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(ownerId);
+        return ApiResponse.ok(shopService.createItem(shopId, effectiveOwnerId, request));
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<ServiceItemSummary> updateItem(@PathVariable Long id, @RequestParam Long ownerId, @Valid @RequestBody UpdateServiceItemRequest request) {
-        return ApiResponse.ok(shopService.updateItem(id, ownerId, request));
+    public ApiResponse<ServiceItemSummary> updateItem(@PathVariable Long id, @RequestParam(required = false) Long ownerId, @Valid @RequestBody UpdateServiceItemRequest request) {
+        Long effectiveOwnerId = ownerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(ownerId);
+        return ApiResponse.ok(shopService.updateItem(id, effectiveOwnerId, request));
     }
 
     @PostMapping("/{id}/publish")
-    public ApiResponse<ServiceItemSummary> publishItem(@PathVariable Long id, @RequestBody ShopActionRequest request) {
-        return ApiResponse.ok(shopService.publishItem(id, request.userId()));
+    public ApiResponse<ServiceItemSummary> publishItem(@PathVariable Long id, @RequestBody(required = false) ShopActionRequest request) {
+        return ApiResponse.ok(shopService.publishItem(id, currentUserService.requireUserId()));
     }
 
     @PostMapping("/{id}/pause")
-    public ApiResponse<ServiceItemSummary> pauseItem(@PathVariable Long id, @RequestBody ShopActionRequest request) {
-        return ApiResponse.ok(shopService.pauseItem(id, request.userId()));
+    public ApiResponse<ServiceItemSummary> pauseItem(@PathVariable Long id, @RequestBody(required = false) ShopActionRequest request) {
+        return ApiResponse.ok(shopService.pauseItem(id, currentUserService.requireUserId()));
     }
 
     @PostMapping("/{id}/off-shelf")
-    public ApiResponse<ServiceItemSummary> offShelfItem(@PathVariable Long id, @RequestBody ShopActionRequest request) {
-        return ApiResponse.ok(shopService.offShelfItem(id, request.userId()));
+    public ApiResponse<ServiceItemSummary> offShelfItem(@PathVariable Long id, @RequestBody(required = false) ShopActionRequest request) {
+        return ApiResponse.ok(shopService.offShelfItem(id, currentUserService.requireUserId()));
     }
 
     @PostMapping("/{id}/orders")
-    public ApiResponse<ServiceOrderSummary> createOrder(@PathVariable Long id, @RequestParam Long customerId, @Valid @RequestBody CreateServiceOrderRequest request) {
-        return ApiResponse.ok(shopService.createOrder(id, customerId, request));
+    public ApiResponse<ServiceOrderSummary> createOrder(@PathVariable Long id, @RequestParam(required = false) Long customerId, @Valid @RequestBody CreateServiceOrderRequest request) {
+        Long effectiveCustomerId = customerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(customerId);
+        return ApiResponse.ok(shopService.createOrder(id, effectiveCustomerId, request));
     }
 }

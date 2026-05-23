@@ -105,9 +105,12 @@ import EmptyState from '@/components/common/EmptyState.vue'
 const auth = useAuthStore()
 const loading = ref(false)
 const center = ref<CreditCenterSummary>()
-const userId = computed(() => auth.currentUser?.id ?? 1)
+const userId = computed(() => auth.currentUser?.id)
 
 async function load() {
+  if (!userId.value) {
+    return
+  }
   loading.value = true
   try {
     center.value = await getCreditCenter(userId.value)

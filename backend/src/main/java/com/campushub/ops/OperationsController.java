@@ -1,5 +1,6 @@
 package com.campushub.ops;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
@@ -39,6 +40,7 @@ public class OperationsController {
     private final ProjectAdService projectAdService;
     private final OperationsAnalyticsService operationsAnalyticsService;
     private final AnalyticsDateRangeParser analyticsDateRangeParser;
+    private final CurrentUserService currentUserService;
 
     public OperationsController(
             RewardTaskRepository rewardTaskRepository,
@@ -47,7 +49,8 @@ public class OperationsController {
             ServiceOrderRepository serviceOrderRepository,
             ProjectAdService projectAdService,
             OperationsAnalyticsService operationsAnalyticsService,
-            AnalyticsDateRangeParser analyticsDateRangeParser) {
+            AnalyticsDateRangeParser analyticsDateRangeParser,
+            CurrentUserService currentUserService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskIssueRepository = taskIssueRepository;
         this.roleApplicationRepository = roleApplicationRepository;
@@ -55,6 +58,7 @@ public class OperationsController {
         this.projectAdService = projectAdService;
         this.operationsAnalyticsService = operationsAnalyticsService;
         this.analyticsDateRangeParser = analyticsDateRangeParser;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/dashboard")
@@ -174,38 +178,38 @@ public class OperationsController {
     @PostMapping("/project-ads/{id}/approve")
     public ApiResponse<ProjectAdSummary> approveProjectAd(
             @PathVariable Long id,
-            @RequestParam Long adminId,
+            @RequestParam(required = false) Long adminId,
             @RequestBody(required = false) ProjectAdReviewRequest request) {
-        return ApiResponse.ok(projectAdService.approve(id, adminId, request));
+        return ApiResponse.ok(projectAdService.approve(id, currentUserService.requireAdminId(), request));
     }
 
     @PostMapping("/project-ads/{id}/reject")
     public ApiResponse<ProjectAdSummary> rejectProjectAd(
             @PathVariable Long id,
-            @RequestParam Long adminId,
+            @RequestParam(required = false) Long adminId,
             @RequestBody(required = false) ProjectAdReviewRequest request) {
-        return ApiResponse.ok(projectAdService.reject(id, adminId, request));
+        return ApiResponse.ok(projectAdService.reject(id, currentUserService.requireAdminId(), request));
     }
 
     @PostMapping("/project-ads/{id}/feature")
     public ApiResponse<ProjectAdSummary> featureProjectAd(
             @PathVariable Long id,
-            @RequestParam Long adminId,
+            @RequestParam(required = false) Long adminId,
             @RequestBody(required = false) ProjectAdReviewRequest request) {
-        return ApiResponse.ok(projectAdService.feature(id, adminId, request));
+        return ApiResponse.ok(projectAdService.feature(id, currentUserService.requireAdminId(), request));
     }
 
     @PostMapping("/project-ads/{id}/unfeature")
-    public ApiResponse<ProjectAdSummary> unfeatureProjectAd(@PathVariable Long id, @RequestParam Long adminId) {
-        return ApiResponse.ok(projectAdService.unfeature(id, adminId));
+    public ApiResponse<ProjectAdSummary> unfeatureProjectAd(@PathVariable Long id, @RequestParam(required = false) Long adminId) {
+        return ApiResponse.ok(projectAdService.unfeature(id, currentUserService.requireAdminId()));
     }
 
     @PostMapping("/project-ads/{id}/block")
     public ApiResponse<ProjectAdSummary> blockProjectAd(
             @PathVariable Long id,
-            @RequestParam Long adminId,
+            @RequestParam(required = false) Long adminId,
             @RequestBody(required = false) ProjectAdReviewRequest request) {
-        return ApiResponse.ok(projectAdService.block(id, adminId, request));
+        return ApiResponse.ok(projectAdService.block(id, currentUserService.requireAdminId(), request));
     }
 
     private AnalyticsDateRange parseRange(String startDate, String endDate) {

@@ -1,5 +1,6 @@
 package com.campushub.notification;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,14 +14,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final CurrentUserService currentUserService;
 
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService, CurrentUserService currentUserService) {
         this.notificationService = notificationService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/users/{userId}/notifications")
     public ApiResponse<List<StationNotificationSummary>> listNotifications(@PathVariable Long userId) {
-        return ApiResponse.ok(notificationService.listForUser(userId));
+        return ApiResponse.ok(notificationService.listForUser(currentUserService.requireSameUser(userId)));
     }
 
     @PostMapping("/notifications/{id}/read")

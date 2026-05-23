@@ -64,9 +64,10 @@ Key conventions:
 Important flows:
 
 - Authentication is in `auth/AuthController`, backed by BCrypt password verification and JJWT token generation.
+- Phase 10 security hardening adds JWT request authentication, `/api/auth/me`, current-user helpers, `ROLE_ADMIN` enforcement for `/api/admin/**`, authenticated writes, and same-user checks for private user paths.
 - Email-code registration is implemented under `auth`: send-code and register endpoints normalize and validate `edu.cn` email addresses, store only hashed verification codes, enforce TTL/resend/attempt limits, create a user, assign `ROLE_STUDENT` when present, and create a wallet account.
 - Wallet, payment, moderation, interaction, and file APIs use the shared target model where appropriate: `target_type` + `target_id`.
-- Current `SecurityConfig` permits `/api/**` for the course prototype; token-aware frontend state exists but most backend APIs are still open for local demonstration.
+- Public business listing/detail GET APIs remain anonymous for campus browsing; write operations and private user data require JWT authentication. Payment-center callbacks keep their internal token/signature boundary rather than user JWT.
 
 ### Configuration
 
@@ -477,4 +478,39 @@ Important constraints remain:
 - Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
 - Avoid PowerShell under CC Switch + Codex Provider.
 - Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
+
+## Phase 10 local implementation handoff, 2026-05-24
+
+Current branch `phase9-wallet-escrow` contains in-progress Phase 10 auth/security hardening changes that are locally implemented but not yet committed, pushed, server-built, deployed, or browser-verified.
+
+Implemented locally:
+
+- New Phase 10 docs: `docs/superpowers/specs/2026-05-24-campushub-phase10-auth-security-design.md` and `docs/superpowers/plans/2026-05-24-campushub-phase10-auth-security-upgrade.md`.
+- Backend JWT infrastructure: `JwtTokenService`, request filter, current-user principal/helper, role lookup, `/api/auth/me`, and role-aware current-user summary.
+- `SecurityConfig` now uses stateless JWT, permits auth/public browse/payment callback routes, requires `ROLE_ADMIN` for `/api/admin/**`, and requires login for other private API routes.
+- Controller hardening derives acting user/admin from JWT for critical writes, private reads, wallet/payment operations, governance/ops/admin actions, notifications, credit, shop/task/project/goods flows, and file binding.
+- File binding now checks uploader ownership and target ownership for goods, project ads, reward tasks, shops, and service items.
+- Frontend auth state restores via `/auth/me`, has 401/403 handling and route guards, and removes production-sensitive demo user/admin fallbacks from protected flows.
+- Additional local safety fixes after interruption: payment order detail requires payer/admin access, `/api/goods/orders/**` is no longer covered by anonymous goods-detail GET matching, and `ResponseStatusException` maps to `ApiResponse` with proper status.
+
+Local verification performed:
+
+- `npm --prefix frontend run build` succeeded after the latest frontend changes; only known Vite large chunk and dependency pure-comment warnings appeared.
+- `git diff --check` and `git diff --cached --check` reported no whitespace errors.
+- Backend tests/build were not run locally because this machine still lacks `mvn` and the repository has no Maven wrapper.
+
+Required next verification before deployment:
+
+1. Review/stage only intended Phase 10 files; exclude `.claude/`, `.superpowers/`, local backups, course TeX files, and production handoff notes unless explicitly desired.
+2. Run backend verification in an available environment, preferably low-impact server Docker backend build.
+3. Run API smoke for anonymous public reads, anonymous write rejection, normal-user `/api/auth/me` and admin 403, admin `/api/admin/**` access, private user mismatch rejection, and payment-center callback boundary.
+4. Run Playwriter desktop/mobile checks for public browse, login, wallet, role applications, notifications, normal-user no-permission admin UX, and admin pages.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V12; add V13+ only for future schema changes.
+- Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
+- Original beta-readiness work is now Phase 11 after Phase 10 auth/security is verified and deployed.
 

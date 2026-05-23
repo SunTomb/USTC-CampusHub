@@ -4,16 +4,9 @@ import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.validation.Valid;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import javax.crypto.SecretKey;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,23 +19,23 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RegistrationService registrationService;
-    private final SecretKey jwtKey;
-    private final String issuer;
-    private final long expirationMinutes;
+    private final JwtTokenService jwtTokenService;
+    private final CurrentUserService currentUserService;
+    private final UserRoleLookup userRoleLookup;
 
     public AuthController(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             RegistrationService registrationService,
-            @Value("${campushub.jwt.secret}") String jwtSecret,
-            @Value("${campushub.jwt.issuer}") String issuer,
-            @Value("${campushub.jwt.expiration-minutes}") long expirationMinutes) {
+            JwtTokenService jwtTokenService,
+            CurrentUserService currentUserService,
+            UserRoleLookup userRoleLookup) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.registrationService = registrationService;
-        this.jwtKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        this.issuer = issuer;
-        this.expirationMinutes = expirationMinutes;
+        this.jwtTokenService = jwtTokenService;
+        this.currentUserService = currentUserService;
+        this.userRoleLookup = userRoleLookup;
     }
 
     @PostMapping("/register/send-code")
@@ -65,20 +58,17 @@ public class AuthController {
         if (!"ACTIVE".equals(user.getStatus())) {
             throw new BusinessException("账号状态不可用");
         }
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(expirationMinutes, ChronoUnit.MINUTES);
-        String token = Jwts.builder()
-                .issuer(issuer)
-                .subject(user.getUsername())
-                .claim("userId", user.getId())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(expiresAt))
-                .signWith(jwtKey)
-                .compact();
+        String token = jwtTokenService.issueToken(user.getId(), user.getUsername());
         return ApiResponse.ok(new LoginResponse(
                 "Bearer",
                 token,
-                expirationMinutes,
-                CurrentUserSummary.from(user)));
+                jwtTokenService.expirationMinutes(),
+                CurrentUserSummary.from(user, userRoleLookup.findRoleCodes(user.getId()))));
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<CurrentUserSummary> me() {
+        User user = currentUserService.requireUser();
+        return ApiResponse.ok(CurrentUserSummary.from(user, userRoleLookup.findRoleCodes(user.getId())));
     }
 }

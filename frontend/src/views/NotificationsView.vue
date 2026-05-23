@@ -47,7 +47,11 @@ const notifications = ref<StationNotificationSummary[]>([])
 async function load() {
   loading.value = true
   try {
-    notifications.value = await listNotifications(auth.currentUser?.id ?? 1)
+    if (!auth.currentUser?.id) {
+      notifications.value = []
+      return
+    }
+    notifications.value = await listNotifications(auth.currentUser.id)
   } finally {
     loading.value = false
   }

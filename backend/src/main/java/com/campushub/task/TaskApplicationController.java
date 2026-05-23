@@ -1,5 +1,6 @@
 package com.campushub.task;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
 import java.util.List;
@@ -13,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskApplicationController {
 
     private final TaskApplicationRepository taskApplicationRepository;
+    private final CurrentUserService currentUserService;
 
-    public TaskApplicationController(TaskApplicationRepository taskApplicationRepository) {
+    public TaskApplicationController(TaskApplicationRepository taskApplicationRepository, CurrentUserService currentUserService) {
         this.taskApplicationRepository = taskApplicationRepository;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -43,8 +46,9 @@ public class TaskApplicationController {
 
     @GetMapping("/applicant/{applicantId}")
     public ApiResponse<List<TaskApplicationSummary>> listApplicantApplications(@PathVariable Long applicantId) {
+        Long effectiveApplicantId = currentUserService.requireSameUser(applicantId);
         List<TaskApplicationSummary> applications = taskApplicationRepository
-                .findByApplicantIdOrderByCreatedAtDesc(applicantId).stream()
+                .findByApplicantIdOrderByCreatedAtDesc(effectiveApplicantId).stream()
                 .map(TaskApplicationSummary::from)
                 .toList();
         return ApiResponse.ok(applications);

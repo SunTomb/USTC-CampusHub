@@ -1,5 +1,6 @@
 package com.campushub.file;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
 import jakarta.validation.Valid;
@@ -18,11 +19,17 @@ public class FileController {
     private final FileResourceRepository fileResourceRepository;
     private final FileBindingRepository fileBindingRepository;
     private final FileUploadService fileUploadService;
+    private final CurrentUserService currentUserService;
 
-    public FileController(FileResourceRepository fileResourceRepository, FileBindingRepository fileBindingRepository, FileUploadService fileUploadService) {
+    public FileController(
+            FileResourceRepository fileResourceRepository,
+            FileBindingRepository fileBindingRepository,
+            FileUploadService fileUploadService,
+            CurrentUserService currentUserService) {
         this.fileResourceRepository = fileResourceRepository;
         this.fileBindingRepository = fileBindingRepository;
         this.fileUploadService = fileUploadService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -52,6 +59,6 @@ public class FileController {
 
     @PostMapping("/bindings")
     public ApiResponse<FileBindingSummary> bind(@Valid @RequestBody BindFileRequest request) {
-        return ApiResponse.ok(fileUploadService.bindExisting(request));
+        return ApiResponse.ok(fileUploadService.bindExisting(request, currentUserService.requireUserId(), currentUserService.isAdmin()));
     }
 }

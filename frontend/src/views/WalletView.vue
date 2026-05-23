@@ -175,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   createServiceFeePayment,
@@ -195,8 +195,10 @@ import {
   type WalletWithdrawalSummary,
 } from '@/api/campushub'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useAuthStore } from '@/stores/auth'
 
-const currentUserId = 1
+const auth = useAuthStore()
+const currentUserId = computed(() => auth.currentUser?.id)
 const account = ref<WalletAccountSummary>()
 const flows = ref<WalletFlowSummary[]>([])
 const serviceFees = ref<ServiceFeeSummary[]>([])
@@ -213,13 +215,18 @@ const withdrawalForm = reactive({ channel: 'WECHAT', amount: 10, accountSnapshot
 async function loadWallet() {
   loading.value = true
   try {
+    const userId = currentUserId.value
+    if (!userId) {
+      ElMessage.warning('请先登录')
+      return
+    }
     const [walletAccount, walletFlows, fees, rechargeData, withdrawalData, frozenData] = await Promise.all([
-      getWallet(currentUserId),
-      listWalletFlows(currentUserId),
-      listServiceFees(currentUserId),
-      listWalletRecharges(currentUserId),
-      listWalletWithdrawals(currentUserId),
-      listWalletFrozenItems(currentUserId),
+      getWallet(userId),
+      listWalletFlows(userId),
+      listServiceFees(userId),
+      listWalletRecharges(userId),
+      listWalletWithdrawals(userId),
+      listWalletFrozenItems(userId),
     ])
     account.value = walletAccount
     flows.value = walletFlows
@@ -252,7 +259,12 @@ async function payFee(feeId: number) {
 
 async function submitRecharge() {
   try {
-    const result = await createWalletRecharge(currentUserId, rechargeForm)
+    const userId = currentUserId.value
+    if (!userId) {
+      ElMessage.warning('请先登录')
+      return
+    }
+    const result = await createWalletRecharge(userId, rechargeForm)
     ElMessage.success(result.channel === 'WECHAT' ? '微信充值已提交人工审核' : '充值支付单已创建')
     rechargeDialogVisible.value = false
     if (result.paymentOrderNo) {
@@ -266,7 +278,12 @@ async function submitRecharge() {
 
 async function submitWithdrawal() {
   try {
-    await createWalletWithdrawal(currentUserId, withdrawalForm)
+    const userId = currentUserId.value
+    if (!userId) {
+      ElMessage.warning('请先登录')
+      return
+    }
+    await createWalletWithdrawal(userId, withdrawalForm)
     ElMessage.success('提现申请已提交，金额已冻结等待审核')
     withdrawalDialogVisible.value = false
     await loadWallet()

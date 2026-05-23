@@ -1,5 +1,6 @@
 package com.campushub.projectad;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProjectAdController {
 
     private final ProjectAdService projectAdService;
+    private final CurrentUserService currentUserService;
 
-    public ProjectAdController(ProjectAdService projectAdService) {
+    public ProjectAdController(ProjectAdService projectAdService, CurrentUserService currentUserService) {
         this.projectAdService = projectAdService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -38,34 +41,39 @@ public class ProjectAdController {
 
     @GetMapping("/users/{userId}")
     public ApiResponse<List<ProjectAdSummary>> userProjectAds(@PathVariable Long userId) {
-        return ApiResponse.ok(projectAdService.listByPublisher(userId));
+        return ApiResponse.ok(projectAdService.listByPublisher(currentUserService.requireSameUser(userId)));
     }
 
     @PostMapping
-    public ApiResponse<ProjectAdSummary> createProjectAd(@RequestParam Long publisherId, @Valid @RequestBody ProjectAdRequest request) {
-        return ApiResponse.ok(projectAdService.create(publisherId, request));
+    public ApiResponse<ProjectAdSummary> createProjectAd(@RequestParam(required = false) Long publisherId, @Valid @RequestBody ProjectAdRequest request) {
+        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        return ApiResponse.ok(projectAdService.create(effectivePublisherId, request));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<ProjectAdDetailSummary> getProjectAd(@PathVariable Long id, @RequestParam(required = false) Long viewerId) {
-        return ApiResponse.ok(projectAdService.getDetail(id, viewerId));
+        Long effectiveViewerId = currentUserService.optionalUserId().orElse(viewerId);
+        return ApiResponse.ok(projectAdService.getDetail(id, effectiveViewerId));
     }
 
     @PutMapping("/{id}")
     public ApiResponse<ProjectAdSummary> updateProjectAd(
             @PathVariable Long id,
-            @RequestParam Long publisherId,
+            @RequestParam(required = false) Long publisherId,
             @Valid @RequestBody ProjectAdRequest request) {
-        return ApiResponse.ok(projectAdService.update(id, publisherId, request));
+        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        return ApiResponse.ok(projectAdService.update(id, effectivePublisherId, request));
     }
 
     @PostMapping("/{id}/submit")
-    public ApiResponse<ProjectAdSummary> submitProjectAd(@PathVariable Long id, @RequestParam Long publisherId) {
-        return ApiResponse.ok(projectAdService.submit(id, publisherId));
+    public ApiResponse<ProjectAdSummary> submitProjectAd(@PathVariable Long id, @RequestParam(required = false) Long publisherId) {
+        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        return ApiResponse.ok(projectAdService.submit(id, effectivePublisherId));
     }
 
     @PostMapping("/{id}/close")
-    public ApiResponse<ProjectAdSummary> closeProjectAd(@PathVariable Long id, @RequestParam Long publisherId) {
-        return ApiResponse.ok(projectAdService.close(id, publisherId));
+    public ApiResponse<ProjectAdSummary> closeProjectAd(@PathVariable Long id, @RequestParam(required = false) Long publisherId) {
+        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        return ApiResponse.ok(projectAdService.close(id, effectivePublisherId));
     }
 }

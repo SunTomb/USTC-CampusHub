@@ -1,5 +1,6 @@
 package com.campushub.review;
 
+import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -16,14 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final CurrentUserService currentUserService;
 
-    public ReviewController(ReviewService reviewService) {
+    public ReviewController(ReviewService reviewService, CurrentUserService currentUserService) {
         this.reviewService = reviewService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping
-    public ApiResponse<ReviewSummary> create(@RequestParam Long reviewerId, @Valid @RequestBody ReviewRequest request) {
-        return ApiResponse.ok(reviewService.create(reviewerId, request));
+    public ApiResponse<ReviewSummary> create(@RequestParam(required = false) Long reviewerId, @Valid @RequestBody ReviewRequest request) {
+        Long effectiveReviewerId = reviewerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(reviewerId);
+        return ApiResponse.ok(reviewService.create(effectiveReviewerId, request));
     }
 
     @GetMapping("/users/{userId}")

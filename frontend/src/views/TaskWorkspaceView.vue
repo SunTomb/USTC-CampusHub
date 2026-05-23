@@ -70,29 +70,39 @@
 
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { advanceRunnerTask, completeRunnerTaskWithCode, reportRunnerTaskIssue } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const taskId = computed(() => Number(route.params.id))
 const activeStep = 1
 const issueForm = reactive({ issueType: 'LOCATION_ERROR', description: '' })
 
+async function requireUserId() {
+  if (!auth.currentUser) {
+    ElMessage.warning('请先登录')
+    await router.push('/auth')
+    throw new Error('请先登录')
+  }
+  return auth.currentUser.id
+}
+
 async function advance(nextStatus: string) {
-  await advanceRunnerTask(taskId.value, auth.currentUser?.id ?? 2, nextStatus, { note: '工作台操作' })
+  await advanceRunnerTask(taskId.value, await requireUserId(), nextStatus, { note: '工作台操作' })
   ElMessage.success('状态已更新')
 }
 
 async function complete() {
-  await completeRunnerTaskWithCode(taskId.value, auth.currentUser?.id ?? 2, { note: '已送达', completionCode: '123456' })
+  await completeRunnerTaskWithCode(taskId.value, await requireUserId(), { note: '已送达', completionCode: '123456' })
   ElMessage.success('任务已完成')
 }
 
 async function reportIssue() {
-  await reportRunnerTaskIssue(taskId.value, auth.currentUser?.id ?? 2, issueForm)
+  await reportRunnerTaskIssue(taskId.value, await requireUserId(), issueForm)
   ElMessage.success('异常已上报')
 }
 </script>
