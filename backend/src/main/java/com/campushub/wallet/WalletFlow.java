@@ -35,17 +35,40 @@ public class WalletFlow {
     @Column(nullable = false)
     private String direction;
 
+    @Column(name = "flow_type", nullable = false)
+    private String flowType;
+
     @Column(nullable = false)
     private BigDecimal amount;
 
     @Column(name = "balance_after", nullable = false)
     private BigDecimal balanceAfter;
 
+    @Column(name = "available_balance_after", nullable = false)
+    private BigDecimal availableBalanceAfter;
+
+    @Column(name = "frozen_balance_after", nullable = false)
+    private BigDecimal frozenBalanceAfter;
+
     @Column(name = "business_type", nullable = false)
     private String businessType;
 
     @Column(name = "business_id")
     private Long businessId;
+
+    @Column(name = "idempotency_key", unique = true)
+    private String idempotencyKey;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "counterparty_user_id")
+    private User counterpartyUser;
+
+    @Column(name = "created_by", nullable = false)
+    private String createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operator_id")
+    private User operator;
 
     private String remark;
 
@@ -65,14 +88,55 @@ public class WalletFlow {
             String businessType,
             Long businessId,
             String remark) {
+        this(
+                walletAccount,
+                user,
+                flowNo,
+                direction,
+                "LEGACY",
+                amount,
+                balanceAfter,
+                walletAccount.getFrozenBalance(),
+                businessType,
+                businessId,
+                null,
+                null,
+                "SYSTEM",
+                null,
+                remark);
+    }
+
+    public WalletFlow(
+            WalletAccount walletAccount,
+            User user,
+            String flowNo,
+            String direction,
+            String flowType,
+            BigDecimal amount,
+            BigDecimal availableBalanceAfter,
+            BigDecimal frozenBalanceAfter,
+            String businessType,
+            Long businessId,
+            String idempotencyKey,
+            User counterpartyUser,
+            String createdBy,
+            User operator,
+            String remark) {
         this.walletAccount = walletAccount;
         this.user = user;
         this.flowNo = flowNo;
         this.direction = direction;
+        this.flowType = flowType == null ? "LEGACY" : flowType;
         this.amount = amount;
-        this.balanceAfter = balanceAfter;
+        this.balanceAfter = availableBalanceAfter;
+        this.availableBalanceAfter = availableBalanceAfter;
+        this.frozenBalanceAfter = frozenBalanceAfter == null ? BigDecimal.ZERO : frozenBalanceAfter;
         this.businessType = businessType;
         this.businessId = businessId;
+        this.idempotencyKey = idempotencyKey;
+        this.counterpartyUser = counterpartyUser;
+        this.createdBy = createdBy == null ? "SYSTEM" : createdBy;
+        this.operator = operator;
         this.remark = remark;
     }
 
@@ -96,6 +160,10 @@ public class WalletFlow {
         return direction;
     }
 
+    public String getFlowType() {
+        return flowType;
+    }
+
     public BigDecimal getAmount() {
         return amount;
     }
@@ -104,12 +172,36 @@ public class WalletFlow {
         return balanceAfter;
     }
 
+    public BigDecimal getAvailableBalanceAfter() {
+        return availableBalanceAfter;
+    }
+
+    public BigDecimal getFrozenBalanceAfter() {
+        return frozenBalanceAfter;
+    }
+
     public String getBusinessType() {
         return businessType;
     }
 
     public Long getBusinessId() {
         return businessId;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public User getCounterpartyUser() {
+        return counterpartyUser;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public User getOperator() {
+        return operator;
     }
 
     public String getRemark() {

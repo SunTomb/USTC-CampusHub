@@ -20,4 +20,10 @@ public interface GoodsOrderRepository extends JpaRepository<GoodsOrder, Long> {
 
     @EntityGraph(attributePaths = {"goods", "buyer", "seller"})
     List<GoodsOrder> findBySellerIdOrderByCreatedAtDesc(Long sellerId);
+
+    @EntityGraph(attributePaths = {"goods", "buyer", "seller"})
+    List<GoodsOrder> findTop200ByTradeModeOrderByCreatedAtDesc(String tradeMode);
+
+    @EntityGraph(attributePaths = {"goods", "buyer", "seller"})
+    List<GoodsOrder> findTop200ByEscrowStatusOrderByCreatedAtDesc(String escrowStatus);
 }
