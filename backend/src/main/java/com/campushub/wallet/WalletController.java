@@ -2,9 +2,12 @@ package com.campushub.wallet;
 
 import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +17,12 @@ public class WalletController {
 
     private final WalletAccountRepository walletAccountRepository;
     private final WalletFlowRepository walletFlowRepository;
+    private final WalletOperationService walletOperationService;
 
-    public WalletController(WalletAccountRepository walletAccountRepository, WalletFlowRepository walletFlowRepository) {
+    public WalletController(WalletAccountRepository walletAccountRepository, WalletFlowRepository walletFlowRepository, WalletOperationService walletOperationService) {
         this.walletAccountRepository = walletAccountRepository;
         this.walletFlowRepository = walletFlowRepository;
+        this.walletOperationService = walletOperationService;
     }
 
     @GetMapping("/accounts")
@@ -41,5 +46,15 @@ public class WalletController {
                 .map(WalletFlowSummary::from)
                 .toList();
         return ApiResponse.ok(flows);
+    }
+
+    @PostMapping("/users/{userId}/recharges")
+    public ApiResponse<WalletRechargeSummary> createRecharge(@PathVariable Long userId, @Valid @RequestBody WalletRechargeRequest request) {
+        return ApiResponse.ok(walletOperationService.createRecharge(userId, request));
+    }
+
+    @GetMapping("/users/{userId}/recharges")
+    public ApiResponse<List<WalletRechargeSummary>> listRecharges(@PathVariable Long userId) {
+        return ApiResponse.ok(walletOperationService.listUserRecharges(userId));
     }
 }

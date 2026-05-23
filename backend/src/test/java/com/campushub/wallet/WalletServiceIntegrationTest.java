@@ -34,6 +34,12 @@ class WalletServiceIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private WalletOperationService walletOperationService;
+
+    @Autowired
+    private WalletRechargeOrderRepository walletRechargeOrderRepository;
+
     @Test
     void walletAccountAndFlowExposePhase9LedgerFields() {
         WalletAccount wallet = walletAccountRepository.findByUserId(1L).orElseThrow();
@@ -86,6 +92,32 @@ class WalletServiceIntegrationTest {
         assertThat(buyerWallet.getFrozenBalance()).isEqualByComparingTo("0.00");
         assertThat(sellerWallet.getBalance()).isEqualByComparingTo("220.00");
         assertThat(walletFlowRepository.findByIdempotencyKey("credit-1")).isPresent();
+    }
+
+    @Test
+    void alipayRechargeCreatesPaymentOrderAndCreditsBalanceAfterCallback() {
+        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        WalletRechargeSummary summary = walletOperationService.createRecharge(user.getId(), new WalletRechargeRequest("ALIPAY", new BigDecimal("100.00"), "支付宝充值"));
+
+        assertThat(summary.channelFee()).isEqualByComparingTo("0.60");
+        assertThat(summary.payAmount()).isEqualByComparingTo("100.60");
+        assertThat(summary.status()).isEqualTo("PENDING_PAYMENT");
+        assertThat(summary.paymentOrderNo()).isNotBlank();
+    }
+
+    @Test
+    void wechatRechargeWaitsForAdminApprovalAndThenCreditsBalance() {
+        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User admin = userRepository.findByEmail("admin@mail.ustc.edu.cn").orElseThrow();
+        WalletRechargeSummary summary = walletOperationService.createRecharge(user.getId(), new WalletRechargeRequest("WECHAT", new BigDecimal("30.00"), "微信人工充值"));
+
+        assertThat(summary.status()).isEqualTo("PENDING_REVIEW");
+        walletOperationService.approveWechatRecharge(summary.id(), admin.getId(), "已确认微信收款");
+
+        WalletAccount wallet = walletAccountRepository.findByUserId(user.getId()).orElseThrow();
+        WalletRechargeOrder order = walletRechargeOrderRepository.findById(summary.id()).orElseThrow();
+        assertThat(wallet.getBalance()).isEqualByComparingTo("230.00");
+        assertThat(order.getStatus()).isEqualTo("PAID");
     }
 
     @Test

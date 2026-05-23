@@ -7,6 +7,7 @@ import com.campushub.wallet.WalletAccount;
 import com.campushub.wallet.WalletAccountRepository;
 import com.campushub.wallet.WalletFlow;
 import com.campushub.wallet.WalletFlowRepository;
+import com.campushub.wallet.WalletOperationService;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class PaymentService {
     private final RoleApplicationRepository roleApplicationRepository;
     private final WalletAccountRepository walletAccountRepository;
     private final WalletFlowRepository walletFlowRepository;
+    private final WalletOperationService walletOperationService;
 
     public PaymentService(
             PaymentProvider paymentProvider,
@@ -31,7 +33,8 @@ public class PaymentService {
             PaymentCenterProperties paymentCenterProperties,
             RoleApplicationRepository roleApplicationRepository,
             WalletAccountRepository walletAccountRepository,
-            WalletFlowRepository walletFlowRepository) {
+            WalletFlowRepository walletFlowRepository,
+            WalletOperationService walletOperationService) {
         this.paymentProvider = paymentProvider;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.paymentOrderRepository = paymentOrderRepository;
@@ -40,6 +43,7 @@ public class PaymentService {
         this.roleApplicationRepository = roleApplicationRepository;
         this.walletAccountRepository = walletAccountRepository;
         this.walletFlowRepository = walletFlowRepository;
+        this.walletOperationService = walletOperationService;
     }
 
     @Transactional
@@ -190,6 +194,9 @@ public class PaymentService {
             }
             if ("ROLE_DEPOSIT".equals(order.getBusinessType())) {
                 markRoleDepositPaid(order);
+            }
+            if ("WALLET_RECHARGE".equals(order.getBusinessType())) {
+                walletOperationService.markRechargePaidByPaymentOrder(order.getOrderNo());
             }
             return;
         }
