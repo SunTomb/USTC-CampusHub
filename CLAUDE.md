@@ -445,7 +445,7 @@ Future payment direction from 2026-05-23:
 
 ## Latest Phase 9 deployment and Phase 10 handoff, 2026-05-23
 
-Latest deployed `phase9-wallet-escrow` includes Phase 9 wallet ledger, recharge/withdrawal operations, goods online escrow, and wallet operations UI through commit `2ecf065` (`fix wallet escrow migration index conflict`). Production `/opt/campushub` is on `phase9-wallet-escrow` at `2ecf065`; backend/web images were rebuilt and backend/web containers restarted successfully.
+Latest deployed `phase9-wallet-escrow` includes Phase 9 wallet ledger, recharge/withdrawal operations, goods online escrow, and wallet operations UI through commit `1fe0029` (`document phase 9 deployment handoff`). Production `/opt/campushub` is on `phase9-wallet-escrow` at `1fe0029`; backend/web images were rebuilt and backend/web containers restarted successfully.
 
 Implemented Phase 9:
 
