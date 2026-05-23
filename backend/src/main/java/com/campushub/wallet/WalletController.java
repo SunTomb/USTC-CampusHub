@@ -67,4 +67,9 @@ public class WalletController {
     public ApiResponse<List<WalletWithdrawalSummary>> listWithdrawals(@PathVariable Long userId) {
         return ApiResponse.ok(walletOperationService.listUserWithdrawals(userId));
     }
+
+    @GetMapping("/users/{userId}/frozen-items")
+    public ApiResponse<List<WalletFrozenRecordSummary>> listUserFrozenItems(@PathVariable Long userId) {
+        return ApiResponse.ok(walletOperationService.listUserFrozenRecords(userId));
+    }
 }

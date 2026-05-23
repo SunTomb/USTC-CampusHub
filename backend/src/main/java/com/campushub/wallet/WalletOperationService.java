@@ -26,6 +26,8 @@ public class WalletOperationService {
     private final PaymentOrderRepository paymentOrderRepository;
     private final PaymentCenterProperties paymentCenterProperties;
     private final WalletService walletService;
+    private final WalletFlowRepository walletFlowRepository;
+    private final WalletFrozenRecordRepository walletFrozenRecordRepository;
 
     public WalletOperationService(
             WalletRechargeOrderRepository rechargeOrderRepository,
@@ -35,7 +37,9 @@ public class WalletOperationService {
             PaymentProvider paymentProvider,
             PaymentOrderRepository paymentOrderRepository,
             PaymentCenterProperties paymentCenterProperties,
-            WalletService walletService) {
+            WalletService walletService,
+            WalletFlowRepository walletFlowRepository,
+            WalletFrozenRecordRepository walletFrozenRecordRepository) {
         this.rechargeOrderRepository = rechargeOrderRepository;
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.userRepository = userRepository;
@@ -44,6 +48,8 @@ public class WalletOperationService {
         this.paymentOrderRepository = paymentOrderRepository;
         this.paymentCenterProperties = paymentCenterProperties;
         this.walletService = walletService;
+        this.walletFlowRepository = walletFlowRepository;
+        this.walletFrozenRecordRepository = walletFrozenRecordRepository;
     }
 
     @Transactional
@@ -164,6 +170,27 @@ public class WalletOperationService {
                 ? withdrawalRequestRepository.findTop200ByOrderByCreatedAtDesc()
                 : withdrawalRequestRepository.findTop200ByStatusOrderByCreatedAtDesc(status);
         return requests.stream().map(WalletWithdrawalSummary::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletFlowSummary> listAdminFlows() {
+        return walletFlowRepository.findTop300ByOrderByCreatedAtDesc().stream()
+                .map(WalletFlowSummary::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletFrozenRecordSummary> listAdminFrozenRecords() {
+        return walletFrozenRecordRepository.findTop200ByOrderByFrozenAtDesc().stream()
+                .map(WalletFrozenRecordSummary::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<WalletFrozenRecordSummary> listUserFrozenRecords(Long userId) {
+        return walletFrozenRecordRepository.findByUserIdOrderByFrozenAtDesc(userId).stream()
+                .map(WalletFrozenRecordSummary::from)
+                .toList();
     }
 
     private WalletRechargeSummary createAlipayRecharge(User user, BigDecimal amount) {

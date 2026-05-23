@@ -53,4 +53,14 @@ public class AdminWalletController {
     public ApiResponse<WalletWithdrawalSummary> rejectWithdrawal(@PathVariable Long id, @RequestParam Long adminId, @RequestParam(defaultValue = "提现审核拒绝") String note) {
         return ApiResponse.ok(walletOperationService.rejectWithdrawal(id, adminId, note));
     }
+
+    @GetMapping("/flows")
+    public ApiResponse<List<WalletFlowSummary>> listFlows() {
+        return ApiResponse.ok(walletOperationService.listAdminFlows());
+    }
+
+    @GetMapping("/frozen-records")
+    public ApiResponse<List<WalletFrozenRecordSummary>> listFrozenRecords() {
+        return ApiResponse.ok(walletOperationService.listAdminFrozenRecords());
+    }
 }
