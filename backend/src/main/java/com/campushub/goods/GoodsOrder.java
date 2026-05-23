@@ -79,17 +79,14 @@ public class GoodsOrder {
     @Column(name = "escrow_released_at")
     private LocalDateTime escrowReleasedAt;
 
-    @Column(name = "escrow_canceled_at")
-    private LocalDateTime escrowCanceledAt;
+    @Column(name = "escrow_unfrozen_at")
+    private LocalDateTime escrowUnfrozenAt;
 
-    @Column(name = "escrow_disputed_at")
-    private LocalDateTime escrowDisputedAt;
+    @Column(name = "cancel_reason")
+    private String cancelReason;
 
-    @Column(name = "escrow_cancel_reason")
-    private String escrowCancelReason;
-
-    @Column(name = "escrow_dispute_reason")
-    private String escrowDisputeReason;
+    @Column(name = "dispute_reason")
+    private String disputeReason;
 
     public Long getId() {
         return id;
@@ -167,20 +164,16 @@ public class GoodsOrder {
         return escrowReleasedAt;
     }
 
-    public LocalDateTime getEscrowCanceledAt() {
-        return escrowCanceledAt;
+    public LocalDateTime getEscrowUnfrozenAt() {
+        return escrowUnfrozenAt;
     }
 
-    public LocalDateTime getEscrowDisputedAt() {
-        return escrowDisputedAt;
+    public String getCancelReason() {
+        return cancelReason;
     }
 
-    public String getEscrowCancelReason() {
-        return escrowCancelReason;
-    }
-
-    public String getEscrowDisputeReason() {
-        return escrowDisputeReason;
+    public String getDisputeReason() {
+        return disputeReason;
     }
 
     public void enableOnlineEscrow(BigDecimal escrowAmount, BigDecimal platformServiceFee) {
@@ -191,29 +184,33 @@ public class GoodsOrder {
         this.escrowStatus = "PENDING_FREEZE";
         this.escrowAmount = escrowAmount;
         this.platformServiceFee = platformServiceFee == null ? BigDecimal.ZERO : platformServiceFee;
-        this.escrowCancelReason = null;
-        this.escrowDisputeReason = null;
+        this.cancelReason = null;
+        this.disputeReason = null;
     }
 
     public void markEscrowFrozen() {
         this.escrowStatus = "FROZEN";
         this.escrowFrozenAt = LocalDateTime.now();
+        this.paidAt = this.escrowFrozenAt;
     }
 
     public void markEscrowReleased() {
         this.escrowStatus = "RELEASED";
         this.escrowReleasedAt = LocalDateTime.now();
+        this.completedAt = this.escrowReleasedAt;
+        this.status = "COMPLETED";
     }
 
     public void markEscrowCanceled(String reason) {
         this.escrowStatus = "CANCELED";
-        this.escrowCanceledAt = LocalDateTime.now();
-        this.escrowCancelReason = reason;
+        this.escrowUnfrozenAt = LocalDateTime.now();
+        this.canceledAt = this.escrowUnfrozenAt;
+        this.cancelReason = reason;
+        this.status = "CANCELED";
     }
 
     public void markEscrowDisputed(String reason) {
         this.escrowStatus = "DISPUTED";
-        this.escrowDisputedAt = LocalDateTime.now();
-        this.escrowDisputeReason = reason;
+        this.disputeReason = reason;
     }
 }
