@@ -131,6 +131,34 @@ export interface GoodsIntentSummary {
   createdAt: string
 }
 
+export interface GoodsOrderSummary {
+  id: number
+  orderNo: string
+  goodsId: number
+  goodsTitle: string
+  buyerId: number
+  buyerNickname: string
+  sellerId: number
+  sellerNickname: string
+  amount: number
+  serviceFee: number
+  status: string
+  tradeMode: string
+  escrowStatus: string
+  escrowAmount: number
+  platformServiceFee: number
+  escrowFrozenAt: string | null
+  escrowReleasedAt: string | null
+  escrowUnfrozenAt: string | null
+  cancelReason: string | null
+  disputeReason: string | null
+  contactSnapshot: string
+  createdAt: string | null
+  paidAt: string | null
+  completedAt: string | null
+  canceledAt: string | null
+}
+
 export type CampusZone =
   | 'CENTRAL'
   | 'WEST'
@@ -815,6 +843,18 @@ export function markGoodsSold(goodsId: number, userId: number, buyerId?: number)
   return postApi<GoodsDetailSummary>(`/goods/${goodsId}/mark-sold`, { userId, buyerId })
 }
 
+export function createGoodsEscrowOrder(goodsId: number, buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/${goodsId}/orders/escrow?buyerId=${buyerId}`, {})
+}
+
+export function freezeGoodsEscrow(orderId: number, buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/freeze?buyerId=${buyerId}`, {})
+}
+
+export function confirmGoodsEscrow(orderId: number, buyerId: number) {
+  return postApi<GoodsOrderSummary>(`/goods/orders/${orderId}/escrow/confirm?buyerId=${buyerId}`, {})
+}
+
 export function bindFileToTarget(payload: { fileId: number; targetType: string; targetId: number; usageType: string; sortOrder: number }) {
   return postApi<FileBindingSummary>('/files/bindings', payload)
 }
@@ -1146,6 +1186,36 @@ export function getPaymentOrder(orderNo: string) {
 
 export function createRoleDepositPayment(applicationId: number) {
   return postApi<PaymentCreation>(`/identity/roles/${applicationId}/deposit-pay`, {})
+}
+
+export function listAdminWalletRecharges(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return getApi<WalletRechargeSummary[]>(`/admin/wallet/recharges${query}`)
+}
+
+export function approveAdminWalletRecharge(id: number, adminId: number, note: string) {
+  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/approve?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+}
+
+export function rejectAdminWalletRecharge(id: number, adminId: number, note: string) {
+  return postApi<WalletRechargeSummary>(`/admin/wallet/recharges/${id}/reject?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+}
+
+export function listAdminWalletWithdrawals(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return getApi<WalletWithdrawalSummary[]>(`/admin/wallet/withdrawals${query}`)
+}
+
+export function approveAdminWalletWithdrawal(id: number, adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/approve?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+}
+
+export function completeAdminWalletWithdrawal(id: number, adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/complete?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
+}
+
+export function rejectAdminWalletWithdrawal(id: number, adminId: number, note: string) {
+  return postApi<WalletWithdrawalSummary>(`/admin/wallet/withdrawals/${id}/reject?adminId=${adminId}&note=${encodeURIComponent(note)}`, {})
 }
 
 export function listAdminPaymentOrders(status?: string) {

@@ -38,9 +38,19 @@
         </div>
         <div class="detail-actions">
           <el-button type="primary" :disabled="isOwner" @click="intentDialog = true">我想要</el-button>
+          <el-button :disabled="isOwner" @click="startEscrowTrade">创建线上托管订单</el-button>
           <el-button @click="favorite">收藏 {{ detail.favoriteCount }}</el-button>
           <el-button @click="reportDialog = true">举报</el-button>
           <el-button v-if="isOwner && detail.status === 'PUBLISHED'" type="warning" @click="markSold">标记售出</el-button>
+        </div>
+        <el-alert type="info" show-icon title="线上托管交易会从买方余额冻结商品金额和平台服务费，确认交易成功后划转给卖方。" />
+        <div v-if="currentEscrowOrder" class="info-card escrow-card">
+          <strong>托管订单 {{ currentEscrowOrder.orderNo }}</strong>
+          <p>状态：{{ currentEscrowOrder.escrowStatus }}；本金 ¥{{ currentEscrowOrder.escrowAmount }}；服务费 ¥{{ currentEscrowOrder.platformServiceFee }}</p>
+          <div class="payment-actions">
+            <el-button v-if="currentEscrowOrder.escrowStatus === 'PENDING_FREEZE'" @click="freezeEscrowTrade">冻结余额</el-button>
+            <el-button v-if="currentEscrowOrder.escrowStatus === 'FROZEN'" type="success" @click="confirmEscrowTrade">确认完成</el-button>
+          </div>
         </div>
       </el-card>
 
@@ -103,7 +113,20 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { commentTarget, createGoodsIntent, createReview, favoriteTarget, getGoodsDetail, markGoodsSold, reportTarget, type GoodsDetailSummary } from '@/api/campushub'
+import {
+  commentTarget,
+  confirmGoodsEscrow,
+  createGoodsEscrowOrder,
+  createGoodsIntent,
+  createReview,
+  favoriteTarget,
+  freezeGoodsEscrow,
+  getGoodsDetail,
+  markGoodsSold,
+  reportTarget,
+  type GoodsDetailSummary,
+  type GoodsOrderSummary,
+} from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 import EmptyState from '@/components/common/EmptyState.vue'
 
@@ -120,6 +143,7 @@ const reportReason = ref('虚假信息')
 const reportDescription = ref('')
 const reviewRating = ref(5)
 const reviewText = ref('交易顺利')
+const currentEscrowOrder = ref<GoodsOrderSummary | null>(null)
 
 const goodsId = computed(() => Number(route.params.id))
 const viewerId = computed(() => auth.currentUser?.id)
@@ -188,6 +212,25 @@ async function markSold() {
   if (!requireLogin()) return
   await markGoodsSold(goodsId.value, viewerId.value!)
   ElMessage.success('已标记售出')
+  await loadDetail()
+}
+
+async function startEscrowTrade() {
+  if (!requireLogin()) return
+  currentEscrowOrder.value = await createGoodsEscrowOrder(goodsId.value, viewerId.value!)
+  ElMessage.success('线上托管订单已创建')
+}
+
+async function freezeEscrowTrade() {
+  if (!requireLogin() || !currentEscrowOrder.value) return
+  currentEscrowOrder.value = await freezeGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
+  ElMessage.success('托管金额已冻结')
+}
+
+async function confirmEscrowTrade() {
+  if (!requireLogin() || !currentEscrowOrder.value) return
+  currentEscrowOrder.value = await confirmGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
+  ElMessage.success('交易已确认完成，托管金额已划转')
   await loadDetail()
 }
 
