@@ -527,12 +527,66 @@ export interface WalletFlowSummary {
   id: number
   flowNo: string
   direction: string
+  flowType: string
   amount: number
   balanceAfter: number
+  availableBalanceAfter: number
+  frozenBalanceAfter: number
   businessType: string
   businessId: number
+  idempotencyKey: string | null
+  counterpartyUserId: number | null
+  counterpartyNickname: string | null
+  createdBy: string
+  operatorId: number | null
+  operatorNickname: string | null
   remark: string
   createdAt: string
+}
+
+export interface WalletRechargeSummary {
+  id: number
+  rechargeNo: string
+  userId: number
+  userNickname: string
+  channel: string
+  amount: number
+  channelFee: number
+  payAmount: number
+  status: string
+  paymentOrderNo: string | null
+  reviewNote: string | null
+  reviewedAt: string | null
+  createdAt: string | null
+}
+
+export interface WalletWithdrawalSummary {
+  id: number
+  withdrawalNo: string
+  userId: number
+  userNickname: string
+  amount: number
+  channel: string
+  accountSnapshot: string | null
+  status: string
+  reviewNote: string | null
+  reviewedAt: string | null
+  completedAt: string | null
+  createdAt: string | null
+}
+
+export interface WalletFrozenRecordSummary {
+  id: number
+  freezeNo: string
+  userId: number
+  userNickname: string
+  businessType: string
+  businessId: number
+  amount: number
+  status: string
+  frozenAt: string | null
+  releasedAt: string | null
+  remark: string | null
 }
 
 export interface ServiceFeeSummary {
@@ -1056,6 +1110,26 @@ export function getWallet(userId = 1) {
 
 export function listWalletFlows(userId = 1) {
   return getApi<WalletFlowSummary[]>(`/wallet/users/${userId}/flows`)
+}
+
+export function createWalletRecharge(userId: number, payload: { channel: string; amount: number; remark?: string }) {
+  return postApi<WalletRechargeSummary>(`/wallet/users/${userId}/recharges`, payload)
+}
+
+export function listWalletRecharges(userId = 1) {
+  return getApi<WalletRechargeSummary[]>(`/wallet/users/${userId}/recharges`)
+}
+
+export function createWalletWithdrawal(userId: number, payload: { amount: number; channel: string; accountSnapshot?: string }) {
+  return postApi<WalletWithdrawalSummary>(`/wallet/users/${userId}/withdrawals`, payload)
+}
+
+export function listWalletWithdrawals(userId = 1) {
+  return getApi<WalletWithdrawalSummary[]>(`/wallet/users/${userId}/withdrawals`)
+}
+
+export function listWalletFrozenItems(userId = 1) {
+  return getApi<WalletFrozenRecordSummary[]>(`/wallet/users/${userId}/frozen-items`)
 }
 
 export function listServiceFees(userId = 1) {

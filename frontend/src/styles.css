@@ -33,6 +33,39 @@ body {
   overflow-x: auto;
 }
 
+.wallet-tabs {
+  margin-top: 18px;
+}
+
+.responsive-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.info-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  background: #ffffff;
+  word-break: break-word;
+}
+
+.info-card strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.info-card p {
+  margin: 4px 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.dialog-form {
+  margin-top: 12px;
+}
+
 .mobile-nav-trigger {
   display: none;
 }
