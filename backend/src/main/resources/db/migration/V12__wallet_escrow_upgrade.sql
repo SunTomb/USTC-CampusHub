@@ -13,7 +13,6 @@ ALTER TABLE wallet_flows
     ADD CONSTRAINT fk_wallet_flows_counterparty_user FOREIGN KEY (counterparty_user_id) REFERENCES users(id),
     ADD CONSTRAINT fk_wallet_flows_operator FOREIGN KEY (operator_id) REFERENCES users(id),
     ADD INDEX idx_wallet_flows_type_time (flow_type, created_at),
-    ADD INDEX idx_wallet_flows_business (business_type, business_id),
     ADD INDEX idx_wallet_flows_counterparty_time (counterparty_user_id, created_at);
 
 UPDATE wallet_flows
