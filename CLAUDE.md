@@ -404,12 +404,42 @@ Important constraints remain:
 - Avoid PowerShell under CC Switch + Codex Provider.
 - Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
 
-Recommended Phase 8 start:
+## Latest Phase 8 deployment and Phase 9 handoff, 2026-05-23
 
-1. Use `docs/superpowers/plans/2026-05-22-campushub-overall-phased-roadmap.md` as the Phase 8 roadmap source.
-2. Phase 8 should focus on payment-center integration hardening and service-fee operations.
-3. Preserve the existing boundary for this phase: production payment continues through API-Transfer-Station; CampusHub must not read, copy, print, store, or commit Alipay private/public key bodies.
-4. Keep Phase 8 Phase-4-sized: one design doc, one implementation plan, focused payment-provider/API contract work, server Docker verification, safe API smoke, Playwriter checks, README/CLAUDE handoff.
-5. Updated future payment direction from 2026-05-23: CampusHub should later support recharge channel fees, offline transaction service-fee thresholds, online escrow-style balance freezing/transfer, and balance withdrawals. This is larger than Phase 8 and should become a later standalone Phase because it touches wallet ledger design, frozen balances, transaction order state machines, withdrawal operations, and risk controls.
-6. Future fee model to carry into that later Phase: Alipay recharge is real-time and charges 0.6%; WeChat recharge has no fee but requires manual review; offline WeChat/QQ transaction amounts below 50 CNY are free; offline amounts of 50 CNY or more charge 1% service fee capped at 2 CNY; online platform transaction freezes payer balance first and transfers frozen amount to the counterparty after successful confirmation.
+Latest deployed `master` includes Phase 8 payment-center integration hardening through commit `bed2579` (`Fix admin payment component imports`). Production `/opt/campushub` is on `master` at `bed2579` and backend/web images were rebuilt/restarted successfully.
+
+Implemented Phase 8:
+
+- New docs: `docs/superpowers/specs/2026-05-23-campushub-phase8-payment-center-design.md` and `docs/superpowers/plans/2026-05-23-campushub-phase8-payment-center-upgrade.md`.
+- `V11__payment_center_integration.sql` adds service-fee payment mapping fields, unified `payment_orders`, callback idempotency/audit events, and role-application deposit payment order mapping.
+- Backend payment package now supports environment-selected `mock` and `payment-center` providers, payment order creation/reuse, service-fee payment callbacks, role-deposit payment callbacks, callback event idempotency, amount/order/status validation, and admin payment monitor APIs under `/api/admin/payment`.
+- Direct CampusHub Alipay provider selection is disabled; production real Alipay handling remains in API-Transfer-Station.
+- Frontend wallet and role pages expose payment-order creation/status; new `/admin/payment` page shows payment orders and callback events.
+- `.env.prod.example` documents placeholder-only payment-center variables.
+- README documents Phase 8 and the future payment direction below.
+
+Verified production after Phase 8:
+
+- GitHub `master` was updated to `bed2579`; production `/opt/campushub` fast-forwarded to `bed2579`.
+- Server Docker backend build succeeded; Maven package completed inside Docker with `BUILD SUCCESS`.
+- Server Docker frontend build succeeded; Vite emitted only known large chunk and dependency pure-comment warnings.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/payment/service-fees`, `/api/admin/payment/orders`, `/api/admin/payment/callback-events`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/admin/ops/analytics/overview`.
+- Playwriter desktop verification covered `/admin/payment`, `/wallet`, `/roles`, `/admin/ops`, `/admin/governance`, `/goods`, `/tasks`, `/shops`, and `/project-ads`; pages rendered without white screens.
+- Playwriter mobile viewport 390x844 on `/admin/payment` had no document-level horizontal overflow (`scrollWidth` equaled `clientWidth`).
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V11; add V12+ only for future schema changes.
+- Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
+- Avoid PowerShell under CC Switch + Codex Provider.
+- Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
+
+Future payment direction from 2026-05-23:
+
+- CampusHub should later support recharge channel fees, offline transaction service-fee thresholds, online escrow-style balance freezing/transfer, and balance withdrawals.
+- This is larger than Phase 8 and should become a later standalone Phase because it touches wallet ledger design, frozen balances, transaction order state machines, withdrawal operations, and risk controls.
+- Future fee model: Alipay recharge is real-time and charges 0.6%; WeChat recharge has no fee but requires manual review; offline WeChat/QQ transaction amounts below 50 CNY are free; offline amounts of 50 CNY or more charge 1% service fee capped at 2 CNY; online platform transaction freezes payer balance first and transfers frozen amount to the counterparty after successful confirmation.
 
