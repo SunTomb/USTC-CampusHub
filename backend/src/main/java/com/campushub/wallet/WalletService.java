@@ -1,5 +1,7 @@
 package com.campushub.wallet;
 
+import com.campushub.user.User;
+import com.campushub.user.UserRepository;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,10 +11,12 @@ public class WalletService {
 
     private final WalletAccountRepository walletAccountRepository;
     private final WalletFlowRepository walletFlowRepository;
+    private final UserRepository userRepository;
 
-    public WalletService(WalletAccountRepository walletAccountRepository, WalletFlowRepository walletFlowRepository) {
+    public WalletService(WalletAccountRepository walletAccountRepository, WalletFlowRepository walletFlowRepository, UserRepository userRepository) {
         this.walletAccountRepository = walletAccountRepository;
         this.walletFlowRepository = walletFlowRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -89,6 +93,8 @@ public class WalletService {
     }
 
     private void saveFlow(WalletAccount account, String direction, String flowType, BigDecimal amount, String businessType, Long businessId, String idempotencyKey, Long counterpartyUserId, String createdBy, Long operatorId, String remark) {
+        User counterpartyUser = counterpartyUserId == null ? null : userRepository.findById(counterpartyUserId).orElse(null);
+        User operator = operatorId == null ? null : userRepository.findById(operatorId).orElse(null);
         walletFlowRepository.save(new WalletFlow(
                 account,
                 account.getUser(),
@@ -101,9 +107,9 @@ public class WalletService {
                 businessType,
                 businessId,
                 idempotencyKey,
-                counterpartyUserId,
+                counterpartyUser,
                 createdBy,
-                operatorId,
+                operator,
                 remark));
     }
 }
