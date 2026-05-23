@@ -443,9 +443,9 @@ Future payment direction from 2026-05-23:
 - This is larger than Phase 8 and should become a later standalone Phase because it touches wallet ledger design, frozen balances, transaction order state machines, withdrawal operations, and risk controls.
 - Future fee model: Alipay recharge is real-time and charges 0.6%; WeChat recharge has no fee but requires manual review; offline WeChat/QQ transaction amounts below 50 CNY are free; offline amounts of 50 CNY or more charge 1% service fee capped at 2 CNY; online platform transaction freezes payer balance first and transfers frozen amount to the counterparty after successful confirmation.
 
-## Latest Phase 9 implementation handoff, 2026-05-23
+## Latest Phase 9 deployment and Phase 10 handoff, 2026-05-23
 
-Current branch `phase9-wallet-escrow` contains local Phase 9 implementation commits through `de0ada6` (`add wallet operations and escrow UI`). This work has not yet been pushed, server-built, deployed, or browser-verified in production.
+Latest deployed `phase9-wallet-escrow` includes Phase 9 wallet ledger, recharge/withdrawal operations, goods online escrow, and wallet operations UI through commit `2ecf065` (`fix wallet escrow migration index conflict`). Production `/opt/campushub` is on `phase9-wallet-escrow` at `2ecf065`; backend/web images were rebuilt and backend/web containers restarted successfully.
 
 Implemented Phase 9:
 
@@ -458,13 +458,16 @@ Implemented Phase 9:
 - Frontend `/wallet`, `/admin/wallet`, and goods detail pages expose the new wallet and escrow flows.
 - README documents Phase 9 and preserves the API-Transfer-Station payment boundary.
 
-Recommended verification and deployment next steps:
+Verification after Phase 9 deployment:
 
-1. Keep the work on `phase9-wallet-escrow` until build verification passes.
-2. Run frontend build locally if dependencies are present; otherwise use server-side Docker build after pushing the branch.
-3. Verify backend with Maven if available, otherwise use low-impact server Docker backend build.
-4. After explicit approval, push/deploy carefully to `/opt/campushub` and run API smoke for `/api/wallet/users/1`, `/api/wallet/users/1/flows`, `/api/admin/wallet/recharges`, `/api/admin/wallet/withdrawals`, `/api/admin/wallet/frozen-records`, `/api/admin/payment/orders`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/admin/ops/analytics/overview`.
-5. Use Playwriter to verify `/wallet`, `/admin/wallet`, `/admin/payment`, `/goods`, a goods detail page, `/admin/ops`, `/admin/governance`, `/tasks`, `/shops`, and `/project-ads`, including mobile overflow checks for `/wallet` and `/admin/wallet`.
+- Server Docker backend build succeeded; Maven package completed inside Docker with `BUILD SUCCESS`.
+- Server Docker frontend build succeeded; Vite emitted only known large chunk and dependency pure-comment warnings.
+- Initial backend startup found a failed V12 Flyway record caused by a duplicate `idx_wallet_flows_business` index in the first migration attempt. Root cause was confirmed by inspecting `flyway_schema_history`, `wallet_flows`, and partial V12 schema state without printing secrets.
+- Fixed V12 by removing the duplicate index creation, deleted the failed `flyway_schema_history` row for version 12, and reran the corrected migration. Flyway now records V12 with `success = 1`.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke returned HTTP 200 for `/api/wallet/users/1`, `/api/wallet/users/1/flows`, `/api/wallet/users/1/frozen-items`, `/api/admin/wallet/recharges`, `/api/admin/wallet/withdrawals`, `/api/admin/wallet/frozen-records`, `/api/admin/payment/orders`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/admin/ops/analytics/overview`.
+- Playwriter verification covered `/wallet`, `/admin/wallet`, `/admin/payment`, `/goods`, `/goods/1`, `/admin/ops`, `/admin/governance`, `/tasks`, `/shops`, and `/project-ads`; pages rendered without white screens.
+- Mobile viewport checks at 375-390px covered `/wallet`, `/admin/wallet`, `/admin/payment`, `/goods`, `/goods/1`, `/admin/ops`, `/admin/governance`, `/tasks`, `/shops`, `/project-ads`, and wallet recharge/withdrawal dialogs; tested pages had no document-level horizontal overflow (`scrollWidth === clientWidth`).
 
 Important constraints remain:
 
