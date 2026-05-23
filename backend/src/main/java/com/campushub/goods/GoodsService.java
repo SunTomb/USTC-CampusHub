@@ -39,6 +39,7 @@ public class GoodsService {
     private final ReviewRepository reviewRepository;
     private final NotificationService notificationService;
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
+    private final GoodsOrderRepository goodsOrderRepository;
     private final GovernanceService governanceService;
     private final WalletService walletService;
     private final FeePolicyService feePolicyService;
@@ -61,6 +62,7 @@ public class GoodsService {
             ReviewRepository reviewRepository,
             NotificationService notificationService,
             ServiceFeeRecordRepository serviceFeeRecordRepository,
+            GoodsOrderRepository goodsOrderRepository,
             GovernanceService governanceService,
             WalletService walletService,
             FeePolicyService feePolicyService,
@@ -75,6 +77,7 @@ public class GoodsService {
         this.reviewRepository = reviewRepository;
         this.notificationService = notificationService;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
+        this.goodsOrderRepository = goodsOrderRepository;
         this.governanceService = governanceService;
         this.walletService = walletService;
         this.feePolicyService = feePolicyService;
