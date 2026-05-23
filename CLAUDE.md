@@ -443,3 +443,35 @@ Future payment direction from 2026-05-23:
 - This is larger than Phase 8 and should become a later standalone Phase because it touches wallet ledger design, frozen balances, transaction order state machines, withdrawal operations, and risk controls.
 - Future fee model: Alipay recharge is real-time and charges 0.6%; WeChat recharge has no fee but requires manual review; offline WeChat/QQ transaction amounts below 50 CNY are free; offline amounts of 50 CNY or more charge 1% service fee capped at 2 CNY; online platform transaction freezes payer balance first and transfers frozen amount to the counterparty after successful confirmation.
 
+## Latest Phase 9 implementation handoff, 2026-05-23
+
+Current branch `phase9-wallet-escrow` contains local Phase 9 implementation commits through `de0ada6` (`add wallet operations and escrow UI`). This work has not yet been pushed, server-built, deployed, or browser-verified in production.
+
+Implemented Phase 9:
+
+- New docs: `docs/superpowers/specs/2026-05-23-campushub-phase9-wallet-escrow-design.md` and `docs/superpowers/plans/2026-05-23-campushub-phase9-wallet-escrow-upgrade.md`.
+- `V12__wallet_escrow_upgrade.sql` extends wallet accounts/flows, adds recharge orders, withdrawal requests, frozen records, and goods escrow fields.
+- Backend wallet package centralizes balance mutations in `WalletService` and fee rules in `FeePolicyService`.
+- Recharge supports Alipay payment-center callback入账 with 0.6% channel fee and WeChat manual review.
+- Withdrawals freeze balance on submit and support admin approve, complete, and reject flows.
+- Goods online escrow freezes buyer balance, releases principal to seller, charges capped online service fee, and supports cancellation/dispute state.
+- Frontend `/wallet`, `/admin/wallet`, and goods detail pages expose the new wallet and escrow flows.
+- README documents Phase 9 and preserves the API-Transfer-Station payment boundary.
+
+Recommended verification and deployment next steps:
+
+1. Keep the work on `phase9-wallet-escrow` until build verification passes.
+2. Run frontend build locally if dependencies are present; otherwise use server-side Docker build after pushing the branch.
+3. Verify backend with Maven if available, otherwise use low-impact server Docker backend build.
+4. After explicit approval, push/deploy carefully to `/opt/campushub` and run API smoke for `/api/wallet/users/1`, `/api/wallet/users/1/flows`, `/api/admin/wallet/recharges`, `/api/admin/wallet/withdrawals`, `/api/admin/wallet/frozen-records`, `/api/admin/payment/orders`, `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, and `/api/admin/ops/analytics/overview`.
+5. Use Playwriter to verify `/wallet`, `/admin/wallet`, `/admin/payment`, `/goods`, a goods detail page, `/admin/ops`, `/admin/governance`, `/tasks`, `/shops`, and `/project-ads`, including mobile overflow checks for `/wallet` and `/admin/wallet`.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment token, or Alipay key contents.
+- Production payment continues through API-Transfer-Station; CampusHub must not read or store Alipay key bodies.
+- Do not edit already-applied migrations V1-V12; add V13+ only for future schema changes.
+- Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
+- Avoid PowerShell under CC Switch + Codex Provider.
+- Prefer server-side Docker build/API smoke/Playwriter for full verification; do not install local dependencies unless explicitly approved.
+
