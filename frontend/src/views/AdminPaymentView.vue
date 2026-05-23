@@ -7,8 +7,8 @@ import {
   type PaymentCallbackEventSummary,
   type PaymentOrderSummary
 } from '../api/campushub'
-import EmptyState from '../components/EmptyState.vue'
-import PageActions from '../components/PageActions.vue'
+import EmptyState from '../components/common/EmptyState.vue'
+import PageActions from '../components/common/PageActions.vue'
 
 const loading = ref(false)
 const status = ref('')
