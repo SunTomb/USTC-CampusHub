@@ -88,6 +88,24 @@ public class GoodsOrder {
     @Column(name = "dispute_reason")
     private String disputeReason;
 
+    protected GoodsOrder() {
+    }
+
+    public GoodsOrder(String orderNo, Goods goods, User buyer, User seller, BigDecimal amount, BigDecimal serviceFee, String contactSnapshot) {
+        this.orderNo = orderNo;
+        this.goods = goods;
+        this.buyer = buyer;
+        this.seller = seller;
+        this.amount = amount;
+        this.serviceFee = serviceFee;
+        this.tradeMode = "OFFLINE";
+        this.escrowStatus = "NONE";
+        this.escrowAmount = BigDecimal.ZERO;
+        this.platformServiceFee = BigDecimal.ZERO;
+        this.status = "OPEN";
+        this.contactSnapshot = contactSnapshot;
+    }
+
     public Long getId() {
         return id;
     }

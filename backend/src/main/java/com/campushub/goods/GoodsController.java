@@ -61,4 +61,29 @@ public class GoodsController {
     public ApiResponse<GoodsDetailSummary> markSold(@PathVariable Long id, @RequestBody GoodsActionRequest request) {
         return ApiResponse.ok(goodsService.markSold(id, request.userId(), request.buyerId()));
     }
+
+    @PostMapping("/{id}/orders/escrow")
+    public ApiResponse<GoodsOrderSummary> createOnlineEscrowOrder(@PathVariable Long id, @RequestParam Long buyerId) {
+        return ApiResponse.ok(goodsService.createOnlineEscrowOrder(id, buyerId));
+    }
+
+    @PostMapping("/orders/{orderId}/escrow/freeze")
+    public ApiResponse<GoodsOrderSummary> freezeEscrow(@PathVariable Long orderId, @RequestParam Long buyerId) {
+        return ApiResponse.ok(goodsService.freezeGoodsEscrow(orderId, buyerId));
+    }
+
+    @PostMapping("/orders/{orderId}/escrow/confirm")
+    public ApiResponse<GoodsOrderSummary> confirmEscrow(@PathVariable Long orderId, @RequestParam Long buyerId) {
+        return ApiResponse.ok(goodsService.confirmGoodsEscrow(orderId, buyerId));
+    }
+
+    @PostMapping("/orders/{orderId}/escrow/cancel")
+    public ApiResponse<GoodsOrderSummary> cancelEscrow(@PathVariable Long orderId, @RequestParam Long buyerId, @RequestParam(defaultValue = "买家取消线上托管交易") String reason) {
+        return ApiResponse.ok(goodsService.cancelGoodsEscrow(orderId, buyerId, reason));
+    }
+
+    @PostMapping("/orders/{orderId}/escrow/dispute")
+    public ApiResponse<GoodsOrderSummary> disputeEscrow(@PathVariable Long orderId, @RequestParam Long userId, @RequestParam String reason) {
+        return ApiResponse.ok(goodsService.disputeGoodsEscrow(orderId, userId, reason));
+    }
 }

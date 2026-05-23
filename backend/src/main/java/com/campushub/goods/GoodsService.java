@@ -15,6 +15,10 @@ import com.campushub.review.ReviewRepository;
 import com.campushub.review.ReviewSummary;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
+import com.campushub.wallet.FeePolicyService;
+import com.campushub.wallet.WalletFrozenRecord;
+import com.campushub.wallet.WalletFrozenRecordRepository;
+import com.campushub.wallet.WalletService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -36,6 +40,9 @@ public class GoodsService {
     private final NotificationService notificationService;
     private final ServiceFeeRecordRepository serviceFeeRecordRepository;
     private final GovernanceService governanceService;
+    private final WalletService walletService;
+    private final FeePolicyService feePolicyService;
+    private final WalletFrozenRecordRepository walletFrozenRecordRepository;
 
     @Value("${campushub.secondhand.service-fee.enabled:false}")
     private boolean secondhandServiceFeeEnabled;
@@ -54,7 +61,10 @@ public class GoodsService {
             ReviewRepository reviewRepository,
             NotificationService notificationService,
             ServiceFeeRecordRepository serviceFeeRecordRepository,
-            GovernanceService governanceService) {
+            GovernanceService governanceService,
+            WalletService walletService,
+            FeePolicyService feePolicyService,
+            WalletFrozenRecordRepository walletFrozenRecordRepository) {
         this.goodsRepository = goodsRepository;
         this.goodsIntentRepository = goodsIntentRepository;
         this.userRepository = userRepository;
@@ -66,6 +76,9 @@ public class GoodsService {
         this.notificationService = notificationService;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.governanceService = governanceService;
+        this.walletService = walletService;
+        this.feePolicyService = feePolicyService;
+        this.walletFrozenRecordRepository = walletFrozenRecordRepository;
     }
 
     @Transactional(readOnly = true)
@@ -152,6 +165,80 @@ public class GoodsService {
         return detailFor(goods, sellerId);
     }
 
+    @Transactional
+    public GoodsOrderSummary createOnlineEscrowOrder(Long goodsId, Long buyerId) {
+        Goods goods = goodsRepository.findById(goodsId).orElseThrow(() -> new BusinessException("商品不存在"));
+        User buyer = userRepository.findById(buyerId).orElseThrow(() -> new BusinessException("买家不存在"));
+        if (!"PUBLISHED".equals(goods.getStatus())) {
+            throw new BusinessException("商品不可交易");
+        }
+        if (goods.getSeller().getId().equals(buyerId)) {
+            throw new BusinessException("不能购买自己的商品");
+        }
+        BigDecimal amount = goods.getPrice();
+        BigDecimal fee = feePolicyService.calculateOnlineEscrowFee(amount);
+        GoodsOrder order = new GoodsOrder("GO" + Instant.now().toEpochMilli(), goods, buyer, goods.getSeller(), amount, fee, buildContactSnapshot(goods.getSeller()));
+        order.enableOnlineEscrow(amount, fee);
+        return GoodsOrderSummary.from(goodsOrderRepository.save(order));
+    }
+
+    @Transactional
+    public GoodsOrderSummary freezeGoodsEscrow(Long orderId, Long buyerId) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
+        ensureEscrowBuyer(order, buyerId);
+        if (!"PENDING_FREEZE".equals(order.getEscrowStatus())) {
+            throw new BusinessException("订单状态不可冻结");
+        }
+        BigDecimal total = order.getEscrowAmount().add(order.getPlatformServiceFee());
+        walletService.freeze(buyerId, total, "GOODS_ESCROW", order.getId(), "goods-escrow-freeze:" + order.getId(), "USER", buyerId, "二手线上交易托管冻结");
+        walletFrozenRecordRepository.save(new WalletFrozenRecord("FRZ-GOODS-" + order.getId(), order.getBuyer(), "GOODS_ESCROW", order.getId(), total, "二手交易托管冻结"));
+        order.markEscrowFrozen();
+        return GoodsOrderSummary.from(order);
+    }
+
+    @Transactional
+    public GoodsOrderSummary confirmGoodsEscrow(Long orderId, Long buyerId) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
+        ensureEscrowBuyer(order, buyerId);
+        if (!"FROZEN".equals(order.getEscrowStatus())) {
+            throw new BusinessException("订单状态不可确认完成");
+        }
+        walletService.transferFrozen(order.getBuyer().getId(), order.getSeller().getId(), order.getEscrowAmount(), "GOODS_ESCROW", order.getId(), "goods-escrow-release:" + order.getId(), "USER", buyerId, "二手托管本金划转给卖家");
+        walletService.debit(order.getBuyer().getId(), order.getPlatformServiceFee(), "SERVICE_FEE", "GOODS_ESCROW", order.getId(), "goods-escrow-fee:" + order.getId(), "SYSTEM", null, "二手线上托管服务费");
+        walletFrozenRecordRepository.findByBusinessTypeAndBusinessIdAndStatus("GOODS_ESCROW", order.getId(), "FROZEN").ifPresent(WalletFrozenRecord::markReleased);
+        order.markEscrowReleased();
+        order.getGoods().markSold(order.getBuyer());
+        return GoodsOrderSummary.from(order);
+    }
+
+    @Transactional
+    public GoodsOrderSummary cancelGoodsEscrow(Long orderId, Long buyerId, String reason) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
+        ensureEscrowBuyer(order, buyerId);
+        if (!"FROZEN".equals(order.getEscrowStatus()) && !"PENDING_FREEZE".equals(order.getEscrowStatus())) {
+            throw new BusinessException("订单状态不可取消");
+        }
+        if ("FROZEN".equals(order.getEscrowStatus())) {
+            walletService.unfreeze(order.getBuyer().getId(), order.getEscrowAmount().add(order.getPlatformServiceFee()), "GOODS_ESCROW", order.getId(), "goods-escrow-cancel:" + order.getId(), "USER", buyerId, "二手托管取消解冻");
+        }
+        walletFrozenRecordRepository.findByBusinessTypeAndBusinessIdAndStatus("GOODS_ESCROW", order.getId(), "FROZEN").ifPresent(WalletFrozenRecord::markUnfrozen);
+        order.markEscrowCanceled(reason);
+        return GoodsOrderSummary.from(order);
+    }
+
+    @Transactional
+    public GoodsOrderSummary disputeGoodsEscrow(Long orderId, Long userId, String reason) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
+        if (!order.getBuyer().getId().equals(userId) && !order.getSeller().getId().equals(userId)) {
+            throw new BusinessException("只有交易双方可以发起争议");
+        }
+        if (!"FROZEN".equals(order.getEscrowStatus())) {
+            throw new BusinessException("订单状态不可发起争议");
+        }
+        order.markEscrowDisputed(reason);
+        return GoodsOrderSummary.from(order);
+    }
+
     private void ensureGoodsPublisher(Long userId) {
         roleApplicationRepository.findByUserIdAndRoleType(userId, "GOODS_PUBLISHER")
                 .filter(application -> "PAID".equals(application.getDepositStatus()))
@@ -162,6 +249,12 @@ public class GoodsService {
     private void ensureSeller(Goods goods, Long sellerId) {
         if (!goods.getSeller().getId().equals(sellerId)) {
             throw new BusinessException("只能操作自己的商品");
+        }
+    }
+
+    private void ensureEscrowBuyer(GoodsOrder order, Long buyerId) {
+        if (!order.getBuyer().getId().equals(buyerId)) {
+            throw new BusinessException("只有买家可以操作托管交易");
         }
     }
 
