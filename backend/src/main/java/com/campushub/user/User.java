@@ -142,4 +142,16 @@ public class User {
     public void setCreditScore(Integer creditScore) {
         this.creditScore = creditScore;
     }
+
+    public void resetPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void updateBetaProfile(String realName, String nickname, String phone, String wechatContact, String qqContact) {
+        this.realName = realName;
+        this.nickname = nickname;
+        this.phone = phone;
+        this.wechatContact = wechatContact;
+        this.qqContact = qqContact;
+    }
 }

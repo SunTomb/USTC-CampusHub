@@ -518,3 +518,33 @@ Important constraints remain:
 - Deploy carefully on the small shared server with low-frequency checks and targeted rebuilds.
 - Phase 11 should focus on beta readiness after auth/security: create/verify usable demo credentials, complete authenticated API smoke, reconnect Playwriter for desktop/mobile verification, and polish any auth UX issues found.
 
+## Latest Phase 11 beta readiness handoff, 2026-05-24
+
+Phase 11 focuses on Beta readiness rather than new business functionality.
+
+Implemented/expected Phase 11 artifacts:
+
+- Design spec: `docs/superpowers/specs/2026-05-24-campushub-phase11-beta-readiness-design.md`.
+- Implementation plan: `docs/superpowers/plans/2026-05-24-campushub-phase11-beta-readiness-upgrade.md`.
+- Disabled-by-default Beta demo account reset controlled by `CAMPUSHUB_BETA_DEMO_RESET_ENABLED` and explicit demo student/admin environment variables.
+- Authenticated smoke script: `scripts/beta-auth-smoke.sh`.
+- Operations docs under `docs/operations/`: beta runbook, backup/restore guide, and admin playbook.
+- User-facing policy/risk page: `/policy`.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token, database password, or Alipay key contents.
+- Production real payment remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
+- Do not edit already-applied migrations V1-V12; add V13+ only if a future schema change is unavoidable.
+- Demo reset must only target configured Beta demo accounts and should be disabled after the reset run.
+- Use low-impact production verification on the small shared server: targeted backend/web builds, API smoke, and Playwriter checks.
+
+Recommended Phase 12+ directions:
+
+- Beta feedback fixes from the Phase 11 acceptance matrix;
+- focused monitoring/alerting improvements;
+- map/location enhancement;
+- WeChat mini-program exploration;
+- recommendation/search improvements;
+- real-time chat only after governance and privacy requirements are revisited.
+

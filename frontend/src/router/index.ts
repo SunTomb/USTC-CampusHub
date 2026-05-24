@@ -26,6 +26,7 @@ import AdminGovernanceView from '@/views/AdminGovernanceView.vue'
 import AdminPaymentView from '@/views/AdminPaymentView.vue'
 import AdminWalletView from '@/views/AdminWalletView.vue'
 import AuthView from '@/views/AuthView.vue'
+import PolicyView from '@/views/PolicyView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -37,6 +38,7 @@ const router = createRouter({
         { path: '', name: 'home', component: HomeView },
         { path: 'login', redirect: { name: 'auth' } },
         { path: 'auth', name: 'auth', component: AuthView },
+        { path: 'policy', name: 'policy', component: PolicyView },
         { path: 'goods', name: 'goods', component: GoodsView },
         { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView, meta: { requiresAuth: true } },
         { path: 'goods/:id', name: 'goods-detail', component: GoodsDetailView },

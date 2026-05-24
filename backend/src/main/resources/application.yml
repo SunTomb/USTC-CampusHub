@@ -22,6 +22,28 @@ campushub:
     issuer: ${CAMPUSHUB_JWT_ISSUER:campushub-local}
     secret: ${CAMPUSHUB_JWT_SECRET:campushub-local-development-secret-with-enough-length}
     expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:720}
+  beta:
+    demo-reset-enabled: ${CAMPUSHUB_BETA_DEMO_RESET_ENABLED:false}
+    student:
+      email: ${CAMPUSHUB_BETA_STUDENT_EMAIL:}
+      username: ${CAMPUSHUB_BETA_STUDENT_USERNAME:}
+      password: ${CAMPUSHUB_BETA_STUDENT_PASSWORD:}
+      student-no: ${CAMPUSHUB_BETA_STUDENT_NO:}
+      real-name: ${CAMPUSHUB_BETA_STUDENT_REAL_NAME:Beta Student}
+      nickname: ${CAMPUSHUB_BETA_STUDENT_NICKNAME:Beta Student}
+      phone: ${CAMPUSHUB_BETA_STUDENT_PHONE:}
+      wechat-contact: ${CAMPUSHUB_BETA_STUDENT_WECHAT:}
+      qq-contact: ${CAMPUSHUB_BETA_STUDENT_QQ:}
+    admin:
+      email: ${CAMPUSHUB_BETA_ADMIN_EMAIL:}
+      username: ${CAMPUSHUB_BETA_ADMIN_USERNAME:}
+      password: ${CAMPUSHUB_BETA_ADMIN_PASSWORD:}
+      student-no: ${CAMPUSHUB_BETA_ADMIN_STUDENT_NO:}
+      real-name: ${CAMPUSHUB_BETA_ADMIN_REAL_NAME:Beta Admin}
+      nickname: ${CAMPUSHUB_BETA_ADMIN_NICKNAME:Beta Admin}
+      phone: ${CAMPUSHUB_BETA_ADMIN_PHONE:}
+      wechat-contact: ${CAMPUSHUB_BETA_ADMIN_WECHAT:}
+      qq-contact: ${CAMPUSHUB_BETA_ADMIN_QQ:}
   file-storage:
     root: ${CAMPUSHUB_FILE_ROOT:./data/uploads}
   payment:

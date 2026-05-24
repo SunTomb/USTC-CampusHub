@@ -60,6 +60,7 @@ const mobileMenuOpen = ref(false)
 const navItems = [
   { path: '/', label: '首页总览' },
   { path: '/auth', label: '登录注册' },
+  { path: '/policy', label: '协议与风险' },
   { path: '/goods', label: '二手商品' },
   { path: '/tasks', label: '悬赏任务' },
   { path: '/shops', label: '学生店铺' },
