@@ -1,11 +1,10 @@
-ALTER TABLE wallet_flows
-    ADD COLUMN flow_type VARCHAR(40) NOT NULL DEFAULT 'LEGACY',
-    ADD COLUMN available_balance_after DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    ADD COLUMN frozen_balance_after DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    ADD COLUMN idempotency_key VARCHAR(120),
-    ADD COLUMN counterparty_user_id BIGINT,
-    ADD COLUMN created_by VARCHAR(40) NOT NULL DEFAULT 'SYSTEM',
-    ADD COLUMN operator_id BIGINT;
+ALTER TABLE wallet_flows ADD COLUMN flow_type VARCHAR(40) NOT NULL DEFAULT 'LEGACY';
+ALTER TABLE wallet_flows ADD COLUMN available_balance_after DECIMAL(10,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE wallet_flows ADD COLUMN frozen_balance_after DECIMAL(10,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE wallet_flows ADD COLUMN idempotency_key VARCHAR(120);
+ALTER TABLE wallet_flows ADD COLUMN counterparty_user_id BIGINT;
+ALTER TABLE wallet_flows ADD COLUMN created_by VARCHAR(40) NOT NULL DEFAULT 'SYSTEM';
+ALTER TABLE wallet_flows ADD COLUMN operator_id BIGINT;
 
 UPDATE wallet_flows
 SET available_balance_after = balance_after,
@@ -78,16 +77,15 @@ CREATE UNIQUE INDEX uk_wallet_freeze_no ON wallet_frozen_records (freeze_no);
 CREATE INDEX idx_wallet_freeze_user_status ON wallet_frozen_records (user_id, status);
 CREATE INDEX idx_wallet_freeze_business ON wallet_frozen_records (business_type, business_id);
 
-ALTER TABLE goods_orders
-    ADD COLUMN trade_mode VARCHAR(40) NOT NULL DEFAULT 'OFFLINE',
-    ADD COLUMN escrow_status VARCHAR(40) NOT NULL DEFAULT 'NONE',
-    ADD COLUMN escrow_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    ADD COLUMN platform_service_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    ADD COLUMN escrow_frozen_at TIMESTAMP,
-    ADD COLUMN escrow_released_at TIMESTAMP,
-    ADD COLUMN escrow_unfrozen_at TIMESTAMP,
-    ADD COLUMN cancel_reason VARCHAR(500),
-    ADD COLUMN dispute_reason VARCHAR(500);
+ALTER TABLE goods_orders ADD COLUMN trade_mode VARCHAR(40) NOT NULL DEFAULT 'OFFLINE';
+ALTER TABLE goods_orders ADD COLUMN escrow_status VARCHAR(40) NOT NULL DEFAULT 'NONE';
+ALTER TABLE goods_orders ADD COLUMN escrow_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE goods_orders ADD COLUMN platform_service_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE goods_orders ADD COLUMN escrow_frozen_at TIMESTAMP;
+ALTER TABLE goods_orders ADD COLUMN escrow_released_at TIMESTAMP;
+ALTER TABLE goods_orders ADD COLUMN escrow_unfrozen_at TIMESTAMP;
+ALTER TABLE goods_orders ADD COLUMN cancel_reason VARCHAR(500);
+ALTER TABLE goods_orders ADD COLUMN dispute_reason VARCHAR(500);
 
 CREATE INDEX idx_goods_orders_trade_time ON goods_orders (trade_mode, created_at);
 CREATE INDEX idx_goods_orders_escrow_status_time ON goods_orders (escrow_status, created_at);
