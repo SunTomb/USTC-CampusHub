@@ -100,7 +100,7 @@ router.beforeEach(async (to) => {
     return { name: 'auth', query: { redirect } }
   }
 
-  if (to.meta.requiredRole && !hasAnyRole(auth.currentUser?.roles, [to.meta.requiredRole])) {
+  if (to.meta.requiredRole && !hasAnyRole(auth.currentUser?.roles, [to.meta.requiredRole]) && !auth.isAdmin) {
     ElMessage.warning(to.meta.lockedTitle || '请先解锁对应身份')
     return {
       path: to.meta.unlockRoute || '/roles',
