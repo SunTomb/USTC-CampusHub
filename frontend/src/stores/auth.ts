@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { getCurrentUser, type CurrentUser } from '@/api/campushub'
 import { postApi } from '@/api/client'
+import { buildIdentityProfile, hasAnyRole, type IdentityKey } from '@/utils/identity'
 
 interface LoginResponse {
   tokenType: string
@@ -23,7 +24,10 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token && state.currentUser),
-    isAdmin: (state) => Boolean(state.currentUser?.roles.includes('ROLE_ADMIN')),
+    identityProfile: (state) => buildIdentityProfile(state.currentUser),
+    isAdmin: (state) => hasAnyRole(state.currentUser?.roles, ['admin']),
+    canAccessIdentity: (state) => (identity: IdentityKey) =>
+      identity === 'guest' || hasAnyRole(state.currentUser?.roles, [identity]),
   },
   actions: {
     async login(username: string, password: string) {
