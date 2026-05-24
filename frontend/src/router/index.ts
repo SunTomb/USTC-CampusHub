@@ -2,6 +2,17 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '@/stores/auth'
+import { hasAnyRole, type IdentityKey } from '@/utils/identity'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    requiresAdmin?: boolean
+    requiredRole?: IdentityKey
+    unlockRoute?: string
+    lockedTitle?: string
+  }
+}
 
 import MainLayout from '@/layouts/MainLayout.vue'
 import HomeView from '@/views/HomeView.vue'
@@ -40,12 +51,12 @@ const router = createRouter({
         { path: 'auth', name: 'auth', component: AuthView },
         { path: 'policy', name: 'policy', component: PolicyView },
         { path: 'goods', name: 'goods', component: GoodsView },
-        { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView, meta: { requiresAuth: true } },
+        { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView, meta: { requiresAuth: true, requiredRole: 'goodsPublisher', unlockRoute: '/roles', lockedTitle: '需要二手发布者身份' } },
         { path: 'goods/:id', name: 'goods-detail', component: GoodsDetailView },
         { path: 'tasks', name: 'tasks', component: TasksView },
-        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true } },
+        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true, requiredRole: 'runner', unlockRoute: '/roles', lockedTitle: '需要跑腿接单者身份' } },
         { path: 'shops', name: 'shops', component: ShopsView },
-        { path: 'shops/merchant', name: 'shop-merchant', component: ShopMerchantView, meta: { requiresAuth: true } },
+        { path: 'shops/merchant', name: 'shop-merchant', component: ShopMerchantView, meta: { requiresAuth: true, requiredRole: 'shopMerchant', unlockRoute: '/roles', lockedTitle: '需要店铺商家身份' } },
         { path: 'shops/:id', name: 'shop-detail', component: ShopDetailView },
         { path: 'project-ads', name: 'project-ads', component: ProjectAdsView },
         { path: 'project-ads/manage', name: 'project-ad-manage', component: ProjectAdManageView, meta: { requiresAuth: true } },
@@ -70,20 +81,33 @@ router.beforeEach(async (to) => {
   if (auth.token && !auth.currentUser && !auth.sessionLoaded) {
     await auth.loadCurrentUser()
   }
+
+  const redirect = to.fullPath
+
   if (to.meta.requiresAdmin) {
     if (!auth.isAuthenticated) {
       ElMessage.warning('请先登录')
-      return { name: 'auth' }
+      return { name: 'auth', query: { redirect } }
     }
-    if (!auth.isAdmin) {
+    if (!hasAnyRole(auth.currentUser?.roles, ['admin'])) {
       ElMessage.error('当前账号无权限访问管理页面')
-      return { name: 'home' }
+      return { name: 'home', query: { locked: 'admin' } }
     }
   }
+
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     ElMessage.warning('请先登录')
-    return { name: 'auth' }
+    return { name: 'auth', query: { redirect } }
   }
+
+  if (to.meta.requiredRole && !hasAnyRole(auth.currentUser?.roles, [to.meta.requiredRole])) {
+    ElMessage.warning(to.meta.lockedTitle || '请先解锁对应身份')
+    return {
+      path: to.meta.unlockRoute || '/roles',
+      query: { locked: to.meta.requiredRole, redirect },
+    }
+  }
+
   return true
 })
 
