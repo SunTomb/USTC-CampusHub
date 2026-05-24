@@ -2,13 +2,13 @@
 set -euo pipefail
 
 BASE_URL="${CAMPUSHUB_BASE_URL:-https://ustc.suntomb.qzz.io}"
-STUDENT_EMAIL="${CAMPUSHUB_SMOKE_STUDENT_EMAIL:-}"
+STUDENT_USERNAME="${CAMPUSHUB_SMOKE_STUDENT_USERNAME:-${CAMPUSHUB_SMOKE_STUDENT_EMAIL:-}}"
 STUDENT_PASSWORD="${CAMPUSHUB_SMOKE_STUDENT_PASSWORD:-}"
-ADMIN_EMAIL="${CAMPUSHUB_SMOKE_ADMIN_EMAIL:-}"
+ADMIN_USERNAME="${CAMPUSHUB_SMOKE_ADMIN_USERNAME:-${CAMPUSHUB_SMOKE_ADMIN_EMAIL:-}}"
 ADMIN_PASSWORD="${CAMPUSHUB_SMOKE_ADMIN_PASSWORD:-}"
 
-if [[ -z "$STUDENT_EMAIL" || -z "$STUDENT_PASSWORD" || -z "$ADMIN_EMAIL" || -z "$ADMIN_PASSWORD" ]]; then
-  echo "Missing CAMPUSHUB_SMOKE_STUDENT_EMAIL/PASSWORD or CAMPUSHUB_SMOKE_ADMIN_EMAIL/PASSWORD" >&2
+if [[ -z "$STUDENT_USERNAME" || -z "$STUDENT_PASSWORD" || -z "$ADMIN_USERNAME" || -z "$ADMIN_PASSWORD" ]]; then
+  echo "Missing CAMPUSHUB_SMOKE_STUDENT_USERNAME/PASSWORD or CAMPUSHUB_SMOKE_ADMIN_USERNAME/PASSWORD" >&2
   exit 2
 fi
 
@@ -46,8 +46,8 @@ login() {
   local email="$1"
   local password="$2"
   local response
-  response=$(curl -sS -X POST "${BASE_URL}/api/auth/login" -H "Content-Type: application/json" --data "{\"emailOrUsername\":\"${email}\",\"password\":\"${password}\"}")
-  python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("data", {}).get("token", ""))' <<<"$response"
+  response=$(curl -sS -X POST "${BASE_URL}/api/auth/login" -H "Content-Type: application/json" --data "{\"username\":\"${email}\",\"password\":\"${password}\"}")
+  python3 -c 'import json,sys; data=json.load(sys.stdin); print((data.get("data") or {}).get("token", ""))' <<<"$response"
 }
 
 check_status "anonymous public goods" GET "/api/goods" 200
@@ -55,7 +55,7 @@ check_status "anonymous public tasks" GET "/api/tasks" 200
 check_status "anonymous write blocked" POST "/api/goods" 401 "" '{}'
 check_status "anonymous admin blocked" GET "/api/admin/wallet/recharges" 401
 
-student_token=$(login "$STUDENT_EMAIL" "$STUDENT_PASSWORD")
+student_token=$(login "$STUDENT_USERNAME" "$STUDENT_PASSWORD")
 if [[ -z "$student_token" ]]; then
   echo "FAIL student login did not return token"
   exit 1
@@ -63,7 +63,7 @@ fi
 echo "PASS student login returned token"
 pass_count=$((pass_count + 1))
 
-admin_token=$(login "$ADMIN_EMAIL" "$ADMIN_PASSWORD")
+admin_token=$(login "$ADMIN_USERNAME" "$ADMIN_PASSWORD")
 if [[ -z "$admin_token" ]]; then
   echo "FAIL admin login did not return token"
   exit 1
