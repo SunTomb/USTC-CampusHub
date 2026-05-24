@@ -3,6 +3,7 @@ package com.campushub.payment;
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,16 +21,19 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final PaymentCenterProperties paymentCenterProperties;
     private final CurrentUserService currentUserService;
+    private final ObjectMapper objectMapper;
 
     public PaymentController(
             ServiceFeeRecordRepository serviceFeeRecordRepository,
             PaymentService paymentService,
             PaymentCenterProperties paymentCenterProperties,
-            CurrentUserService currentUserService) {
+            CurrentUserService currentUserService,
+            ObjectMapper objectMapper) {
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.paymentService = paymentService;
         this.paymentCenterProperties = paymentCenterProperties;
         this.currentUserService = currentUserService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/service-fees")
@@ -70,11 +74,18 @@ public class PaymentController {
             @RequestHeader(name = "X-CampusHub-Payment-Token", required = false) String token,
             @RequestHeader(name = "X-CampusHub-Payment-Signature", required = false) String signature,
             @RequestHeader(name = "X-CampusHub-Payment-Timestamp", required = false) String timestamp,
-            @RequestBody PaymentCenterCallbackRequest request) {
+            @RequestBody String rawBody) {
+        PaymentCenterCallbackRequest request;
+        try {
+            request = objectMapper.readValue(rawBody, PaymentCenterCallbackRequest.class);
+        } catch (Exception e) {
+            throw new BusinessException("支付回调内容无效");
+        }
         return ApiResponse.ok(paymentService.handlePaymentCenterCallback(
                 request,
-                new PaymentCallbackHeaders(token, signature, timestamp),
-                paymentCenterProperties.getCallbackToken()));
+                new PaymentCallbackHeaders(token, signature, timestamp, rawBody),
+                paymentCenterProperties.getCallbackToken(),
+                paymentCenterProperties.getSigningSecret()));
     }
 
     @PostMapping("/service-fees/{feeId}/mock-pay")

@@ -1,4 +1,4 @@
 package com.campushub.payment;
 
-public record PaymentCallbackHeaders(String token, String signature, String timestamp) {
+public record PaymentCallbackHeaders(String token, String signature, String timestamp, String rawBody) {
 }

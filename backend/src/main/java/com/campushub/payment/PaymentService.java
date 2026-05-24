@@ -8,7 +8,11 @@ import com.campushub.wallet.WalletAccountRepository;
 import com.campushub.wallet.WalletFlow;
 import com.campushub.wallet.WalletFlowRepository;
 import com.campushub.wallet.WalletOperationService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -125,11 +129,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentStatus handlePaymentCenterCallback(PaymentCenterCallbackRequest request, PaymentCallbackHeaders headers, String expectedToken) {
+    public PaymentStatus handlePaymentCenterCallback(PaymentCenterCallbackRequest request, PaymentCallbackHeaders headers, String expectedToken, String signingSecret) {
         if (expectedToken == null || expectedToken.isBlank() || !expectedToken.equals(headers.token())) {
             paymentCallbackEventRepository.save(new PaymentCallbackEvent(request.eventId(), request.orderNo(), request.paymentCenterOrderNo(), request.status(), request.amount(), false, false, "内部 token 校验失败"));
             throw new BusinessException("支付回调鉴权失败");
         }
+        validateCallbackSignature(request, headers, signingSecret);
         if (paymentCallbackEventRepository.findByEventId(request.eventId()).isPresent()) {
             return new PaymentStatus(paymentProvider.providerName(), request.orderNo(), request.paymentCenterOrderNo(), request.status(), request.paidAt(), null, "重复回调已忽略");
         }
@@ -172,6 +177,36 @@ public class PaymentService {
                             null)));
         }
         return new PaymentStatus(order.getProvider(), order.getOrderNo(), order.getProviderOrderNo(), order.getStatus(), order.getPaidAt(), null, "服务费已标记为本地支付成功。 ");
+    }
+
+    private void validateCallbackSignature(PaymentCenterCallbackRequest request, PaymentCallbackHeaders headers, String signingSecret) {
+        if (signingSecret == null || signingSecret.isBlank()) {
+            return;
+        }
+        if (headers.timestamp() == null || headers.timestamp().isBlank() || headers.signature() == null || headers.signature().isBlank()) {
+            paymentCallbackEventRepository.save(new PaymentCallbackEvent(request.eventId(), request.orderNo(), request.paymentCenterOrderNo(), request.status(), request.amount(), false, false, "签名头缺失"));
+            throw new BusinessException("支付回调签名失败");
+        }
+        String expected = hmacSha256Hex(headers.timestamp() + "." + headers.rawBody(), signingSecret);
+        if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), headers.signature().getBytes(StandardCharsets.UTF_8))) {
+            paymentCallbackEventRepository.save(new PaymentCallbackEvent(request.eventId(), request.orderNo(), request.paymentCenterOrderNo(), request.status(), request.amount(), false, false, "签名不匹配"));
+            throw new BusinessException("支付回调签名失败");
+        }
+    }
+
+    private String hmacSha256Hex(String value, String secret) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                builder.append(String.format("%02x", b));
+            }
+            return builder.toString();
+        } catch (Exception e) {
+            throw new BusinessException("支付回调签名失败");
+        }
     }
 
     private void validateCallback(PaymentCenterCallbackRequest request, PaymentOrder order) {
