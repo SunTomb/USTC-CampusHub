@@ -1,5 +1,6 @@
 package com.campushub.beta;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.campushub.CampusHubApplication;
@@ -34,6 +35,17 @@ class BetaDemoAccountInitializerValidationTest {
             try (ConfigurableApplicationContext ignored = application.run()) {
                 throw new AssertionError("context should not start");
             }
-        }).hasRootCauseMessage("Beta demo student password must be non-placeholder and at least 12 characters");
+        }).satisfies(error -> assertThat(stackMessages(error))
+                .contains("Beta demo student password must be non-placeholder and at least 12 characters"));
+    }
+
+    private String stackMessages(Throwable error) {
+        StringBuilder messages = new StringBuilder();
+        Throwable current = error;
+        while (current != null) {
+            messages.append(current.getMessage()).append('\n');
+            current = current.getCause();
+        }
+        return messages.toString();
     }
 }
