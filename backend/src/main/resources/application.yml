@@ -59,6 +59,11 @@ campushub:
     service-fee:
       enabled: ${CAMPUSHUB_SECONDHAND_SERVICE_FEE_ENABLED:false}
       intent-amount: ${CAMPUSHUB_SECONDHAND_SERVICE_FEE_INTENT_AMOUNT:0.00}
+  wallet:
+    recharge:
+      wechat:
+        manual-qr-url: ${CAMPUSHUB_WECHAT_MANUAL_QR_URL:}
+        manual-note: ${CAMPUSHUB_WECHAT_MANUAL_NOTE:扫码支付后请备注充值订单号，管理员审核后入账。}
   mail:
     enabled: ${CAMPUSHUB_MAIL_ENABLED:false}
     provider: ${CAMPUSHUB_MAIL_PROVIDER:mock}

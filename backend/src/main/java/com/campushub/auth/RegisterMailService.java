@@ -1,5 +1,6 @@
 package com.campushub.auth;
 
+import com.campushub.common.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -21,9 +22,12 @@ public class RegisterMailService {
     }
 
     public void sendRegisterCode(String email, String code) {
-        if (!mailProperties.enabled() || mailSender == null) {
+        if (!mailProperties.enabled()) {
             log.info("Registration email verification mock-sent to {}", maskEmail(email));
             return;
+        }
+        if (mailSender == null) {
+            throw new BusinessException("邮件服务未配置，请联系管理员开启 SMTP");
         }
 
         SimpleMailMessage message = new SimpleMailMessage();
@@ -34,7 +38,11 @@ public class RegisterMailService {
                 + mailProperties.code().ttlMinutes()
                 + " 分钟。若非本人操作，请忽略本邮件。\n\n验证码："
                 + code);
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (RuntimeException ex) {
+            throw new BusinessException("验证码邮件发送失败，请稍后再试");
+        }
         log.info("Registration email verification sent to {} via {}", maskEmail(email), mailProperties.provider());
     }
 

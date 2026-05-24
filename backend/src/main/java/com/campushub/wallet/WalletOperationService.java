@@ -28,6 +28,7 @@ public class WalletOperationService {
     private final WalletService walletService;
     private final WalletFlowRepository walletFlowRepository;
     private final WalletFrozenRecordRepository walletFrozenRecordRepository;
+    private final WalletRechargeProperties walletRechargeProperties;
 
     public WalletOperationService(
             WalletRechargeOrderRepository rechargeOrderRepository,
@@ -39,7 +40,8 @@ public class WalletOperationService {
             PaymentCenterProperties paymentCenterProperties,
             WalletService walletService,
             WalletFlowRepository walletFlowRepository,
-            WalletFrozenRecordRepository walletFrozenRecordRepository) {
+            WalletFrozenRecordRepository walletFrozenRecordRepository,
+            WalletRechargeProperties walletRechargeProperties) {
         this.rechargeOrderRepository = rechargeOrderRepository;
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.userRepository = userRepository;
@@ -50,6 +52,7 @@ public class WalletOperationService {
         this.walletService = walletService;
         this.walletFlowRepository = walletFlowRepository;
         this.walletFrozenRecordRepository = walletFrozenRecordRepository;
+        this.walletRechargeProperties = walletRechargeProperties;
     }
 
     @Transactional
@@ -60,7 +63,7 @@ public class WalletOperationService {
         }
         if ("WECHAT".equals(request.channel())) {
             WalletRechargeOrder order = rechargeOrderRepository.save(new WalletRechargeOrder(nextNo("WR"), user, "WECHAT", request.amount(), BigDecimal.ZERO, request.amount(), "PENDING_REVIEW"));
-            return WalletRechargeSummary.from(order);
+            return enrichRechargeSummary(order);
         }
         throw new BusinessException("不支持的充值渠道");
     }
@@ -85,7 +88,7 @@ public class WalletOperationService {
         }
         order.approve(admin, note);
         walletService.credit(order.getUser().getId(), order.getAmount(), "WALLET_RECHARGE", order.getId(), "wechat-recharge:" + order.getId(), "ADMIN", adminId, "微信人工充值到账");
-        return WalletRechargeSummary.from(order);
+        return enrichRechargeSummary(order);
     }
 
     @Transactional
@@ -96,13 +99,13 @@ public class WalletOperationService {
             throw new BusinessException("充值订单状态不可拒绝");
         }
         order.reject(admin, note);
-        return WalletRechargeSummary.from(order);
+        return enrichRechargeSummary(order);
     }
 
     @Transactional(readOnly = true)
     public List<WalletRechargeSummary> listUserRecharges(Long userId) {
         return rechargeOrderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
-                .map(WalletRechargeSummary::from)
+                .map(this::enrichRechargeSummary)
                 .toList();
     }
 
@@ -111,7 +114,7 @@ public class WalletOperationService {
         List<WalletRechargeOrder> orders = status == null || status.isBlank()
                 ? rechargeOrderRepository.findTop200ByOrderByCreatedAtDesc()
                 : rechargeOrderRepository.findTop200ByStatusOrderByCreatedAtDesc(status);
-        return orders.stream().map(WalletRechargeSummary::from).toList();
+        return orders.stream().map(this::enrichRechargeSummary).toList();
     }
 
     @Transactional
@@ -201,7 +204,23 @@ public class WalletOperationService {
         PaymentCreation creation = paymentProvider.createWebPayment(new PaymentRequest(order.getOrderNo(), "WALLET_RECHARGE", recharge.getId(), user.getId(), recharge.getRechargeNo(), payAmount, "CampusHub 钱包充值 " + recharge.getRechargeNo(), paymentCenterProperties.getCallbackUrl(), paymentCenterProperties.getExpireMinutes()));
         order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
         recharge.attachPaymentOrder(order.getOrderNo());
-        return WalletRechargeSummary.from(recharge);
+        return enrichRechargeSummary(recharge);
+    }
+
+    private WalletRechargeSummary enrichRechargeSummary(WalletRechargeOrder order) {
+        WalletRechargeSummary summary = WalletRechargeSummary.from(order);
+        if (order.getPaymentOrderNo() != null) {
+            PaymentOrder paymentOrder = paymentOrderRepository.findByOrderNo(order.getPaymentOrderNo()).orElse(null);
+            if (paymentOrder != null) {
+                summary = summary.withPaymentInfo(paymentOrder.getProvider(), paymentOrder.getPayUrl());
+            }
+        }
+        if ("WECHAT".equals(order.getChannel())) {
+            summary = summary.withWechatManualInfo(
+                    walletRechargeProperties.getWechat().getManualQrUrl(),
+                    walletRechargeProperties.getWechat().getManualNote());
+        }
+        return summary;
     }
 
     private String nextNo(String prefix) {

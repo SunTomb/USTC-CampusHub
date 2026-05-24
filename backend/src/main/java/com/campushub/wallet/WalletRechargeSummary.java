@@ -16,7 +16,11 @@ public record WalletRechargeSummary(
         String paymentOrderNo,
         String reviewNote,
         LocalDateTime reviewedAt,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        String paymentProvider,
+        String paymentPayUrl,
+        String wechatQrUrl,
+        String wechatNote) {
 
     public static WalletRechargeSummary from(WalletRechargeOrder order) {
         return new WalletRechargeSummary(
@@ -32,6 +36,52 @@ public record WalletRechargeSummary(
                 order.getPaymentOrderNo(),
                 order.getReviewNote(),
                 order.getReviewedAt(),
-                order.getCreatedAt());
+                order.getCreatedAt(),
+                null,
+                null,
+                null,
+                null);
+    }
+
+    public WalletRechargeSummary withPaymentInfo(String paymentProvider, String paymentPayUrl) {
+        return new WalletRechargeSummary(
+                id,
+                rechargeNo,
+                userId,
+                userNickname,
+                channel,
+                amount,
+                channelFee,
+                payAmount,
+                status,
+                paymentOrderNo,
+                reviewNote,
+                reviewedAt,
+                createdAt,
+                paymentProvider,
+                paymentPayUrl,
+                wechatQrUrl,
+                wechatNote);
+    }
+
+    public WalletRechargeSummary withWechatManualInfo(String wechatQrUrl, String wechatNote) {
+        return new WalletRechargeSummary(
+                id,
+                rechargeNo,
+                userId,
+                userNickname,
+                channel,
+                amount,
+                channelFee,
+                payAmount,
+                status,
+                paymentOrderNo,
+                reviewNote,
+                reviewedAt,
+                createdAt,
+                paymentProvider,
+                paymentPayUrl,
+                wechatQrUrl,
+                wechatNote);
     }
 }

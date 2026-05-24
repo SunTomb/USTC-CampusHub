@@ -596,6 +596,10 @@ export interface WalletRechargeSummary {
   reviewNote: string | null
   reviewedAt: string | null
   createdAt: string | null
+  paymentProvider: string | null
+  paymentPayUrl: string | null
+  wechatQrUrl: string | null
+  wechatNote: string | null
 }
 
 export interface WalletWithdrawalSummary {

@@ -549,3 +549,37 @@ Recommended Phase 12+ directions:
 - recommendation/search improvements;
 - real-time chat only after governance and privacy requirements are revisited.
 
+## Latest Phase 12 production user journey handoff, 2026-05-24
+
+Phase 12 focuses on making the real new-user production journey operational after Phase 11 Beta readiness.
+
+Implemented locally in this session:
+
+- New spec: `docs/superpowers/specs/2026-05-24-campushub-phase12-production-user-journey-design.md`.
+- New plan: `docs/superpowers/plans/2026-05-24-campushub-phase12-production-user-journey.md`.
+- `RegisterMailService` now fails clearly when `campushub.mail.enabled=true` but `JavaMailSender` is unavailable, and wraps SMTP send failures as a business error instead of silently pretending success.
+- `WalletRechargeSummary` now exposes `paymentProvider`, `paymentPayUrl`, `wechatQrUrl`, and `wechatNote`.
+- `WalletOperationService` enriches Alipay recharge summaries from linked `payment_orders.pay_url` and enriches WeChat recharge summaries from configured manual QR properties.
+- New `WalletRechargeProperties` maps `campushub.wallet.recharge.wechat.manual-qr-url` and `manual-note`.
+- Frontend wallet recharge now opens non-mock Alipay payment URLs, keeps a continue-payment action on pending recharge cards, and shows a WeChat manual QR dialog for pending WeChat recharge orders.
+- `.env.prod.example` documents placeholder-only `CAMPUSHUB_WECHAT_MANUAL_QR_URL` and `CAMPUSHUB_WECHAT_MANUAL_NOTE`.
+
+Verification completed locally:
+
+- `npm --prefix frontend run test -- src/views/walletPaymentActions.test.ts` passed.
+- `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
+- Local backend Maven verification was attempted with `mvn -pl backend -Dtest=RegisterMailServiceTest,WalletRechargeSummaryTest test` but this machine still lacks `mvn`.
+
+Before production deployment:
+
+- Run targeted backend Maven tests or backend Docker build on the server.
+- Configure real server `.env` without printing contents: SMTP must remain enabled and valid; set `CAMPUSHUB_WECHAT_MANUAL_QR_URL` to a served QR image URL; set `CAMPUSHUB_WECHAT_MANUAL_NOTE` to the desired user-facing instruction.
+- Verify `/auth` send-code with a controlled campus email, `/wallet` Alipay recharge opens the payment-center URL, `/wallet` WeChat recharge shows QR, and `/admin/wallet` can approve the pending WeChat recharge.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token, database password, manual QR image contents if sensitive, or Alipay key contents.
+- Production real payment remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
+- Do not edit already-applied migrations V1-V12; Phase 12 does not require a migration.
+- Use low-impact production verification on the small shared server.
+

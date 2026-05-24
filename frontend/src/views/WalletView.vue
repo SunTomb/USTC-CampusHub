@@ -40,6 +40,11 @@
             <p>实际支付：¥{{ item.payAmount }}，手续费：¥{{ item.channelFee }}</p>
             <p>状态：{{ item.status }}</p>
             <p v-if="item.paymentOrderNo">支付单：{{ item.paymentOrderNo }}</p>
+            <p v-if="item.paymentProvider">支付渠道：{{ item.paymentProvider }}</p>
+            <div class="payment-actions inline-card-actions">
+              <el-button v-if="item.paymentPayUrl && item.status !== 'PAID'" size="small" type="primary" @click="openRechargePayUrl(item)">继续支付</el-button>
+              <el-button v-if="item.wechatQrUrl && item.status === 'PENDING_REVIEW'" size="small" @click="showWechatQr(item)">查看微信收款码</el-button>
+            </div>
           </article>
         </div>
       </el-tab-pane>
@@ -149,6 +154,18 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="wechatQrDialogVisible" title="微信扫码充值" width="420px">
+      <div v-if="wechatRecharge" class="wechat-qr-box">
+        <p>充值单号：{{ wechatRecharge.rechargeNo }}</p>
+        <p>金额：¥{{ wechatRecharge.amount }}</p>
+        <img v-if="wechatRecharge.wechatQrUrl" :src="wechatRecharge.wechatQrUrl" alt="微信收款二维码" class="wechat-qr-image" />
+        <el-alert type="info" show-icon :title="wechatRecharge.wechatNote || '扫码支付后请备注充值订单号，管理员审核后入账。'" />
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="wechatQrDialogVisible = false">我知道了</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="withdrawalDialogVisible" title="申请提现" width="420px">
       <el-alert type="warning" show-icon title="Phase 9 提现为人工审核与人工打款，不会自动调用外部转账通道。" />
       <el-form label-width="90px" class="dialog-form">
@@ -196,6 +213,7 @@ import {
 } from '@/api/campushub'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
+import { getRechargePaymentAction } from './walletPaymentActions'
 
 const auth = useAuthStore()
 const currentUserId = computed(() => auth.currentUser?.id)
@@ -209,6 +227,8 @@ const loading = ref(false)
 const payingId = ref<number>()
 const rechargeDialogVisible = ref(false)
 const withdrawalDialogVisible = ref(false)
+const wechatQrDialogVisible = ref(false)
+const wechatRecharge = ref<WalletRechargeSummary>()
 const rechargeForm = reactive({ channel: 'ALIPAY', amount: 10, remark: '' })
 const withdrawalForm = reactive({ channel: 'WECHAT', amount: 10, accountSnapshot: '' })
 
@@ -267,13 +287,34 @@ async function submitRecharge() {
     const result = await createWalletRecharge(userId, rechargeForm)
     ElMessage.success(result.channel === 'WECHAT' ? '微信充值已提交人工审核' : '充值支付单已创建')
     rechargeDialogVisible.value = false
-    if (result.paymentOrderNo) {
-      ElMessage.info(`支付订单：${result.paymentOrderNo}`)
-    }
+    handleRechargePaymentAction(result)
     await loadWallet()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '充值提交失败')
   }
+}
+
+function handleRechargePaymentAction(recharge: WalletRechargeSummary) {
+  const action = getRechargePaymentAction(recharge)
+  if (action.type === 'open-url') {
+    window.open(action.url, '_blank', 'noopener,noreferrer')
+    return
+  }
+  if (action.type === 'show-wechat-qr') {
+    showWechatQr(recharge)
+  }
+}
+
+function openRechargePayUrl(recharge: WalletRechargeSummary) {
+  if (!recharge.paymentPayUrl) {
+    return
+  }
+  window.open(recharge.paymentPayUrl, '_blank', 'noopener,noreferrer')
+}
+
+function showWechatQr(recharge: WalletRechargeSummary) {
+  wechatRecharge.value = recharge
+  wechatQrDialogVisible.value = true
 }
 
 async function submitWithdrawal() {
@@ -294,3 +335,24 @@ async function submitWithdrawal() {
 
 onMounted(loadWallet)
 </script>
+
+<style scoped>
+.inline-card-actions {
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+
+.wechat-qr-box {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+}
+
+.wechat-qr-image {
+  width: min(260px, 80vw);
+  max-width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+</style>
