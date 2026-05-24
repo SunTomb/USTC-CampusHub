@@ -47,7 +47,7 @@ login() {
   local password="$2"
   local response
   response=$(curl -sS -X POST "${BASE_URL}/api/auth/login" -H "Content-Type: application/json" --data "{\"username\":\"${email}\",\"password\":\"${password}\"}")
-  python3 -c 'import json,sys; data=json.load(sys.stdin); print((data.get("data") or {}).get("token", ""))' <<<"$response"
+  python3 -c 'import json,sys; data=json.load(sys.stdin); print((data.get("data") or {}).get("accessToken", ""))' <<<"$response"
 }
 
 check_status "anonymous public goods" GET "/api/goods" 200
