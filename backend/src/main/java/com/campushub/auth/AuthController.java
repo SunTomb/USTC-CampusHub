@@ -51,6 +51,7 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = userRepository.findByUsername(request.username())
+                .or(() -> userRepository.findByEmail(request.username().trim().toLowerCase()))
                 .orElseThrow(() -> new BusinessException("用户名或密码错误"));
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BusinessException("用户名或密码错误");
