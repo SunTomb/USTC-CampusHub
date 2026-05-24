@@ -1,12 +1,11 @@
-ALTER TABLE service_fee_records
-    ADD COLUMN payment_order_no VARCHAR(64),
-    ADD COLUMN payment_provider VARCHAR(40),
-    ADD COLUMN payment_center_order_no VARCHAR(80),
-    ADD COLUMN pay_url VARCHAR(1000),
-    ADD COLUMN expires_at TIMESTAMP,
-    ADD COLUMN failed_at TIMESTAMP,
-    ADD COLUMN failure_reason VARCHAR(500),
-    ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL;
+ALTER TABLE service_fee_records ADD COLUMN payment_order_no VARCHAR(64);
+ALTER TABLE service_fee_records ADD COLUMN payment_provider VARCHAR(40);
+ALTER TABLE service_fee_records ADD COLUMN payment_center_order_no VARCHAR(80);
+ALTER TABLE service_fee_records ADD COLUMN pay_url VARCHAR(1000);
+ALTER TABLE service_fee_records ADD COLUMN expires_at TIMESTAMP;
+ALTER TABLE service_fee_records ADD COLUMN failed_at TIMESTAMP;
+ALTER TABLE service_fee_records ADD COLUMN failure_reason VARCHAR(500);
+ALTER TABLE service_fee_records ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL;
 
 CREATE UNIQUE INDEX uk_service_fee_payment_order_no ON service_fee_records (payment_order_no);
 CREATE INDEX idx_service_fee_payment_status_time ON service_fee_records (status, created_at);
@@ -51,9 +50,7 @@ CREATE TABLE payment_callback_events (
 CREATE UNIQUE INDEX uk_payment_callback_event_id ON payment_callback_events (event_id);
 CREATE INDEX idx_payment_callback_order_time ON payment_callback_events (order_no, created_at);
 
-ALTER TABLE role_applications
-    ALTER COLUMN deposit_status SET DEFAULT 'PENDING';
-ALTER TABLE role_applications
-    ADD COLUMN deposit_payment_order_no VARCHAR(64);
+ALTER TABLE role_applications ALTER COLUMN deposit_status SET DEFAULT 'PENDING';
+ALTER TABLE role_applications ADD COLUMN deposit_payment_order_no VARCHAR(64);
 
 CREATE UNIQUE INDEX uk_role_application_deposit_order ON role_applications (deposit_payment_order_no);
