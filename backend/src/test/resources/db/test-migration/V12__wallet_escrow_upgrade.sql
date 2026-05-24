@@ -15,7 +15,6 @@ WHERE flow_type = 'LEGACY';
 
 CREATE UNIQUE INDEX uk_wallet_flows_idempotency_key ON wallet_flows (idempotency_key);
 CREATE INDEX idx_wallet_flows_type_time ON wallet_flows (flow_type, created_at);
-CREATE INDEX idx_wallet_flows_business ON wallet_flows (business_type, business_id);
 CREATE INDEX idx_wallet_flows_counterparty_time ON wallet_flows (counterparty_user_id, created_at);
 
 CREATE TABLE wallet_recharge_orders (
