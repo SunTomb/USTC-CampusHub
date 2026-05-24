@@ -520,7 +520,7 @@ Important constraints remain:
 
 ## Latest Phase 11 beta readiness handoff, 2026-05-24
 
-Phase 11 focuses on Beta readiness rather than new business functionality.
+Phase 11 focuses on Beta readiness rather than new business functionality. Latest GitHub/local/production `master` is synchronized at `13b315e` (`fix beta smoke token extraction`); `phase9-wallet-escrow` also contains the same commit. Production `/opt/campushub` is back on `master` at `13b315e`, with MySQL healthy and backend/web running.
 
 Implemented/expected Phase 11 artifacts:
 
@@ -530,6 +530,7 @@ Implemented/expected Phase 11 artifacts:
 - Authenticated smoke script: `scripts/beta-auth-smoke.sh`.
 - Operations docs under `docs/operations/`: beta runbook, backup/restore guide, and admin playbook.
 - User-facing policy/risk page: `/policy`.
+- Verification completed: targeted backend Maven-container tests passed, backend Docker build completed Maven `BUILD SUCCESS`, frontend Docker build passed with known Vite warnings, authenticated smoke passed 14 checks, Playwriter desktop/mobile matrix rendered without white screens, and mobile 390x844 checks had no document-level horizontal overflow.
 
 Important constraints remain:
 
