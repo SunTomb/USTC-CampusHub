@@ -431,7 +431,7 @@ Add placeholder-only envs to `.env.prod.example`:
 ```env
 CAMPUSHUB_MAIL_ENABLED=true
 CAMPUSHUB_WECHAT_MANUAL_QR_URL=https://example.com/path/to/wechat-qr.png
-CAMPUSHUB_WECHAT_MANUAL_NOTE=扫码支付后请备注充值订单号，管理员审核后入账。
+CAMPUSHUB_WECHAT_MANUAL_NOTE=扫码支付后请备注你的校园邮箱或 CampusHub 用户名，管理员审核后入账。
 ```
 
 Do not add real credentials or QR image content.

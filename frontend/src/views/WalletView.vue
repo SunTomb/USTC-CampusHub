@@ -159,7 +159,7 @@
         <p>充值单号：{{ wechatRecharge.rechargeNo }}</p>
         <p>金额：¥{{ wechatRecharge.amount }}</p>
         <img v-if="wechatRecharge.wechatQrUrl" :src="wechatRecharge.wechatQrUrl" alt="微信收款二维码" class="wechat-qr-image" />
-        <el-alert type="info" show-icon :title="wechatRecharge.wechatNote || '扫码支付后请备注充值订单号，管理员审核后入账。'" />
+        <el-alert type="info" show-icon :title="wechatRecharge.wechatNote || '扫码支付后请备注你的校园邮箱或 CampusHub 用户名，管理员审核后入账。'" />
       </div>
       <template #footer>
         <el-button type="primary" @click="wechatQrDialogVisible = false">我知道了</el-button>

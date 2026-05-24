@@ -63,7 +63,7 @@ campushub:
     recharge:
       wechat:
         manual-qr-url: ${CAMPUSHUB_WECHAT_MANUAL_QR_URL:}
-        manual-note: ${CAMPUSHUB_WECHAT_MANUAL_NOTE:扫码支付后请备注充值订单号，管理员审核后入账。}
+        manual-note: ${CAMPUSHUB_WECHAT_MANUAL_NOTE:扫码支付后请备注你的校园邮箱或 CampusHub 用户名，管理员审核后入账。}
   mail:
     enabled: ${CAMPUSHUB_MAIL_ENABLED:false}
     provider: ${CAMPUSHUB_MAIL_PROVIDER:mock}
