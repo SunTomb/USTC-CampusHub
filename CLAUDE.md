@@ -549,37 +549,33 @@ Recommended Phase 12+ directions:
 - recommendation/search improvements;
 - real-time chat only after governance and privacy requirements are revisited.
 
-## Latest Phase 12 production user journey handoff, 2026-05-24
+## Latest Phase 12 final production user journey handoff, 2026-05-24
 
-Phase 12 focuses on making the real new-user production journey operational after Phase 11 Beta readiness.
+Latest local/GitHub/production `master` is synchronized at `749f60a` (`allow login with campus email`). Production `/opt/campushub` is on `master` at `749f60a`; MySQL/backend/web are running.
 
-Implemented locally in this session:
+Additional Phase 12 completion after the initial handoff:
 
-- New spec: `docs/superpowers/specs/2026-05-24-campushub-phase12-production-user-journey-design.md`.
-- New plan: `docs/superpowers/plans/2026-05-24-campushub-phase12-production-user-journey.md`.
-- `RegisterMailService` now fails clearly when `campushub.mail.enabled=true` but `JavaMailSender` is unavailable, and wraps SMTP send failures as a business error instead of silently pretending success.
-- `WalletRechargeSummary` now exposes `paymentProvider`, `paymentPayUrl`, `wechatQrUrl`, and `wechatNote`.
-- `WalletOperationService` enriches Alipay recharge summaries from linked `payment_orders.pay_url` and enriches WeChat recharge summaries from configured manual QR properties.
-- New `WalletRechargeProperties` maps `campushub.wallet.recharge.wechat.manual-qr-url` and `manual-note`.
-- Frontend wallet recharge now opens non-mock Alipay payment URLs, keeps a continue-payment action on pending recharge cards, and shows a WeChat manual QR dialog for pending WeChat recharge orders.
-- `.env.prod.example` documents placeholder-only `CAMPUSHUB_WECHAT_MANUAL_QR_URL` and `CAMPUSHUB_WECHAT_MANUAL_NOTE`.
+- API-Transfer-Station payment-center bridge exists at commit `a4f7ab2` (`feat: add CampusHub payment center bridge`). It owns Alipay keys and exposes the internal CampusHub order creation bridge.
+- CampusHub commit `f08c7bf` wires payment-center callback signature verification and production compose payment-center env passthrough.
+- CampusHub commit `9c6df2b` updates WeChat manual recharge guidance to ask users to remark their campus email or CampusHub username, not a recharge order number.
+- CampusHub commit `749f60a` allows login with either username or campus email. This fixed the real account `yeshenghao@mail.ustc.edu.cn`, whose username is `yeshenghao`; the account now has `ROLE_STUDENT, ROLE_ADMIN`.
+- Production Brevo SMTP was configured safely by reusing existing server-side API-Transfer-Station SMTP config; no secrets were printed or committed.
+- Production payment provider is now `payment-center`, with required payment-center URL/path/token/signing config present in server `.env`; do not print those values.
 
-Verification completed locally:
+Verified production evidence:
 
-- `npm --prefix frontend run test -- src/views/walletPaymentActions.test.ts` passed.
-- `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
-- Local backend Maven verification was attempted with `mvn -pl backend -Dtest=RegisterMailServiceTest,WalletRechargeSummaryTest test` but this machine still lacks `mvn`.
-
-Before production deployment:
-
-- Run targeted backend Maven tests or backend Docker build on the server.
-- Configure real server `.env` without printing contents: SMTP must remain enabled and valid; set `CAMPUSHUB_WECHAT_MANUAL_QR_URL` to a served QR image URL; set `CAMPUSHUB_WECHAT_MANUAL_NOTE` to the desired user-facing instruction.
-- Verify `/auth` send-code with a controlled campus email, `/wallet` Alipay recharge opens the payment-center URL, `/wallet` WeChat recharge shows QR, and `/admin/wallet` can approve the pending WeChat recharge.
+- CampusHub backend Docker build completed Maven `BUILD SUCCESS`; frontend Docker build succeeded with only known Vite warnings.
+- `scripts/beta-auth-smoke.sh` passed 14 checks.
+- Registration send-code smoke returned `200 success=True`.
+- Wallet Alipay recharge smoke returned `PENDING_PAYMENT provider=PAYMENT_CENTER payUrl=yes mock=no`.
+- Playwriter confirmed `/wallet` shows `PAYMENT_CENTER` and `继续支付`; clicking it opened an Alipay cashier page under `excashier.alipay.com`.
+- WeChat QR dialog loads and shows the email/username remark instruction; mobile wallet viewport had no document-level horizontal overflow.
+- `yeshenghao@mail.ustc.edu.cn` plus the user-known password logs in successfully, returns roles `ROLE_STUDENT, ROLE_ADMIN`, and can access `/admin/wallet`.
 
 Important constraints remain:
 
-- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token, database password, manual QR image contents if sensitive, or Alipay key contents.
-- Production real payment remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
-- Do not edit already-applied migrations V1-V12; Phase 12 does not require a migration.
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token/signing secret, database password, manual QR image contents if sensitive, or Alipay key contents.
+- Production real Alipay handling remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
+- Do not edit already-applied migrations V1-V12; Phase 12 did not require a migration.
 - Use low-impact production verification on the small shared server.
 
