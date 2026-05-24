@@ -632,6 +632,122 @@ body {
   margin: 18px 0 10px;
 }
 
+.identity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.identity-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.identity-badges-compact .identity-badge {
+  min-height: 22px;
+  padding: 2px 8px;
+}
+
+.identity-badge-admin {
+  color: #f8fafc;
+  background: #0f172a;
+}
+
+.identity-badge-runner,
+.identity-badge-shopMerchant {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.identity-badge-goodsPublisher {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.capability-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.capability-card-locked {
+  background: #fff7ed;
+}
+
+.capability-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #14b8a6);
+  font-weight: 800;
+}
+
+.capability-card-orange .capability-icon {
+  background: linear-gradient(135deg, #f97316, #facc15);
+}
+
+.capability-card-green .capability-icon {
+  background: linear-gradient(135deg, #059669, #2dd4bf);
+}
+
+.capability-card-dark .capability-icon {
+  background: linear-gradient(135deg, #0f172a, #475569);
+}
+
+.capability-content {
+  min-width: 0;
+}
+
+.capability-content p,
+.capability-meta {
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.locked-state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-radius: 26px;
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.locked-state-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.locked-state h2,
+.locked-state p {
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .ops-heading-actions {
     justify-content: flex-start;
