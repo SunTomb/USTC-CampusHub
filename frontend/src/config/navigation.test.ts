@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getVisibleNavGroups, getMobileTabItems } from './navigation'
+import { getVisibleNavGroups, getMobileTabItems, navItems } from './navigation'
 import { buildIdentityProfile } from '@/utils/identity'
 
 const guestProfile = buildIdentityProfile(null)
@@ -8,6 +8,10 @@ const studentProfile = buildIdentityProfile({ id: 1, username: 'student', nickna
 const adminProfile = buildIdentityProfile({ id: 2, username: 'admin', nickname: '管理员', roles: ['ROLE_STUDENT', 'ROLE_ADMIN'] })
 
 describe('navigation config', () => {
+  it('does not expose task workspaces as static navigation links', () => {
+    expect(navItems.map((item) => item.path)).not.toContain('/tasks/1/workspace')
+  })
+
   it('keeps private and admin entries out of guest navigation', () => {
     const labels = getVisibleNavGroups(guestProfile).flatMap((group) => group.items.map((item) => item.label))
     expect(labels).toContain('首页')
