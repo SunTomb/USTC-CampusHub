@@ -77,10 +77,46 @@ const heroDescription = computed(() => auth.isAuthenticated
 const hasIdentity = (key: string) => identityProfile.value.identities.some((identity) => identity.key === key)
 
 const capabilityCards = computed(() => [
-  { icon: '跑', title: '跑腿接单者', description: hasIdentity('runner') ? '你已解锁抢单、申请和任务工作台能力。' : '支付 5 元保证金后自动开通，适合快递、外卖、打印代取。', badge: hasIdentity('runner') ? '已解锁' : '可申请', tone: 'green' as const, locked: !hasIdentity('runner'), to: hasIdentity('runner') ? '/tasks' : '/roles', action: hasIdentity('runner') ? '进入跑腿大厅' : '申请身份' },
-  { icon: '二', title: '二手发布者', description: hasIdentity('goodsPublisher') ? '你可以发布和管理二手商品。' : '支付 10 元保证金后自动开通，用于可信二手发布。', badge: hasIdentity('goodsPublisher') ? '已解锁' : '可申请', tone: 'orange' as const, locked: !hasIdentity('goodsPublisher'), to: hasIdentity('goodsPublisher') ? '/goods/publish' : '/roles', action: hasIdentity('goodsPublisher') ? '发布二手' : '申请身份' },
-  { icon: '店', title: '店铺商家', description: hasIdentity('shopMerchant') ? '你可以维护店铺、服务项目和预约。' : '支付 20 元保证金并通过人工审核后开通。', badge: hasIdentity('shopMerchant') ? '已解锁' : '需审核', tone: 'blue' as const, locked: !hasIdentity('shopMerchant'), to: hasIdentity('shopMerchant') ? '/shops/merchant' : '/roles', action: hasIdentity('shopMerchant') ? '店铺工作台' : '申请身份' },
-  { icon: '管', title: '运营管理员', description: hasIdentity('admin') ? '你可以进入审核、治理、运营、支付和钱包后台。' : '管理员能力仅对授权账号展示。', badge: hasIdentity('admin') ? '管理员' : '受限', tone: 'dark' as const, locked: !hasIdentity('admin'), to: hasIdentity('admin') ? '/admin/ops' : '/policy', action: hasIdentity('admin') ? '进入运营后台' : '了解规则' },
+  {
+    icon: '跑',
+    title: '跑腿接单者',
+    description: hasIdentity('runner') ? '你已解锁抢单、申请和任务工作台能力。' : '支付 5 元保证金后自动开通，适合快递、外卖、打印代取。',
+    badge: hasIdentity('runner') ? '已解锁' : '可申请',
+    tone: 'green' as const,
+    locked: !hasIdentity('runner'),
+    to: !auth.isAuthenticated ? '/auth' : hasIdentity('runner') ? '/tasks' : '/roles',
+    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('runner') ? '进入跑腿大厅' : '申请身份',
+  },
+  {
+    icon: '二',
+    title: '二手发布者',
+    description: hasIdentity('goodsPublisher') ? '你可以发布和管理二手商品。' : '支付 10 元保证金后自动开通，用于可信二手发布。',
+    badge: hasIdentity('goodsPublisher') ? '已解锁' : '可申请',
+    tone: 'orange' as const,
+    locked: !hasIdentity('goodsPublisher'),
+    to: !auth.isAuthenticated ? '/auth' : hasIdentity('goodsPublisher') ? '/goods/publish' : '/roles',
+    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('goodsPublisher') ? '发布二手' : '申请身份',
+  },
+  {
+    icon: '店',
+    title: '店铺商家',
+    description: hasIdentity('shopMerchant') ? '你可以维护店铺、服务项目和预约。' : '支付 20 元保证金并通过人工审核后开通。',
+    badge: hasIdentity('shopMerchant') ? '已解锁' : '需审核',
+    tone: 'blue' as const,
+    locked: !hasIdentity('shopMerchant'),
+    to: !auth.isAuthenticated ? '/auth' : hasIdentity('shopMerchant') ? '/shops/merchant' : '/roles',
+    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('shopMerchant') ? '店铺工作台' : '申请身份',
+  },
+  {
+    icon: '管',
+    title: '运营管理员',
+    description: hasIdentity('admin') ? '你可以进入审核、治理、运营、支付和钱包后台。' : '管理员能力仅对授权账号展示。',
+    badge: hasIdentity('admin') ? '管理员' : '受限',
+    tone: 'dark' as const,
+    locked: !hasIdentity('admin'),
+    to: hasIdentity('admin') ? '/admin/ops' : '/policy',
+    action: hasIdentity('admin') ? '进入运营后台' : '了解规则',
+  },
 ])
 
 const nextActions = computed(() => {

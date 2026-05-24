@@ -77,9 +77,12 @@ export function buildIdentityProfile(user: RoleAwareUser | null): IdentityProfil
     }
   }
 
-  const identities = IDENTITY_ORDER.filter((identity) => identity === 'student' || hasAnyRole(user.roles, [identity])).map(
-    (identity) => IDENTITY_ITEMS[identity],
-  )
+  const identities = [
+    IDENTITY_ITEMS.student,
+    ...IDENTITY_ORDER.filter((identity) => identity !== 'student' && hasAnyRole(user.roles, [identity])).map(
+      (identity) => IDENTITY_ITEMS[identity],
+    ),
+  ]
   const primaryIdentity = identities.some((identity) => identity.key === 'admin') ? 'admin' : identities[identities.length - 1].key
 
   return {
