@@ -19,7 +19,7 @@
         <section v-for="group in navGroups" :key="group.key" class="nav-group">
           <p>{{ group.label }}</p>
           <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="nav-link">
-            <span class="nav-link-icon">{{ item.icon }}</span>
+            <span v-if="displayIcon(item.icon)" class="nav-link-icon">{{ displayIcon(item.icon) }}</span>
             <span>
               <strong>{{ item.label }}</strong>
               <small>{{ item.description }}</small>
@@ -43,8 +43,8 @@
           <IdentityBadge :identities="identityProfile.identities" compact />
           <span v-if="auth.currentUser">{{ auth.currentUser.nickname }}</span>
           <span v-else>未登录游客</span>
-          <el-button v-if="auth.token" size="small" plain @click="auth.clearSession()">退出</el-button>
-          <el-button v-else size="small" type="primary" @click="$router.push('/auth')">登录注册</el-button>
+          <el-button v-if="auth.token" size="small" plain @click="logout">退出</el-button>
+          <el-button v-else size="small" type="primary" @click="router.push('/auth')">登录注册</el-button>
         </div>
       </el-header>
       <el-main class="main-content">
@@ -54,7 +54,7 @@
 
     <nav class="mobile-tabbar" aria-label="移动端主导航">
       <RouterLink v-for="item in mobileTabItems" :key="item.path" :to="item.path" class="mobile-tabbar-item">
-        <span class="mobile-tabbar-icon">{{ item.icon }}</span>
+        <span v-if="displayIcon(item.icon)" class="mobile-tabbar-icon">{{ displayIcon(item.icon) }}</span>
         <span>{{ item.label }}</span>
       </RouterLink>
       <button type="button" class="mobile-tabbar-item mobile-tabbar-button" @click="mobileMenuOpen = true">
@@ -73,7 +73,7 @@
         <section v-for="group in navGroups" :key="group.key" class="mobile-directory-group">
           <p>{{ group.label }}</p>
           <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="mobile-directory-link" @click="mobileMenuOpen = false">
-            <span>{{ item.icon }}</span>
+            <span v-if="displayIcon(item.icon)">{{ displayIcon(item.icon) }}</span>
             <strong>{{ item.label }}</strong>
             <small>{{ item.description }}</small>
           </RouterLink>
@@ -85,13 +85,24 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getMobileTabItems, getVisibleNavGroups } from '@/config/navigation'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 const mobileMenuOpen = ref(false)
 const identityProfile = computed(() => auth.identityProfile)
 const navGroups = computed(() => getVisibleNavGroups(identityProfile.value))
 const mobileTabItems = computed(() => getMobileTabItems(identityProfile.value))
+
+function logout() {
+  auth.clearSession()
+  router.push('/auth')
+}
+
+function displayIcon(icon: string) {
+  return icon.trim().length <= 2 ? icon : ''
+}
 </script>
