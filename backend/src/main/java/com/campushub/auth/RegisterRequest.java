@@ -9,6 +9,9 @@ public record RegisterRequest(
         @Email
         String email,
         @NotBlank
+        @Size(min = 3, max = 64)
+        String username,
+        @NotBlank
         @Size(min = 8, max = 72)
         String password,
         @NotBlank

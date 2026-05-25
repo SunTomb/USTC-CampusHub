@@ -72,10 +72,36 @@ class AuthRegistrationIntegrationTest {
     void registerRequiresAtLeastOneCampusContact() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"contact.required@ustc.edu.cn\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\"}"))
+                        .content("{\"email\":\"contact.required@ustc.edu.cn\",\"username\":\"contact_required\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("请至少填写微信或 QQ 联系方式"));
+    }
+
+    @Test
+    void registerUsesRequestedUsernameWhenAvailable() throws Exception {
+        mockMvc.perform(post("/api/auth/register/send-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"custom.username@ustc.edu.cn\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        EmailVerificationCode code = emailVerificationCodeRepository
+                .findFirstByEmailAndPurposeOrderByIdDesc("custom.username@ustc.edu.cn", "REGISTER")
+                .orElseThrow();
+        code.setCodeHash(passwordEncoder.encode("123456"));
+        emailVerificationCodeRepository.save(code);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"custom.username@ustc.edu.cn\",\"username\":\"campus_user\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\",\"wechatContact\":\"campus-wechat\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.username").value("campus_user"));
+
+        User user = userRepository.findByEmail("custom.username@ustc.edu.cn").orElseThrow();
+        assertThat(user.getUsername()).isEqualTo("campus_user");
+        assertThat(user.getNickname()).isEqualTo("campus_user");
     }
 
     @Test
@@ -94,7 +120,7 @@ class AuthRegistrationIntegrationTest {
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"REGISTER.OK@USTC.EDU.CN\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\",\"wechatContact\":\"  campus-wechat  \"}"))
+                        .content("{\"email\":\"REGISTER.OK@USTC.EDU.CN\",\"username\":\"register_ok\",\"password\":\"Passw0rd!2026\",\"emailCode\":\"123456\",\"wechatContact\":\"  campus-wechat  \"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.email").value("register.ok@ustc.edu.cn"));

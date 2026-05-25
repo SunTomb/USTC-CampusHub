@@ -59,7 +59,7 @@ campushub:
       username: ${CAMPUSHUB_MAIL_SMTP_USERNAME}
       password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD}
       from: ${CAMPUSHUB_MAIL_FROM}
-      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:CampusHub}
+      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:USTC CampusHub}
     code:
       ttl-minutes: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:10}
       resend-seconds: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:60}

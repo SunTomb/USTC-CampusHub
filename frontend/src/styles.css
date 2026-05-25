@@ -2019,3 +2019,25 @@ body {
 .premium-panel .el-tabs {
   --el-border-color-lighter: #e2e8f0;
 }
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.profile-grid .premium-panel {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

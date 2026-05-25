@@ -28,6 +28,7 @@ import ProjectAdsView from '@/views/ProjectAdsView.vue'
 import ProjectAdDetailView from '@/views/ProjectAdDetailView.vue'
 import ProjectAdManageView from '@/views/ProjectAdManageView.vue'
 import WalletView from '@/views/WalletView.vue'
+import ProfileView from '@/views/ProfileView.vue'
 import CreditCenterView from '@/views/CreditCenterView.vue'
 import RoleApplicationsView from '@/views/RoleApplicationsView.vue'
 import NotificationsView from '@/views/NotificationsView.vue'
@@ -62,6 +63,7 @@ const router = createRouter({
         { path: 'project-ads/manage', name: 'project-ad-manage', component: ProjectAdManageView, meta: { requiresAuth: true } },
         { path: 'project-ads/:id', name: 'project-ad-detail', component: ProjectAdDetailView },
         { path: 'wallet', name: 'wallet', component: WalletView, meta: { requiresAuth: true } },
+        { path: 'profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
         { path: 'credit', name: 'credit-center', component: CreditCenterView, meta: { requiresAuth: true } },
         { path: 'roles', name: 'roles', component: RoleApplicationsView, meta: { requiresAuth: true } },
         { path: 'notifications', name: 'notifications', component: NotificationsView, meta: { requiresAuth: true } },

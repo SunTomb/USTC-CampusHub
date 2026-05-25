@@ -7,6 +7,7 @@ export interface LoginPayload {
 
 export interface RegisterPayload {
   email: string
+  username: string
   password: string
   emailCode: string
   wechatContact?: string
@@ -838,6 +839,14 @@ export function register(payload: RegisterPayload) {
 
 export function getCurrentUser() {
   return getApi<CurrentUser>('/auth/me')
+}
+
+export function updateCurrentUserProfile(payload: { username: string; nickname: string }) {
+  return putApi<CurrentUser>('/users/me/profile', payload)
+}
+
+export function changeCurrentUserPassword(payload: { currentPassword: string; newPassword: string }) {
+  return putApi<void>('/users/me/password', payload)
 }
 
 export function listGoods() {

@@ -102,6 +102,15 @@ export const navItems: NavItem[] = [
     mobileTab: 'guest',
   },
   {
+    path: '/profile',
+    label: '个人信息',
+    description: '修改用户名、展示昵称和登录密码',
+    group: 'account',
+    audiences: ['student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin'],
+    icon: 'User',
+    requiresAuth: true,
+  },
+  {
     path: '/wallet',
     label: '钱包中心',
     description: '管理余额、充值、提现、冻结与钱包流水',

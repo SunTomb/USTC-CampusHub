@@ -33,6 +33,9 @@
                 <el-button :loading="codeLoading" @click="handleSendCode">发送验证码</el-button>
               </div>
             </el-form-item>
+            <el-form-item label="CampusHub 用户名">
+              <el-input v-model="registerForm.username" placeholder="3-64 位字母、数字或下划线" />
+            </el-form-item>
             <el-form-item label="验证码">
               <el-input v-model="registerForm.emailCode" maxlength="6" placeholder="6 位数字" />
             </el-form-item>
@@ -77,6 +80,7 @@ const loginForm = reactive({
 
 const registerForm = reactive({
   email: '',
+  username: '',
   password: '',
   emailCode: '',
   wechatContact: '',
@@ -120,6 +124,10 @@ async function handleSendCode() {
 }
 
 async function handleRegister() {
+  if (!/^[a-zA-Z0-9_]{3,64}$/.test(registerForm.username.trim())) {
+    ElMessage.error('用户名只能包含 3-64 位字母、数字或下划线')
+    return
+  }
   if (!registerForm.wechatContact.trim() && !registerForm.qqContact.trim()) {
     ElMessage.error('请至少填写微信或 QQ 联系方式')
     return

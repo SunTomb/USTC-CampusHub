@@ -134,6 +134,11 @@ public class User {
         return createdAt;
     }
 
+    public void updateProfile(String username, String nickname) {
+        this.username = username;
+        this.nickname = nickname;
+    }
+
     public void updateContact(String wechatContact, String qqContact) {
         this.wechatContact = wechatContact;
         this.qqContact = qqContact;

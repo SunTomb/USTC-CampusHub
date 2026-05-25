@@ -80,6 +80,7 @@ public class RegistrationService {
         String wechatContact = trimToNull(request.wechatContact());
         String qqContact = trimToNull(request.qqContact());
         validateCampusContact(wechatContact, qqContact);
+        String username = normalizeAndValidateUsername(request.username());
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException("该邮箱已注册");
         }
@@ -103,8 +104,6 @@ public class RegistrationService {
         }
         verificationCode.markUsed(now);
 
-        String baseName = email.substring(0, email.indexOf('@')).replaceAll("[^a-zA-Z0-9_]", "_");
-        String username = uniqueUsername(baseName);
         User user = new User(
                 uniqueStudentNo(),
                 username,
@@ -147,23 +146,19 @@ public class RegistrationService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private String generateCode() {
-        return String.format("%06d", RANDOM.nextInt(1_000_000));
+    private String normalizeAndValidateUsername(String rawUsername) {
+        String username = rawUsername == null ? "" : rawUsername.trim();
+        if (!username.matches("[a-zA-Z0-9_]{3,64}")) {
+            throw new BusinessException("用户名只能包含 3-64 位字母、数字或下划线");
+        }
+        if (userRepository.existsByUsername(username)) {
+            throw new BusinessException("用户名已被使用");
+        }
+        return username;
     }
 
-    private String uniqueUsername(String baseName) {
-        String normalized = baseName == null || baseName.isBlank() ? "student" : baseName;
-        String candidate = normalized.length() > 48 ? normalized.substring(0, 48) : normalized;
-        int suffix = 0;
-        while (userRepository.existsByUsername(candidate)) {
-            suffix++;
-            String tail = "_" + suffix;
-            String prefix = normalized.length() + tail.length() > 64
-                    ? normalized.substring(0, 64 - tail.length())
-                    : normalized;
-            candidate = prefix + tail;
-        }
-        return candidate;
+    private String generateCode() {
+        return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
 
     private String uniqueStudentNo() {
