@@ -12,6 +12,15 @@
       </div>
     </div>
 
+    <div class="business-cta-card">
+      <div>
+        <p class="eyebrow">Recommended Next Step</p>
+        <h3>{{ primaryCta.label }}</h3>
+        <p>CampusHub 会根据登录状态和已解锁身份展示最适合的下一步入口。</p>
+      </div>
+      <el-button type="primary" @click="router.push(primaryCta.to)">{{ primaryCta.label }}</el-button>
+    </div>
+
     <el-card class="filter-card" shadow="never">
       <div class="filter-grid">
         <el-input v-model="filters.keyword" clearable placeholder="搜索标题、简介或标签" @keyup.enter="loadProjects" />
@@ -61,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listProjectAds, type ProjectAdListParams, type ProjectAdSummary, type ProjectAdType } from '@/api/campushub'
@@ -92,6 +101,16 @@ const campusOptions = [
   { label: '高新校区', value: 'HIGH_TECH' },
   { label: '其他', value: 'OTHER' },
 ]
+
+const primaryCta = computed(() => {
+  if (!auth.currentUser) {
+    return { label: '登录后继续', to: '/auth' }
+  }
+  if (auth.isAdmin) {
+    return { label: '进入运营后台', to: '/admin/ops' }
+  }
+  return { label: '管理项目广告', to: '/project-ads/manage' }
+})
 
 async function loadProjects() {
   loading.value = true

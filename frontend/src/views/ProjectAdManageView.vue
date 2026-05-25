@@ -6,10 +6,18 @@
         <h2>我的项目广告</h2>
         <p>发布项目组队、作品展示、社团招募或校园活动，审核通过后公开展示。</p>
       </div>
-      <el-button type="primary" @click="openCreate">新建项目广告</el-button>
+      <el-button v-if="auth.currentUser" type="primary" @click="openCreate">新建项目广告</el-button>
     </div>
 
-    <el-alert v-if="!auth.currentUser" type="warning" :closable="false" title="请先登录后管理项目广告" />
+    <LockedState
+      v-if="!auth.currentUser"
+      title="登录后管理项目广告"
+      description="登录后可以发布项目组队、作品展示、社团招募和活动宣传。"
+      primary-text="登录注册"
+      primary-to="/auth"
+      secondary-text="返回项目广场"
+      secondary-to="/project-ads"
+    />
 
     <div v-else class="mobile-table-wrapper">
       <el-table v-loading="loading" :data="projects" class="table-card">
@@ -73,6 +81,7 @@ import {
   type ProjectAdType,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import LockedState from '@/components/common/LockedState.vue'
 import FormSection from '@/components/common/FormSection.vue'
 
 const auth = useAuthStore()

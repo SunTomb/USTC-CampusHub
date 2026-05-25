@@ -9,21 +9,32 @@
       <el-button @click="loadWorkspace" :loading="loading">刷新</el-button>
     </div>
 
-    <el-alert v-if="!auth.currentUser" title="请先登录后再管理店铺" type="warning" show-icon :closable="false" />
+    <LockedState
+      v-if="auth.currentUser && !auth.canAccessIdentity('shopMerchant')"
+      title="需要店铺商家身份"
+      description="支付 20 元保证金并通过管理员审核后，可创建店铺、维护服务项目并处理预约。"
+      primary-text="去申请身份"
+      primary-to="/roles"
+      secondary-text="返回学生店铺"
+      secondary-to="/shops"
+    />
 
-    <el-alert
-      v-else-if="!shop && !loading"
-      title="开店需要先通过店铺商家身份审核。若尚未申请，请前往身份保证金页申请 20 元店铺商家身份。"
-      type="info"
-      show-icon
-      :closable="false"
-    >
-      <template #default>
-        <el-button type="primary" @click="router.push({ name: 'roles' })">前往身份申请</el-button>
-      </template>
-    </el-alert>
+    <template v-else>
+      <el-alert v-if="!auth.currentUser" title="请先登录后再管理店铺" type="warning" show-icon :closable="false" />
 
-    <el-card v-if="auth.currentUser" shadow="never" class="workspace-card">
+      <el-alert
+        v-else-if="!shop && !loading"
+        title="开店需要先通过店铺商家身份审核。若尚未申请，请前往身份保证金页申请 20 元店铺商家身份。"
+        type="info"
+        show-icon
+        :closable="false"
+      >
+        <template #default>
+          <el-button type="primary" @click="router.push({ name: 'roles' })">前往身份申请</el-button>
+        </template>
+      </el-alert>
+
+      <el-card v-if="auth.currentUser" shadow="never" class="workspace-card">
       <template #header>店铺资料</template>
       <el-form label-position="top" :model="shopForm" class="goods-publish-form form-section-stack">
         <FormSection title="店铺资料" description="展示服务范围、校区、营业时间和联系方式规则。">
@@ -88,27 +99,28 @@
       </div>
     </el-card>
 
-    <el-card v-if="shop" shadow="never" class="workspace-card">
-      <template #header>预约处理</template>
-      <div class="mobile-table-wrapper">
-        <el-table :data="orders" style="width: 100%">
-        <el-table-column prop="serviceItemTitle" label="服务" min-width="140" />
-        <el-table-column prop="customerNickname" label="顾客" width="120" />
-        <el-table-column prop="appointmentTime" label="时间" min-width="170" />
-        <el-table-column prop="status" label="状态" width="120" />
-        <el-table-column label="操作" min-width="260">
-          <template #default="{ row }">
-            <div class="card-actions">
-              <el-button size="small" @click="acceptOrder(row.id)">接受</el-button>
-              <el-button size="small" @click="startOrder(row.id)">开始</el-button>
-              <el-button size="small" type="success" @click="completeOrder(row.id)">完成</el-button>
-              <el-button size="small" type="danger" @click="cancelOrder(row.id)">取消</el-button>
-            </div>
-          </template>
-        </el-table-column>
-        </el-table>
-      </div>
-    </el-card>
+      <el-card v-if="shop" shadow="never" class="workspace-card">
+        <template #header>预约处理</template>
+        <div class="mobile-table-wrapper">
+          <el-table :data="orders" style="width: 100%">
+          <el-table-column prop="serviceItemTitle" label="服务" min-width="140" />
+          <el-table-column prop="customerNickname" label="顾客" width="120" />
+          <el-table-column prop="appointmentTime" label="时间" min-width="170" />
+          <el-table-column prop="status" label="状态" width="120" />
+          <el-table-column label="操作" min-width="260">
+            <template #default="{ row }">
+              <div class="card-actions">
+                <el-button size="small" @click="acceptOrder(row.id)">接受</el-button>
+                <el-button size="small" @click="startOrder(row.id)">开始</el-button>
+                <el-button size="small" type="success" @click="completeOrder(row.id)">完成</el-button>
+                <el-button size="small" type="danger" @click="cancelOrder(row.id)">取消</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          </el-table>
+        </div>
+      </el-card>
+    </template>
   </section>
 </template>
 
@@ -137,6 +149,7 @@ import {
   type ShopDetailSummary,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import LockedState from '@/components/common/LockedState.vue'
 import FormSection from '@/components/common/FormSection.vue'
 
 const router = useRouter()

@@ -11,7 +11,17 @@
 
     <el-alert v-if="!auth.currentUser" title="请先登录后发布商品" type="warning" show-icon />
 
-    <el-card>
+    <LockedState
+      v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher')"
+      title="需要二手发布者身份"
+      description="支付 10 元保证金后可解锁二手商品发布能力。"
+      primary-text="去申请身份"
+      primary-to="/roles"
+      secondary-text="返回二手市场"
+      secondary-to="/goods"
+    />
+
+    <el-card v-else>
       <el-form label-position="top" :model="form" class="form-section-stack">
         <FormSection title="商品信息" description="标题、分类和成色决定买家是否会继续查看详情。">
           <el-form-item label="标题">
@@ -74,6 +84,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { publishGoods, type CreateGoodsPayload } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import LockedState from '@/components/common/LockedState.vue'
 import FormSection from '@/components/common/FormSection.vue'
 
 const router = useRouter()
