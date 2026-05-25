@@ -148,6 +148,20 @@ public class RoleApplication {
         }
     }
 
+    public void markDepositFailed(String reason) {
+        this.depositStatus = "FAILED";
+        this.reviewStatus = "PENDING_PAYMENT";
+        this.reviewer = null;
+        this.reviewedAt = null;
+    }
+
+    public void markDepositExpired() {
+        this.depositStatus = "EXPIRED";
+        this.reviewStatus = "PENDING_PAYMENT";
+        this.reviewer = null;
+        this.reviewedAt = null;
+    }
+
     public void markApproved(User reviewer) {
         this.reviewStatus = "APPROVED";
         this.reviewer = reviewer;

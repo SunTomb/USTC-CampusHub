@@ -240,12 +240,18 @@ public class PaymentService {
             if ("SERVICE_FEE".equals(order.getBusinessType())) {
                 findServiceFee(order.getBusinessId()).markFailed(LocalDateTime.now(), request.failureReason());
             }
+            if ("ROLE_DEPOSIT".equals(order.getBusinessType())) {
+                markRoleDepositFailed(order, request.failureReason());
+            }
             return;
         }
         if ("EXPIRED".equals(request.status())) {
             order.markExpired(LocalDateTime.now());
             if ("SERVICE_FEE".equals(order.getBusinessType())) {
                 findServiceFee(order.getBusinessId()).markExpired(LocalDateTime.now());
+            }
+            if ("ROLE_DEPOSIT".equals(order.getBusinessType())) {
+                markRoleDepositExpired(order);
             }
             return;
         }
@@ -275,10 +281,33 @@ public class PaymentService {
     private void markRoleDepositPaid(PaymentOrder order) {
         RoleApplication application = roleApplicationRepository.findById(order.getBusinessId())
                 .orElseThrow(() -> new BusinessException("身份申请不存在"));
+        if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
+            return;
+        }
         if (!"PAID".equals(application.getDepositStatus())) {
             application.markDepositPaid();
             roleApplicationRepository.save(application);
         }
+    }
+
+    private void markRoleDepositFailed(PaymentOrder order, String failureReason) {
+        RoleApplication application = roleApplicationRepository.findById(order.getBusinessId())
+                .orElseThrow(() -> new BusinessException("身份申请不存在"));
+        if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
+            return;
+        }
+        application.markDepositFailed(failureReason);
+        roleApplicationRepository.save(application);
+    }
+
+    private void markRoleDepositExpired(PaymentOrder order) {
+        RoleApplication application = roleApplicationRepository.findById(order.getBusinessId())
+                .orElseThrow(() -> new BusinessException("身份申请不存在"));
+        if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
+            return;
+        }
+        application.markDepositExpired();
+        roleApplicationRepository.save(application);
     }
 
     private String nextOrderNo(String prefix, Long id) {

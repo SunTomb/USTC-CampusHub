@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { applyRole, createRoleDepositPayment, listRoleApplications, type RoleApplicationSummary } from '@/api/campushub'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
@@ -118,15 +118,18 @@ function hasIdentity(roleType: string) {
 }
 
 async function loadApplications() {
-  const userId = auth.currentUser?.id
-  if (!userId) {
+  const requestedUserId = auth.currentUser?.id
+  if (!requestedUserId) {
     Object.keys(applications).forEach((roleType) => {
       delete applications[roleType]
     })
     return
   }
   try {
-    const existing = await listRoleApplications(userId)
+    const existing = await listRoleApplications(requestedUserId)
+    if (auth.currentUser?.id !== requestedUserId) {
+      return
+    }
     Object.keys(applications).forEach((roleType) => {
       delete applications[roleType]
     })
@@ -134,7 +137,9 @@ async function loadApplications() {
       applications[application.roleType] = application
     })
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '身份申请加载失败，请稍后重试')
+    if (auth.currentUser?.id === requestedUserId) {
+      ElMessage.error(error instanceof Error ? error.message : '身份申请加载失败，请稍后重试')
+    }
   }
 }
 
@@ -170,14 +175,11 @@ async function payDeposit(applicationId: number) {
     payingApplicationId.value = null
   }
 }
-onMounted(() => {
-  void loadApplications()
-})
-
 watch(
   () => auth.currentUser?.id,
   () => {
     void loadApplications()
   },
+  { immediate: true },
 )
 </script>
