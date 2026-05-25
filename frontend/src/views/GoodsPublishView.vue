@@ -12,7 +12,7 @@
     <el-alert v-if="!auth.currentUser" title="请先登录后发布商品" type="warning" show-icon />
 
     <LockedState
-      v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher')"
+      v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher') && !auth.isAdmin"
       title="需要二手发布者身份"
       description="支付 10 元保证金后可解锁二手商品发布能力。"
       primary-text="去申请身份"

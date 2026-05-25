@@ -10,7 +10,7 @@
     </div>
 
     <LockedState
-      v-if="auth.currentUser && !auth.canAccessIdentity('shopMerchant')"
+      v-if="auth.currentUser && !auth.canAccessIdentity('shopMerchant') && !auth.isAdmin"
       title="需要店铺商家身份"
       description="支付 20 元保证金并通过管理员审核后，可创建店铺、维护服务项目并处理预约。"
       primary-text="去申请身份"
