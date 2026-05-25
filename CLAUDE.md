@@ -592,14 +592,20 @@ Implemented Phase 13:
 - Phase 13 does not add a Flyway migration and does not change CampusHub's payment-center boundary.
 - A build failure in `AuthView.vue` exposed that the template still referenced `handleSendCode`; the root cause was a missing script function after the auth-page polish, and the function was restored using the existing `sendRegisterCode` API.
 
-Local verification completed before deployment:
+Verification completed:
 
-- `npm --prefix frontend run test -- src/api/client.test.ts src/views/walletPaymentActions.test.ts src/utils/identity.test.ts src/config/navigation.test.ts` passed: 4 files, 15 tests.
-- `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
+- GitHub `master` was pushed to `2217db6`; production `/opt/campushub` fast-forwarded to `2217db6`.
+- Local `npm --prefix frontend run test -- src/api/client.test.ts src/views/walletPaymentActions.test.ts src/utils/identity.test.ts src/config/navigation.test.ts` passed: 4 files, 15 tests.
+- Local `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
+- Server Docker frontend build succeeded; Vite emitted only known large chunk and dependency pure-comment warnings.
+- Production containers running: MySQL healthy, backend running, web running.
+- Server-local API smoke through the web proxy returned HTTP 200 for `/api/goods`, `/api/tasks`, `/api/shops`, and `/api/project-ads`; anonymous protected routes returned HTTP 401 for `/api/payment/service-fees`, `/api/admin/ops/analytics/overview`, `/api/admin/governance/dashboard`, and `/api/credit/users/1`, consistent with Phase 10 auth.
+- Server-local frontend route smoke returned HTTP 200 for `/`, `/auth`, `/tasks`, `/goods`, `/shops`, `/project-ads`, `/wallet`, `/roles`, `/notifications`, `/credit`, `/admin/ops`, `/admin/governance`, `/admin/payment`, and `/admin/wallet`.
+- Playwriter guest desktop checks covered `/`, `/tasks`, `/goods`, `/shops`, `/project-ads`, `/auth`, and `/policy`; pages rendered without white screens and guest navigation did not show admin management entries.
+- Playwriter mobile viewport checks covered `/`, `/tasks`, `/goods`, `/shops`, `/project-ads`, `/auth`, and `/policy`; tested pages had no document-level horizontal overflow and the mobile tab bar rendered.
 
-Verification still needed after pushing/deploying:
+Verification still useful later:
 
-- Server-side frontend Docker build/restart.
-- Server-local API smoke for public routes, payment service-fee route, ops/governance/credit routes.
-- Playwriter checks for guest, normal student, and `yeshenghao@mail.ustc.edu.cn` admin views; 390x844 mobile without document-level horizontal overflow; Alipay/WeChat recharge entries remain visible and non-mock.
+- Authenticated normal-student and `yeshenghao@mail.ustc.edu.cn` admin Playwriter checks require user-known passwords; do not reset production passwords or read password hashes just for smoke verification.
+- After an authenticated check is available, confirm `/wallet` still shows payment-center Alipay continue-pay and WeChat QR entries in the logged-in UI.
 
