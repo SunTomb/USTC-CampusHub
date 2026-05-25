@@ -24,7 +24,7 @@
           </div>
         </template>
         <p>{{ role.description }}</p>
-        <div class="deposit-amount">¥{{ role.depositAmount }}</div>
+        <div class="deposit-amount">{{ role.depositAmount > 0 ? `¥${role.depositAmount}` : '免保证金' }}</div>
         <el-input v-model="notes[role.roleType]" type="textarea" :rows="3" placeholder="申请说明，可选" />
         <el-button type="primary" :loading="loadingRole === role.roleType" :disabled="role.unlocked" @click="submit(role.roleType)">
           {{ role.unlocked ? '已解锁' : '申请开通' }}
@@ -73,34 +73,51 @@ const depositStatusText: Record<string, string> = {
   PENDING: '待支付',
   PAID: '已支付',
   FAILED: '支付失败',
-  EXPIRED: '已过期'
+  EXPIRED: '已过期',
+  NOT_REQUIRED: '无需保证金',
 }
 const notes = reactive<Record<string, string>>({
   RUNNER: '',
   GOODS_PUBLISHER: '',
   SHOP_MERCHANT: '',
+  TRADE_ADMIN: '',
+  SHOWCASE_ADMIN: '',
 })
 
 const roles = [
   {
     roleType: 'RUNNER',
     title: '跑腿接单者',
-    depositAmount: '5.00',
+    depositAmount: 5,
     description: '可抢单或申请校园跑腿任务，适合快递、外卖、打印代取等履约场景。',
     review: false,
   },
   {
     roleType: 'GOODS_PUBLISHER',
     title: '二手发布者',
-    depositAmount: '10.00',
+    depositAmount: 10,
     description: '用于后续真实二手交易发布身份，保证商品信息和信用治理可追溯。',
     review: false,
   },
   {
     roleType: 'SHOP_MERCHANT',
     title: '学生店铺商家',
-    depositAmount: '20.00',
+    depositAmount: 20,
     description: '适合摄影、贴膜、电脑维护等持续服务，需要管理员人工审核。',
+    review: true,
+  },
+  {
+    roleType: 'TRADE_ADMIN',
+    title: '交易管理员',
+    depositAmount: 0,
+    description: '管理悬赏跑腿、二手商品与跑腿商品售后纠纷，需要 master 审核。',
+    review: true,
+  },
+  {
+    roleType: 'SHOWCASE_ADMIN',
+    title: '展示管理员',
+    depositAmount: 0,
+    description: '管理项目广告、学生店铺与商店服务售后纠纷，需要 master 审核。',
     review: true,
   },
 ]
@@ -109,6 +126,8 @@ const roleAliases: Record<string, string[]> = {
   RUNNER: ['ROLE_RUNNER', 'RUNNER'],
   GOODS_PUBLISHER: ['ROLE_GOODS_PUBLISHER', 'GOODS_PUBLISHER'],
   SHOP_MERCHANT: ['ROLE_SHOP_MERCHANT', 'SHOP_MERCHANT'],
+  TRADE_ADMIN: ['ROLE_TRADE_ADMIN', 'TRADE_ADMIN'],
+  SHOWCASE_ADMIN: ['ROLE_SHOWCASE_ADMIN', 'SHOWCASE_ADMIN'],
 }
 
 const roleCards = computed(() => roles.map((role) => ({

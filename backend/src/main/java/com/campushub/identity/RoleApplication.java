@@ -63,8 +63,8 @@ public class RoleApplication {
         this.user = user;
         this.roleType = roleType.name();
         this.depositAmount = roleType.depositAmount();
-        this.depositStatus = "PENDING";
-        this.reviewStatus = "PENDING_PAYMENT";
+        this.depositStatus = roleType.depositAmount().compareTo(BigDecimal.ZERO) <= 0 ? "NOT_REQUIRED" : "PENDING";
+        this.reviewStatus = roleType.depositAmount().compareTo(BigDecimal.ZERO) <= 0 ? "PENDING_REVIEW" : "PENDING_PAYMENT";
         this.applyNote = applyNote;
     }
 
@@ -127,10 +127,11 @@ public class RoleApplication {
     }
 
     public void resetForPayment(String applyNote) {
+        boolean noDepositRequired = depositAmount.compareTo(BigDecimal.ZERO) <= 0;
         boolean keepPendingPaymentOrder = "PENDING".equals(depositStatus) && "PENDING_PAYMENT".equals(reviewStatus);
         this.applyNote = applyNote;
-        this.depositStatus = "PENDING";
-        this.reviewStatus = "PENDING_PAYMENT";
+        this.depositStatus = noDepositRequired ? "NOT_REQUIRED" : "PENDING";
+        this.reviewStatus = noDepositRequired ? "PENDING_REVIEW" : "PENDING_PAYMENT";
         if (!keepPendingPaymentOrder) {
             this.depositPaymentOrderNo = null;
         }

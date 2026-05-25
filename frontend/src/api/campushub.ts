@@ -946,6 +946,18 @@ export function listRoleApplications(userId: number) {
   return getApi<RoleApplicationSummary[]>(`/identity/users/${userId}/roles`)
 }
 
+export function listMasterAdminApplications() {
+  return getApi<RoleApplicationSummary[]>('/admin/master/admin-applications')
+}
+
+export function approveMasterAdminApplication(applicationId: number) {
+  return postApi<RoleApplicationSummary>(`/admin/master/admin-applications/${applicationId}/approve`, {})
+}
+
+export function rejectMasterAdminApplication(applicationId: number) {
+  return postApi<RoleApplicationSummary>(`/admin/master/admin-applications/${applicationId}/reject`, {})
+}
+
 export function listNotifications(userId: number) {
   return getApi<StationNotificationSummary[]>(`/users/${userId}/notifications`)
 }
@@ -1159,6 +1171,87 @@ export function getAdminActionLogs() {
 
 export function getCreditCenter(userId: number) {
   return getApi<CreditCenterSummary>(`/credit/users/${userId}`)
+}
+
+export function listAdminTradeTasks() {
+  return getApi<RewardTaskSummary[]>('/admin/trade/tasks')
+}
+
+export function closeAdminTradeTask(taskId: number, note?: string) {
+  return postApi<RewardTaskSummary>(`/admin/trade/tasks/${taskId}/close`, { note })
+}
+
+export function listAdminTradeGoods() {
+  return getApi<GoodsSummary[]>('/admin/trade/goods')
+}
+
+export function offShelfAdminTradeGoods(goodsId: number, note?: string) {
+  return postApi<GoodsSummary>(`/admin/trade/goods/${goodsId}/off-shelf`, { note })
+}
+
+export function listAdminTradeGoodsOrders() {
+  return getApi<GoodsOrderSummary[]>('/admin/trade/goods-orders')
+}
+
+export function listAdminTradeTaskIssues() {
+  return getApi<TaskIssueSummary[]>('/admin/trade/task-issues')
+}
+
+export function listAdminShowcaseProjectAds(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return getApi<ProjectAdSummary[]>(`/admin/showcase/project-ads${query}`)
+}
+
+export function approveAdminShowcaseProjectAd(id: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/showcase/project-ads/${id}/approve`, payload)
+}
+
+export function rejectAdminShowcaseProjectAd(id: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/showcase/project-ads/${id}/reject`, payload)
+}
+
+export function blockAdminShowcaseProjectAd(id: number, payload: ProjectAdReviewPayload) {
+  return postApi<ProjectAdSummary>(`/admin/showcase/project-ads/${id}/block`, payload)
+}
+
+export function listAdminShowcaseShops() {
+  return getApi<ShopSummary[]>('/admin/showcase/shops')
+}
+
+export function pauseAdminShowcaseShop(shopId: number, note?: string) {
+  return postApi<ShopSummary>(`/admin/showcase/shops/${shopId}/pause`, { note })
+}
+
+export function resumeAdminShowcaseShop(shopId: number, note?: string) {
+  return postApi<ShopSummary>(`/admin/showcase/shops/${shopId}/resume`, { note })
+}
+
+export function blockAdminShowcaseShop(shopId: number, note?: string) {
+  return postApi<ShopSummary>(`/admin/showcase/shops/${shopId}/block`, { note })
+}
+
+export function listAdminShowcaseServiceItems() {
+  return getApi<ServiceItemSummary[]>('/admin/showcase/service-items')
+}
+
+export function offShelfAdminShowcaseServiceItem(itemId: number, note?: string) {
+  return postApi<ServiceItemSummary>(`/admin/showcase/service-items/${itemId}/off-shelf`, { note })
+}
+
+export function listAdminShowcaseShopOrders() {
+  return getApi<ServiceOrderSummary[]>('/admin/showcase/shop-orders')
+}
+
+export function listAdminShowcaseShopMerchantApplications() {
+  return getApi<RoleApplicationSummary[]>('/admin/showcase/shop-merchant-applications')
+}
+
+export function approveAdminShowcaseShopMerchantApplication(applicationId: number) {
+  return postApi<RoleApplicationSummary>(`/admin/showcase/shop-merchant-applications/${applicationId}/approve`, {})
+}
+
+export function rejectAdminShowcaseShopMerchantApplication(applicationId: number) {
+  return postApi<RoleApplicationSummary>(`/admin/showcase/shop-merchant-applications/${applicationId}/reject`, {})
 }
 
 function buildQuery(params?: object) {

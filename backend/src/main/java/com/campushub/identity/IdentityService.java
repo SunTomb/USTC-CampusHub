@@ -59,6 +59,16 @@ public class IdentityService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<RoleApplicationSummary> listPendingAdminApplications() {
+        return roleApplicationRepository.findByRoleTypeInAndReviewStatusOrderByCreatedAtAsc(
+                        List.of(PlatformRoleType.TRADE_ADMIN.name(), PlatformRoleType.SHOWCASE_ADMIN.name()),
+                        "PENDING_REVIEW")
+                .stream()
+                .map(RoleApplicationSummary::from)
+                .toList();
+    }
+
     @Transactional
     public RoleApplicationSummary approve(Long applicationId, Long reviewerId) {
         RoleApplication application = roleApplicationRepository.findById(applicationId)

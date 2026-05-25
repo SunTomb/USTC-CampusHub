@@ -37,6 +37,9 @@ import AdminOperationsView from '@/views/AdminOperationsView.vue'
 import AdminGovernanceView from '@/views/AdminGovernanceView.vue'
 import AdminPaymentView from '@/views/AdminPaymentView.vue'
 import AdminWalletView from '@/views/AdminWalletView.vue'
+import AdminApplicationsView from '@/views/AdminApplicationsView.vue'
+import AdminTradeView from '@/views/AdminTradeView.vue'
+import AdminShowcaseView from '@/views/AdminShowcaseView.vue'
 import AuthView from '@/views/AuthView.vue'
 import PolicyView from '@/views/PolicyView.vue'
 
@@ -72,6 +75,9 @@ const router = createRouter({
         { path: 'admin/governance', name: 'admin-governance', component: AdminGovernanceView, meta: { requiresAdmin: true } },
         { path: 'admin/payment', name: 'admin-payment', component: AdminPaymentView, meta: { requiresAdmin: true } },
         { path: 'admin/wallet', name: 'admin-wallet', component: AdminWalletView, meta: { requiresAdmin: true } },
+        { path: 'admin/master/admin-applications', name: 'admin-master-applications', component: AdminApplicationsView, meta: { requiresAuth: true, requiredRole: 'masterAdmin' } },
+        { path: 'admin/trade', name: 'admin-trade', component: AdminTradeView, meta: { requiresAuth: true, requiredRole: 'tradeAdmin' } },
+        { path: 'admin/showcase', name: 'admin-showcase', component: AdminShowcaseView, meta: { requiresAuth: true, requiredRole: 'showcaseAdmin' } },
         { path: ':pathMatch(.*)*', redirect: { name: 'home' } },
       ],
     },

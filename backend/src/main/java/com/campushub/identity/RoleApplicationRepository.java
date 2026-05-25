@@ -23,4 +23,7 @@ public interface RoleApplicationRepository extends JpaRepository<RoleApplication
 
     @EntityGraph(attributePaths = {"user", "reviewer"})
     List<RoleApplication> findByReviewStatusOrderByCreatedAtAsc(String reviewStatus);
+
+    @EntityGraph(attributePaths = {"user", "reviewer"})
+    List<RoleApplication> findByRoleTypeInAndReviewStatusOrderByCreatedAtAsc(List<String> roleTypes, String reviewStatus);
 }
