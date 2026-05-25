@@ -102,6 +102,23 @@ async function handleLogin() {
   }
 }
 
+async function handleSendCode() {
+  if (!registerForm.email.trim()) {
+    ElMessage.warning('请先填写校园邮箱')
+    return
+  }
+  codeLoading.value = true
+  try {
+    const result = await sendRegisterCode(registerForm.email)
+    codeHint.value = `验证码已发送，有效期 ${result.ttlMinutes} 分钟，${result.resendSeconds} 秒后可重新发送。`
+    ElMessage.success('验证码已发送')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '验证码发送失败')
+  } finally {
+    codeLoading.value = false
+  }
+}
+
 async function handleRegister() {
   if (!registerForm.wechatContact.trim() && !registerForm.qqContact.trim()) {
     ElMessage.error('请至少填写微信或 QQ 联系方式')

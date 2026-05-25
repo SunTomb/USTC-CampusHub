@@ -579,3 +579,27 @@ Important constraints remain:
 - Do not edit already-applied migrations V1-V12; Phase 12 did not require a migration.
 - Use low-impact production verification on the small shared server.
 
+## Latest Phase 13 identity-aware UI handoff, 2026-05-25
+
+Latest local Phase 13 work upgrades CampusHub's frontend into a more polished identity-aware campus service platform without changing backend schema or payment boundaries.
+
+Implemented Phase 13:
+
+- New docs: `docs/superpowers/specs/2026-05-24-campushub-phase13-identity-aware-ui-design.md` and `docs/superpowers/plans/2026-05-24-campushub-phase13-identity-aware-ui-upgrade.md`.
+- Frontend identity utilities derive guest/student/runner/goods-publisher/shop-merchant/admin presentation from `/api/auth/me` roles.
+- Desktop sidebar, mobile bottom tabs, mobile directory drawer, homepage shortcuts, and locked-state guidance are generated from shared identity-aware navigation config.
+- Homepage now acts as a role-aware landing/workbench; auth, wallet, role unlock, business surfaces, notifications, credit, and admin pages received visual/UX polish.
+- Phase 13 does not add a Flyway migration and does not change CampusHub's payment-center boundary.
+- A build failure in `AuthView.vue` exposed that the template still referenced `handleSendCode`; the root cause was a missing script function after the auth-page polish, and the function was restored using the existing `sendRegisterCode` API.
+
+Local verification completed before deployment:
+
+- `npm --prefix frontend run test -- src/api/client.test.ts src/views/walletPaymentActions.test.ts src/utils/identity.test.ts src/config/navigation.test.ts` passed: 4 files, 15 tests.
+- `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
+
+Verification still needed after pushing/deploying:
+
+- Server-side frontend Docker build/restart.
+- Server-local API smoke for public routes, payment service-fee route, ops/governance/credit routes.
+- Playwriter checks for guest, normal student, and `yeshenghao@mail.ustc.edu.cn` admin views; 390x844 mobile without document-level horizontal overflow; Alipay/WeChat recharge entries remain visible and non-mock.
+
