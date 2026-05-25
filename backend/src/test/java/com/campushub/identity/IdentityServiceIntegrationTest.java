@@ -29,6 +29,23 @@ class IdentityServiceIntegrationTest {
     }
 
     @Test
+    void applyingAgainForPendingPaymentRoleReusesApplicationAndListsIt() {
+        RoleApplicationSummary first = identityService.apply(3L, new ApplyRoleRequest("RUNNER", "第一次申请跑腿身份"));
+        RoleApplicationSummary second = identityService.apply(3L, new ApplyRoleRequest("RUNNER", "继续支付保证金"));
+
+        assertThat(second.id()).isEqualTo(first.id());
+        assertThat(second.applyNote()).isEqualTo("继续支付保证金");
+        assertThat(second.depositStatus()).isEqualTo("PENDING");
+        assertThat(second.reviewStatus()).isEqualTo("PENDING_PAYMENT");
+
+        assertThat(identityService.listUserApplications(3L))
+                .filteredOn(application -> application.id().equals(first.id()))
+                .singleElement()
+                .extracting(RoleApplicationSummary::roleType)
+                .isEqualTo("RUNNER");
+    }
+
+    @Test
     void shopMerchantApplicationRequiresManualReviewWithTwentyYuanDeposit() {
         RoleApplicationSummary summary = identityService.apply(2L, new ApplyRoleRequest("SHOP_MERCHANT", "申请开通学生技能店铺"));
 

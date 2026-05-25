@@ -24,13 +24,25 @@ public class IdentityService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("用户不存在"));
 
-        roleApplicationRepository.findByUserIdAndRoleType(userId, roleType.name())
-                .ifPresent(existing -> {
-                    throw new BusinessException("该身份已申请");
-                });
+        var existingApplication = roleApplicationRepository.findByUserIdAndRoleType(userId, roleType.name());
+        if (existingApplication.isPresent()) {
+            RoleApplication existing = existingApplication.get();
+            if (existing.isRecoverableUnpaid()) {
+                existing.resetForPayment(request.applyNote());
+                return RoleApplicationSummary.from(existing);
+            }
+            throw new BusinessException("该身份已申请，当前状态不可重复申请");
+        }
 
         RoleApplication application = new RoleApplication(user, roleType, request.applyNote());
         return RoleApplicationSummary.from(roleApplicationRepository.save(application));
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoleApplicationSummary> listUserApplications(Long userId) {
+        return roleApplicationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(RoleApplicationSummary::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

@@ -942,6 +942,10 @@ export function applyRole(userId: number, payload: ApplyRolePayload) {
   return postApi<RoleApplicationSummary>(`/identity/users/${userId}/roles`, payload)
 }
 
+export function listRoleApplications(userId: number) {
+  return getApi<RoleApplicationSummary[]>(`/identity/users/${userId}/roles`)
+}
+
 export function listNotifications(userId: number) {
   return getApi<StationNotificationSummary[]>(`/users/${userId}/notifications`)
 }

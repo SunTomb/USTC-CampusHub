@@ -120,6 +120,24 @@ public class RoleApplication {
         this.depositPaymentOrderNo = orderNo;
     }
 
+    public boolean isRecoverableUnpaid() {
+        return ("PENDING".equals(depositStatus) && "PENDING_PAYMENT".equals(reviewStatus))
+                || "FAILED".equals(depositStatus)
+                || "EXPIRED".equals(depositStatus);
+    }
+
+    public void resetForPayment(String applyNote) {
+        boolean keepPendingPaymentOrder = "PENDING".equals(depositStatus) && "PENDING_PAYMENT".equals(reviewStatus);
+        this.applyNote = applyNote;
+        this.depositStatus = "PENDING";
+        this.reviewStatus = "PENDING_PAYMENT";
+        if (!keepPendingPaymentOrder) {
+            this.depositPaymentOrderNo = null;
+        }
+        this.reviewer = null;
+        this.reviewedAt = null;
+    }
+
     public void markDepositPaid() {
         this.depositStatus = "PAID";
         if (PlatformRoleType.SHOP_MERCHANT.name().equals(roleType)) {

@@ -6,6 +6,8 @@ import com.campushub.common.BusinessException;
 import com.campushub.payment.PaymentCreation;
 import com.campushub.payment.PaymentService;
 import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +32,11 @@ public class IdentityController {
         this.paymentService = paymentService;
         this.currentUserService = currentUserService;
         this.roleApplicationRepository = roleApplicationRepository;
+    }
+
+    @GetMapping("/users/{userId}/roles")
+    public ApiResponse<List<RoleApplicationSummary>> listUserApplications(@PathVariable Long userId) {
+        return ApiResponse.ok(identityService.listUserApplications(currentUserService.requireSameUser(userId)));
     }
 
     @PostMapping("/users/{userId}/roles")

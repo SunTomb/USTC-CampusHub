@@ -48,9 +48,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { applyRole, createRoleDepositPayment, type RoleApplicationSummary } from '@/api/campushub'
+import { applyRole, createRoleDepositPayment, listRoleApplications, type RoleApplicationSummary } from '@/api/campushub'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -117,6 +117,27 @@ function hasIdentity(roleType: string) {
   return aliases.some((role) => userRoles.includes(role))
 }
 
+async function loadApplications() {
+  const userId = auth.currentUser?.id
+  if (!userId) {
+    Object.keys(applications).forEach((roleType) => {
+      delete applications[roleType]
+    })
+    return
+  }
+  try {
+    const existing = await listRoleApplications(userId)
+    Object.keys(applications).forEach((roleType) => {
+      delete applications[roleType]
+    })
+    existing.forEach((application) => {
+      applications[application.roleType] = application
+    })
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '身份申请加载失败，请稍后重试')
+  }
+}
+
 async function submit(roleType: string) {
   const userId = auth.currentUser?.id
   if (!userId) {
@@ -149,4 +170,14 @@ async function payDeposit(applicationId: number) {
     payingApplicationId.value = null
   }
 }
+onMounted(() => {
+  void loadApplications()
+})
+
+watch(
+  () => auth.currentUser?.id,
+  () => {
+    void loadApplications()
+  },
+)
 </script>
