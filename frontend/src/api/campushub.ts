@@ -1219,6 +1219,10 @@ export function createRoleDepositPayment(applicationId: number) {
   return postApi<PaymentCreation>(`/identity/roles/${applicationId}/deposit-pay`, {})
 }
 
+export function payRoleDepositWithWallet(applicationId: number) {
+  return postApi<PaymentCreation>(`/identity/roles/${applicationId}/deposit-wallet-pay`, {})
+}
+
 export function listAdminWalletRecharges(status?: string) {
   const query = status ? `?status=${encodeURIComponent(status)}` : ''
   return getApi<WalletRechargeSummary[]>(`/admin/wallet/recharges${query}`)

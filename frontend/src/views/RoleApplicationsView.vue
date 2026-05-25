@@ -34,12 +34,21 @@
           <span>审核状态：{{ role.application.reviewStatus }}</span>
           <span v-if="role.application.depositPaymentOrderNo">支付单：{{ role.application.depositPaymentOrderNo }}</span>
           <el-button
-            v-if="role.application.depositStatus !== 'PAID'"
+            v-if="role.application.depositStatus !== 'PAID' && role.application.depositAmount > 0"
             size="small"
             :loading="payingApplicationId === role.application.id"
             @click="payDeposit(role.application.id)"
           >
-            支付保证金
+            支付宝支付
+          </el-button>
+          <el-button
+            v-if="role.application.depositStatus !== 'PAID' && role.application.depositAmount > 0"
+            size="small"
+            type="success"
+            :loading="walletPayingApplicationId === role.application.id"
+            @click="payDepositByWallet(role.application.id)"
+          >
+            余额支付
           </el-button>
         </div>
       </el-card>
@@ -50,7 +59,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { applyRole, createRoleDepositPayment, listRoleApplications, type RoleApplicationSummary } from '@/api/campushub'
+import { applyRole, createRoleDepositPayment, listRoleApplications, payRoleDepositWithWallet, type RoleApplicationSummary } from '@/api/campushub'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -58,6 +67,7 @@ const auth = useAuthStore()
 const identityProfile = computed(() => auth.identityProfile)
 const loadingRole = ref<string | null>(null)
 const payingApplicationId = ref<number | null>(null)
+const walletPayingApplicationId = ref<number | null>(null)
 const applications = reactive<Record<string, RoleApplicationSummary>>({})
 const depositStatusText: Record<string, string> = {
   PENDING: '待支付',
@@ -166,6 +176,7 @@ async function payDeposit(applicationId: number) {
   try {
     const result = await createRoleDepositPayment(applicationId)
     ElMessage.success(result.message || '保证金支付单已创建')
+    await loadApplications()
     if (result.payUrl && !result.payUrl.startsWith('mock://')) {
       window.open(result.payUrl, '_blank', 'noopener,noreferrer')
     }
@@ -173,6 +184,20 @@ async function payDeposit(applicationId: number) {
     ElMessage.error(error instanceof Error ? error.message : '保证金支付失败，请稍后重试')
   } finally {
     payingApplicationId.value = null
+  }
+}
+
+async function payDepositByWallet(applicationId: number) {
+  walletPayingApplicationId.value = applicationId
+  try {
+    const result = await payRoleDepositWithWallet(applicationId)
+    ElMessage.success(result.message || '余额支付成功')
+    await auth.loadCurrentUser()
+    await loadApplications()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '余额支付失败，请先充值或改用支付宝')
+  } finally {
+    walletPayingApplicationId.value = null
   }
 }
 watch(
