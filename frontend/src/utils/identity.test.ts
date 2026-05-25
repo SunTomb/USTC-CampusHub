@@ -34,7 +34,7 @@ describe('identity utilities', () => {
     expect(profile.capabilities).toContain('治理、支付、钱包与运营后台')
   })
 
-  it('recognizes domain admin roles and keeps generic admin visibility', () => {
+  it('recognizes domain admin roles without generic admin visibility', () => {
     const masterProfile = buildIdentityProfile({ id: 3, username: 'master', nickname: 'Master', roles: ['ROLE_MASTER_ADMIN'] })
     const tradeProfile = buildIdentityProfile({ id: 4, username: 'trade', nickname: 'Trade', roles: ['ROLE_TRADE_ADMIN'] })
     const showcaseProfile = buildIdentityProfile({
@@ -47,10 +47,12 @@ describe('identity utilities', () => {
     expect(masterProfile.primaryIdentity).toBe('masterAdmin')
     expect(masterProfile.identities.map((item) => item.key)).toEqual(['student', 'admin', 'masterAdmin'])
     expect(tradeProfile.primaryIdentity).toBe('tradeAdmin')
-    expect(tradeProfile.identities.map((item) => item.key)).toEqual(['student', 'admin', 'tradeAdmin'])
+    expect(tradeProfile.identities.map((item) => item.key)).toEqual(['student', 'tradeAdmin'])
     expect(showcaseProfile.primaryIdentity).toBe('showcaseAdmin')
-    expect(showcaseProfile.identities.map((item) => item.key)).toEqual(['student', 'admin', 'showcaseAdmin'])
+    expect(showcaseProfile.identities.map((item) => item.key)).toEqual(['student', 'showcaseAdmin'])
     expect(hasAnyRole(['ROLE_MASTER_ADMIN'], ['admin'])).toBe(true)
+    expect(hasAnyRole(['ROLE_TRADE_ADMIN'], ['admin'])).toBe(false)
+    expect(hasAnyRole(['ROLE_SHOWCASE_ADMIN'], ['admin'])).toBe(false)
     expect(hasAnyRole(['ROLE_TRADE_ADMIN'], ['tradeAdmin'])).toBe(true)
     expect(hasAnyRole(['ROLE_SHOWCASE_ADMIN'], ['showcaseAdmin'])).toBe(true)
   })

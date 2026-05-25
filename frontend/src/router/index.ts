@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '@/stores/auth'
-import { hasAnyRole, type IdentityKey } from '@/utils/identity'
+import { canBypassRequiredRole, hasAnyRole, type IdentityKey } from '@/utils/identity'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -108,7 +108,7 @@ router.beforeEach(async (to) => {
     return { name: 'auth', query: { redirect } }
   }
 
-  if (to.meta.requiredRole && !hasAnyRole(auth.currentUser?.roles, [to.meta.requiredRole]) && !auth.isAdmin) {
+  if (to.meta.requiredRole && !hasAnyRole(auth.currentUser?.roles, [to.meta.requiredRole]) && !canBypassRequiredRole(auth.currentUser?.roles)) {
     ElMessage.warning(to.meta.lockedTitle || '请先解锁对应身份')
     return {
       path: to.meta.unlockRoute || '/roles',

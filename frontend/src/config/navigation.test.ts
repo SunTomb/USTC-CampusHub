@@ -7,6 +7,8 @@ const guestProfile = buildIdentityProfile(null)
 const studentProfile = buildIdentityProfile({ id: 1, username: 'student', nickname: '学生', roles: ['ROLE_STUDENT'] })
 const adminProfile = buildIdentityProfile({ id: 2, username: 'admin', nickname: '管理员', roles: ['ROLE_STUDENT', 'ROLE_ADMIN'] })
 const masterAdminProfile = buildIdentityProfile({ id: 3, username: 'master', nickname: '超管', roles: ['ROLE_MASTER_ADMIN'] })
+const tradeAdminProfile = buildIdentityProfile({ id: 4, username: 'trade', nickname: '交易管理员', roles: ['ROLE_TRADE_ADMIN'] })
+const showcaseAdminProfile = buildIdentityProfile({ id: 5, username: 'showcase', nickname: '展示管理员', roles: ['ROLE_SHOWCASE_ADMIN'] })
 
 describe('navigation config', () => {
   it('does not expose task workspaces as static navigation links', () => {
@@ -41,6 +43,25 @@ describe('navigation config', () => {
     expect(masterLabels).toContain('治理台')
     expect(masterLabels).toContain('支付监控')
     expect(masterLabels).toContain('钱包运营')
+  })
+
+  it('limits domain admin navigation to the matching management workspace', () => {
+    const tradeLabels = getVisibleNavGroups(tradeAdminProfile).flatMap((group) => group.items.map((item) => item.label))
+    const showcaseLabels = getVisibleNavGroups(showcaseAdminProfile).flatMap((group) => group.items.map((item) => item.label))
+
+    expect(tradeLabels).toContain('交易管理')
+    expect(tradeLabels).not.toContain('展示管理')
+    expect(tradeLabels).not.toContain('运营数据')
+    expect(tradeLabels).not.toContain('治理台')
+    expect(tradeLabels).not.toContain('支付监控')
+    expect(tradeLabels).not.toContain('钱包运营')
+
+    expect(showcaseLabels).toContain('展示管理')
+    expect(showcaseLabels).not.toContain('交易管理')
+    expect(showcaseLabels).not.toContain('运营数据')
+    expect(showcaseLabels).not.toContain('治理台')
+    expect(showcaseLabels).not.toContain('支付监控')
+    expect(showcaseLabels).not.toContain('钱包运营')
   })
 
   it('changes mobile tabs by authentication state', () => {

@@ -66,7 +66,7 @@ const ROLE_ALIASES: Record<Exclude<IdentityKey, 'guest'>, string[]> = {
   runner: ['ROLE_RUNNER', 'RUNNER'],
   goodsPublisher: ['ROLE_GOODS_PUBLISHER', 'GOODS_PUBLISHER'],
   shopMerchant: ['ROLE_SHOP_MERCHANT', 'SHOP_MERCHANT'],
-  admin: ['ROLE_ADMIN', 'ADMIN', 'ROLE_MASTER_ADMIN', 'MASTER_ADMIN', 'ROLE_TRADE_ADMIN', 'TRADE_ADMIN', 'ROLE_SHOWCASE_ADMIN', 'SHOWCASE_ADMIN'],
+  admin: ['ROLE_ADMIN', 'ADMIN', 'ROLE_MASTER_ADMIN', 'MASTER_ADMIN'],
   tradeAdmin: ['ROLE_TRADE_ADMIN', 'TRADE_ADMIN'],
   showcaseAdmin: ['ROLE_SHOWCASE_ADMIN', 'SHOWCASE_ADMIN'],
   masterAdmin: ['ROLE_MASTER_ADMIN', 'MASTER_ADMIN'],
@@ -88,6 +88,10 @@ export function hasAnyRole(roles: readonly string[] | null | undefined, identiti
     }
     return ROLE_ALIASES[identity].some((role) => normalizedRoles.has(role))
   })
+}
+
+export function canBypassRequiredRole(roles: readonly string[] | null | undefined) {
+  return hasAnyRole(roles, ['masterAdmin'])
 }
 
 export function roleDisplayName(identity: IdentityKey) {

@@ -19,7 +19,7 @@
         <section v-for="group in navGroups" :key="group.key" class="nav-group">
           <p>{{ group.label }}</p>
           <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="nav-link">
-            <span v-if="displayIcon(item.icon)" class="nav-link-icon">{{ displayIcon(item.icon) }}</span>
+            <span class="nav-link-icon">{{ navIcon(item) }}</span>
             <span>
               <strong>{{ item.label }}</strong>
               <small>{{ item.description }}</small>
@@ -31,6 +31,13 @@
 
     <el-container>
       <el-header class="header premium-header">
+        <div class="mobile-header-brand">
+          <span class="brand-mark mobile-brand-mark">CH</span>
+          <div>
+            <p class="eyebrow">Campus Service OS</p>
+            <strong>校集 CampusHub</strong>
+          </div>
+        </div>
         <div class="mobile-nav-trigger">
           <el-button plain @click="mobileMenuOpen = true">完整目录</el-button>
         </div>
@@ -54,7 +61,7 @@
 
     <nav class="mobile-tabbar" aria-label="移动端主导航">
       <RouterLink v-for="item in mobileTabItems" :key="item.path" :to="item.path" class="mobile-tabbar-item">
-        <span v-if="displayIcon(item.icon)" class="mobile-tabbar-icon">{{ displayIcon(item.icon) }}</span>
+        <span class="mobile-tabbar-icon">{{ navIcon(item) }}</span>
         <span>{{ item.label }}</span>
       </RouterLink>
       <button type="button" class="mobile-tabbar-item mobile-tabbar-button" @click="mobileMenuOpen = true">
@@ -65,6 +72,14 @@
 
     <el-drawer v-model="mobileMenuOpen" title="校集 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
+        <div class="mobile-directory-brand">
+          <span class="brand-mark">CH</span>
+          <div>
+            <p class="eyebrow">Campus Service OS</p>
+            <strong>校集 CampusHub</strong>
+            <small>二手交易 × 跑腿悬赏 × 学生店铺 × 信用治理 × 钱包运营</small>
+          </div>
+        </div>
         <div class="sidebar-identity mobile-directory-identity">
           <p class="eyebrow">当前身份</p>
           <strong>{{ identityProfile.displayName }}</strong>
@@ -73,7 +88,7 @@
         <section v-for="group in navGroups" :key="group.key" class="mobile-directory-group">
           <p>{{ group.label }}</p>
           <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="mobile-directory-link" @click="mobileMenuOpen = false">
-            <span v-if="displayIcon(item.icon)">{{ displayIcon(item.icon) }}</span>
+            <span>{{ navIcon(item) }}</span>
             <strong>{{ item.label }}</strong>
             <small>{{ item.description }}</small>
           </RouterLink>
@@ -102,7 +117,8 @@ function logout() {
   router.push('/auth')
 }
 
-function displayIcon(icon: string) {
-  return icon.trim().length <= 2 ? icon : ''
+function navIcon(item: { icon: string; label: string }) {
+  const trimmedIcon = item.icon.trim()
+  return trimmedIcon.length <= 2 ? trimmedIcon : item.label.slice(0, 1)
 }
 </script>
