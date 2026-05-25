@@ -1,6 +1,15 @@
 import type { CurrentUser } from '@/api/campushub'
 
-export type IdentityKey = 'guest' | 'student' | 'runner' | 'goodsPublisher' | 'shopMerchant' | 'admin'
+export type IdentityKey =
+  | 'guest'
+  | 'student'
+  | 'runner'
+  | 'goodsPublisher'
+  | 'shopMerchant'
+  | 'admin'
+  | 'tradeAdmin'
+  | 'showcaseAdmin'
+  | 'masterAdmin'
 
 export interface IdentityItem {
   key: IdentityKey
@@ -17,7 +26,16 @@ export interface IdentityProfile {
 
 type RoleAwareUser = Pick<CurrentUser, 'id' | 'username' | 'nickname' | 'roles'>
 
-const IDENTITY_ORDER: Exclude<IdentityKey, 'guest'>[] = ['student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin']
+const IDENTITY_ORDER: Exclude<IdentityKey, 'guest'>[] = [
+  'student',
+  'runner',
+  'goodsPublisher',
+  'shopMerchant',
+  'admin',
+  'tradeAdmin',
+  'showcaseAdmin',
+  'masterAdmin',
+]
 
 const IDENTITY_ITEMS: Record<IdentityKey, IdentityItem> = {
   guest: { key: 'guest', label: '未登录游客', shortLabel: '游客' },
@@ -26,6 +44,9 @@ const IDENTITY_ITEMS: Record<IdentityKey, IdentityItem> = {
   goodsPublisher: { key: 'goodsPublisher', label: '二手发布者', shortLabel: '二手' },
   shopMerchant: { key: 'shopMerchant', label: '店铺商家', shortLabel: '商家' },
   admin: { key: 'admin', label: '管理员', shortLabel: '管理' },
+  tradeAdmin: { key: 'tradeAdmin', label: '交易管理员', shortLabel: '交易管理' },
+  showcaseAdmin: { key: 'showcaseAdmin', label: '展示管理员', shortLabel: '展示管理' },
+  masterAdmin: { key: 'masterAdmin', label: '最高级系统管理员', shortLabel: '超管' },
 }
 
 const CAPABILITIES: Record<IdentityKey, string> = {
@@ -35,6 +56,9 @@ const CAPABILITIES: Record<IdentityKey, string> = {
   goodsPublisher: '二手商品发布与管理',
   shopMerchant: '店铺服务与预约处理',
   admin: '治理、支付、钱包与运营后台',
+  tradeAdmin: '悬赏跑腿、二手交易与售后纠纷后台',
+  showcaseAdmin: '项目广告、学生店铺与服务售后后台',
+  masterAdmin: 'CampusHub 全部后台权限',
 }
 
 const ROLE_ALIASES: Record<Exclude<IdentityKey, 'guest'>, string[]> = {
@@ -42,7 +66,10 @@ const ROLE_ALIASES: Record<Exclude<IdentityKey, 'guest'>, string[]> = {
   runner: ['ROLE_RUNNER', 'RUNNER'],
   goodsPublisher: ['ROLE_GOODS_PUBLISHER', 'GOODS_PUBLISHER'],
   shopMerchant: ['ROLE_SHOP_MERCHANT', 'SHOP_MERCHANT'],
-  admin: ['ROLE_ADMIN', 'ADMIN'],
+  admin: ['ROLE_ADMIN', 'ADMIN', 'ROLE_MASTER_ADMIN', 'MASTER_ADMIN', 'ROLE_TRADE_ADMIN', 'TRADE_ADMIN', 'ROLE_SHOWCASE_ADMIN', 'SHOWCASE_ADMIN'],
+  tradeAdmin: ['ROLE_TRADE_ADMIN', 'TRADE_ADMIN'],
+  showcaseAdmin: ['ROLE_SHOWCASE_ADMIN', 'SHOWCASE_ADMIN'],
+  masterAdmin: ['ROLE_MASTER_ADMIN', 'MASTER_ADMIN'],
 }
 
 function normalizeRole(role: string) {
@@ -83,7 +110,9 @@ export function buildIdentityProfile(user: RoleAwareUser | null): IdentityProfil
       (identity) => IDENTITY_ITEMS[identity],
     ),
   ]
-  const primaryIdentity = identities.some((identity) => identity.key === 'admin') ? 'admin' : identities[identities.length - 1].key
+  const primaryIdentity = [...IDENTITY_ORDER].reverse().find((identity) =>
+    identities.some((item) => item.key === identity),
+  ) ?? 'student'
 
   return {
     primaryIdentity,

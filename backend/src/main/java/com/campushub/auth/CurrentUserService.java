@@ -34,7 +34,34 @@ public class CurrentUserService {
     public Long requireAdminId() {
         CurrentUserPrincipal principal = currentPrincipal()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录"));
-        if (!hasAuthority(principal, "ROLE_ADMIN")) {
+        if (!isCompatibilityAdmin(principal)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
+        return principal.userId();
+    }
+
+    public Long requireMasterAdminId() {
+        CurrentUserPrincipal principal = currentPrincipal()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录"));
+        if (!hasAuthority(principal, "ROLE_MASTER_ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
+        return principal.userId();
+    }
+
+    public Long requireTradeAdminId() {
+        CurrentUserPrincipal principal = currentPrincipal()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录"));
+        if (!hasAnyAuthority(principal, "ROLE_MASTER_ADMIN", "ROLE_TRADE_ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
+        return principal.userId();
+    }
+
+    public Long requireShowcaseAdminId() {
+        CurrentUserPrincipal principal = currentPrincipal()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录"));
+        if (!hasAnyAuthority(principal, "ROLE_MASTER_ADMIN", "ROLE_SHOWCASE_ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
         }
         return principal.userId();
@@ -54,7 +81,17 @@ public class CurrentUserService {
 
     public boolean isAdmin() {
         return currentPrincipal()
-                .map(principal -> hasAuthority(principal, "ROLE_ADMIN"))
+                .map(this::isCompatibilityAdmin)
+                .orElse(false);
+    }
+
+    public boolean isAnyAdmin() {
+        return currentPrincipal()
+                .map(principal -> hasAnyAuthority(principal,
+                        "ROLE_ADMIN",
+                        "ROLE_MASTER_ADMIN",
+                        "ROLE_TRADE_ADMIN",
+                        "ROLE_SHOWCASE_ADMIN"))
                 .orElse(false);
     }
 
@@ -64,6 +101,19 @@ public class CurrentUserService {
             return Optional.empty();
         }
         return Optional.of(principal);
+    }
+
+    private boolean isCompatibilityAdmin(CurrentUserPrincipal principal) {
+        return hasAnyAuthority(principal, "ROLE_ADMIN", "ROLE_MASTER_ADMIN");
+    }
+
+    private boolean hasAnyAuthority(CurrentUserPrincipal principal, String... authorities) {
+        for (String authority : authorities) {
+            if (hasAuthority(principal, authority)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean hasAuthority(CurrentUserPrincipal principal, String authority) {

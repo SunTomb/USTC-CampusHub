@@ -42,7 +42,7 @@ public class SecurityConfig {
                                 "/api/project-ads/**",
                                 "/api/files/**")
                         .permitAll()
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_MASTER_ADMIN", "ROLE_TRADE_ADMIN", "ROLE_SHOWCASE_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
