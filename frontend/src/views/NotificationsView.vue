@@ -2,14 +2,14 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Station Messages</p>
+        <p class="eyebrow">Message Center</p>
         <h2>站内通知</h2>
         <p>接单申请、任务状态、异常处理和身份保证金结果都会沉淀在站内通知。</p>
       </div>
       <el-button :loading="loading" @click="load">刷新</el-button>
     </div>
 
-    <div class="list-surface">
+    <div class="list-surface premium-panel">
       <EmptyState
         v-if="!loading && notifications.length === 0"
         eyebrow="Notifications"

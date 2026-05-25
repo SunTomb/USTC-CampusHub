@@ -1,15 +1,15 @@
 <template>
   <section class="page-stack">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Moderation</p>
-        <h2>审核治理</h2>
-        <p>审核记录与举报记录并列展示，支持课程设计中的内容治理闭环说明。</p>
+        <p class="eyebrow">Operations Console</p>
+        <h2>内容审核</h2>
+        <p>并列查看审核与举报记录，便于低影响复核内容状态并保留处理追溯。</p>
       </div>
       <el-button :loading="loading" @click="loadModeration">刷新</el-button>
     </div>
 
-    <el-tabs class="tabs-surface">
+    <el-tabs class="tabs-surface premium-panel">
       <el-tab-pane label="审核记录">
         <EmptyState v-if="!loading && reviews.length === 0" title="暂无审核记录" description="内容审核结果会在这里汇总展示。" compact />
         <div v-else class="mobile-table-wrapper">

@@ -71,18 +71,18 @@ onMounted(loadAll)
 
 <template>
   <section class="page-stack">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Admin Wallet</p>
+        <p class="eyebrow">Operations Console</p>
         <h2>钱包运营</h2>
-        <p>处理微信充值审核、提现审核和钱包资金运营；不显示 token、secret 或支付宝密钥。</p>
+        <p>处理微信充值与提现审核，保持低影响资金运营并追溯每笔状态变化。</p>
       </div>
       <div class="payment-actions">
         <el-button :loading="loading" @click="loadAll">刷新</el-button>
       </div>
     </div>
 
-    <el-tabs>
+    <el-tabs class="tabs-surface premium-panel">
       <el-tab-pane label="充值审核">
         <el-select v-model="rechargeStatus" clearable placeholder="全部状态" style="width: 180px" @change="loadAll">
           <el-option label="待审核" value="PENDING_REVIEW" />
@@ -92,7 +92,7 @@ onMounted(loadAll)
         </el-select>
         <EmptyState v-if="!recharges.length && !loading" eyebrow="Recharge" title="暂无充值订单" description="用户发起充值后会出现在这里。" compact />
         <div class="responsive-card-grid">
-          <article v-for="item in recharges" :key="item.id" class="info-card">
+          <article v-for="item in recharges" :key="item.id" class="info-card premium-panel">
             <strong>{{ item.userNickname }} {{ item.channel }} 充值 ¥{{ item.amount }}</strong>
             <p>状态：{{ item.status }}；实际支付：¥{{ item.payAmount }}</p>
             <p v-if="item.reviewNote">审核备注：{{ item.reviewNote }}</p>
@@ -113,7 +113,7 @@ onMounted(loadAll)
         </el-select>
         <EmptyState v-if="!withdrawals.length && !loading" eyebrow="Withdraw" title="暂无提现申请" description="用户申请提现后会出现在这里。" compact />
         <div class="responsive-card-grid">
-          <article v-for="item in withdrawals" :key="item.id" class="info-card">
+          <article v-for="item in withdrawals" :key="item.id" class="info-card premium-panel">
             <strong>{{ item.userNickname }} {{ item.channel }} 提现 ¥{{ item.amount }}</strong>
             <p>状态：{{ item.status }}；账号摘要：{{ item.accountSnapshot || '未填写' }}</p>
             <p v-if="item.reviewNote">审核备注：{{ item.reviewNote }}</p>

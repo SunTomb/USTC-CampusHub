@@ -1,10 +1,10 @@
 <template>
   <section class="page-stack">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Operations</p>
-        <h2>运营后台</h2>
-        <p>聚合跑腿任务、异常、身份保证金、举报和违规治理入口。</p>
+        <p class="eyebrow">Operations Console</p>
+        <h2>运营数据</h2>
+        <p>汇总跨业务运营指标、异常和导出入口，支持低影响处理与全链路状态追溯。</p>
       </div>
       <div class="ops-heading-actions">
         <el-date-picker
@@ -29,7 +29,7 @@
       <div><span>待审身份</span><strong>{{ dashboard.pendingRoleApplications }}</strong></div>
     </div>
 
-    <section class="ops-analytics-panel" v-loading="analyticsLoading">
+    <section class="ops-analytics-panel premium-panel" v-loading="analyticsLoading">
       <div class="panel-topline">
         <span>运营分析</span>
         <span v-if="overview">{{ overview.startDate }} 至 {{ overview.endDate }}</span>
@@ -42,7 +42,7 @@
       </div>
     </section>
 
-    <el-tabs class="tabs-surface" v-loading="loading">
+    <el-tabs class="tabs-surface premium-panel" v-loading="loading">
       <el-tab-pane label="业务漏斗">
         <div class="funnel-grid" v-if="funnels">
           <div class="funnel-card" v-for="funnel in funnels.funnels" :key="funnel.businessKey">

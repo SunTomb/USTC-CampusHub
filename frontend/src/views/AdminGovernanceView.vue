@@ -1,10 +1,10 @@
 <template>
   <section class="page-stack governance-page">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Governance</p>
-        <h2>治理工作台</h2>
-        <p>统一处理举报、违规、信用分、用户限制和管理员操作审计。</p>
+        <p class="eyebrow">Operations Console</p>
+        <h2>治理台</h2>
+        <p>统一处理举报、违规、信用调整和用户限制，确保低影响处置并保留状态追溯。</p>
       </div>
       <el-button :loading="loading" @click="load">刷新</el-button>
     </div>
@@ -17,7 +17,7 @@
       <div><span>有效限制</span><strong>{{ dashboard.activeRestrictions }}</strong></div>
     </div>
 
-    <el-card shadow="never" class="surface-card">
+    <el-card shadow="never" class="surface-card premium-panel">
       <div class="ops-toolbar governance-filters">
         <el-select v-model="statusFilter" clearable placeholder="举报状态" @change="loadReports">
           <el-option label="开放" value="OPEN" />
@@ -62,7 +62,7 @@
       </div>
     </el-card>
 
-    <el-card shadow="never" class="surface-card">
+    <el-card shadow="never" class="surface-card premium-panel">
       <template #header>管理员操作审计</template>
       <div class="mobile-table-wrapper">
         <el-table :data="auditLogs" stripe>

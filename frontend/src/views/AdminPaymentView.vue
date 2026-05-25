@@ -8,7 +8,6 @@ import {
   type PaymentOrderSummary
 } from '../api/campushub'
 import EmptyState from '../components/common/EmptyState.vue'
-import PageActions from '../components/common/PageActions.vue'
 
 const loading = ref(false)
 const status = ref('')
@@ -35,18 +34,25 @@ onMounted(loadPayments)
 </script>
 
 <template>
-  <section class="page-section">
-    <PageActions title="支付监控" description="查看服务费与身份保证金支付订单，不显示内部 token、签名 secret 或支付宝密钥。">
-      <el-select v-model="status" clearable placeholder="全部状态" style="width: 180px" @change="loadPayments">
-        <el-option label="待支付" value="PENDING" />
-        <el-option label="已支付" value="PAID" />
-        <el-option label="失败" value="FAILED" />
-        <el-option label="已过期" value="EXPIRED" />
-      </el-select>
-      <el-button @click="loadPayments">刷新</el-button>
-    </PageActions>
+  <section class="page-stack">
+    <div class="page-heading admin-page-heading">
+      <div>
+        <p class="eyebrow">Operations Console</p>
+        <h2>支付监控</h2>
+        <p>查看服务费与身份保证金支付订单，保持低影响排查并追溯回调处理状态。</p>
+      </div>
+      <div class="payment-actions">
+        <el-select v-model="status" clearable placeholder="全部状态" style="width: 180px" @change="loadPayments">
+          <el-option label="待支付" value="PENDING" />
+          <el-option label="已支付" value="PAID" />
+          <el-option label="失败" value="FAILED" />
+          <el-option label="已过期" value="EXPIRED" />
+        </el-select>
+        <el-button @click="loadPayments">刷新</el-button>
+      </div>
+    </div>
 
-    <el-tabs>
+    <el-tabs class="tabs-surface premium-panel">
       <el-tab-pane label="支付订单">
         <EmptyState v-if="!orders.length && !loading" title="暂无支付订单" description="创建服务费或身份保证金支付单后会出现在这里。" />
         <el-table v-else v-loading="loading" :data="orders" class="mobile-safe-table">

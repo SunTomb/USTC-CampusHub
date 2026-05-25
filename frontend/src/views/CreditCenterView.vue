@@ -9,7 +9,7 @@
       <el-button :loading="loading" @click="load">刷新</el-button>
     </div>
 
-    <el-card v-if="center" shadow="never" class="credit-score-card">
+    <el-card v-if="center" shadow="never" class="credit-score-card premium-panel">
       <div>
         <span>当前信用分</span>
         <strong>{{ center.creditScore }}</strong>
@@ -27,7 +27,7 @@
       :closable="false"
     />
 
-    <el-tabs v-if="center" class="tabs-surface">
+    <el-tabs v-if="center" class="tabs-surface premium-panel">
       <el-tab-pane label="当前限制">
         <EmptyState
           v-if="center.activeRestrictions.length === 0"
