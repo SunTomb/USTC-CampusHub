@@ -8,8 +8,15 @@
       </div>
     </div>
 
+    <div class="premium-panel role-status-panel">
+      <p class="eyebrow">Unlocked Capabilities</p>
+      <h3>当前已解锁身份</h3>
+      <IdentityBadge :identities="identityProfile.identities" />
+      <p>跑腿和二手发布者支付保证金后自动开通；店铺商家支付保证金后进入人工审核。</p>
+    </div>
+
     <div class="role-grid">
-      <el-card v-for="role in roles" :key="role.roleType" class="role-card" shadow="never">
+      <el-card v-for="role in roleCards" :key="role.roleType" class="role-card" shadow="never">
         <template #header>
           <div class="panel-topline">
             <strong>{{ role.title }}</strong>
@@ -19,18 +26,18 @@
         <p>{{ role.description }}</p>
         <div class="deposit-amount">¥{{ role.depositAmount }}</div>
         <el-input v-model="notes[role.roleType]" type="textarea" :rows="3" placeholder="申请说明，可选" />
-        <el-button type="primary" :loading="loadingRole === role.roleType" @click="submit(role.roleType)">
-          申请开通
+        <el-button type="primary" :loading="loadingRole === role.roleType" :disabled="role.unlocked" @click="submit(role.roleType)">
+          {{ role.unlocked ? '已解锁' : '申请开通' }}
         </el-button>
-        <div v-if="applications[role.roleType]" class="payment-meta">
-          <span>保证金状态：{{ depositStatusText[applications[role.roleType].depositStatus] ?? applications[role.roleType].depositStatus }}</span>
-          <span>审核状态：{{ applications[role.roleType].reviewStatus }}</span>
-          <span v-if="applications[role.roleType].depositPaymentOrderNo">支付单：{{ applications[role.roleType].depositPaymentOrderNo }}</span>
+        <div v-if="role.application" class="payment-meta">
+          <span>保证金状态：{{ depositStatusText[role.application.depositStatus] ?? role.application.depositStatus }}</span>
+          <span>审核状态：{{ role.application.reviewStatus }}</span>
+          <span v-if="role.application.depositPaymentOrderNo">支付单：{{ role.application.depositPaymentOrderNo }}</span>
           <el-button
-            v-if="applications[role.roleType].depositStatus !== 'PAID'"
+            v-if="role.application.depositStatus !== 'PAID'"
             size="small"
-            :loading="payingApplicationId === applications[role.roleType].id"
-            @click="payDeposit(applications[role.roleType].id)"
+            :loading="payingApplicationId === role.application.id"
+            @click="payDeposit(role.application.id)"
           >
             支付保证金
           </el-button>
@@ -41,12 +48,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { applyRole, createRoleDepositPayment, type RoleApplicationSummary } from '@/api/campushub'
+import IdentityBadge from '@/components/common/IdentityBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
+const identityProfile = computed(() => auth.identityProfile)
 const loadingRole = ref<string | null>(null)
 const payingApplicationId = ref<number | null>(null)
 const applications = reactive<Record<string, RoleApplicationSummary>>({})
@@ -85,6 +94,28 @@ const roles = [
     review: true,
   },
 ]
+
+const roleAliases: Record<string, string[]> = {
+  RUNNER: ['ROLE_RUNNER', 'RUNNER'],
+  GOODS_PUBLISHER: ['ROLE_GOODS_PUBLISHER', 'GOODS_PUBLISHER'],
+  SHOP_MERCHANT: ['ROLE_SHOP_MERCHANT', 'SHOP_MERCHANT'],
+}
+
+const roleCards = computed(() => roles.map((role) => ({
+  ...role,
+  application: applicationFor(role.roleType),
+  unlocked: hasIdentity(role.roleType),
+})))
+
+function applicationFor(roleType: string) {
+  return applications[roleType]
+}
+
+function hasIdentity(roleType: string) {
+  const aliases = roleAliases[roleType] ?? [roleType]
+  const userRoles = auth.currentUser?.roles.map((role) => role.trim().toUpperCase()) ?? []
+  return aliases.some((role) => userRoles.includes(role))
+}
 
 async function submit(roleType: string) {
   const userId = auth.currentUser?.id

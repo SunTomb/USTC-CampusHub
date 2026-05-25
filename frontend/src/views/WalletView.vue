@@ -2,9 +2,9 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Wallet</p>
-        <h2>钱包中心</h2>
-        <p>管理余额、充值、提现、冻结明细、服务费和支付中心订单状态；CampusHub 不直接处理真实支付密钥。</p>
+        <p class="eyebrow">Wallet Center</p>
+        <h2>钱包与充值</h2>
+        <p>支付宝充值通过 API-Transfer-Station 支付中心创建真实支付链接；微信充值进入人工审核，请备注校园邮箱或 CampusHub 用户名。</p>
       </div>
       <el-button :loading="loading" @click="loadWallet">刷新</el-button>
     </div>

@@ -604,6 +604,25 @@ body {
   gap: 18px;
 }
 
+.role-status-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.role-status-panel h3,
+.role-status-panel p {
+  margin: 0;
+}
+
+.role-card {
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.role-card .el-card__header {
+  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+}
+
 .role-card :deep(.el-card__body) {
   display: flex;
   flex-direction: column;

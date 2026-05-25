@@ -1,13 +1,13 @@
 <template>
   <section class="auth-page">
     <div class="auth-copy">
-      <p class="eyebrow">CampusHub 账号</p>
-      <h2>用校园邮箱进入校集工作台</h2>
-      <p>注册强制校验 edu.cn 邮箱，验证码仅用于建立学生身份；演示账号仍可直接登录。</p>
+      <p class="eyebrow">Campus Identity</p>
+      <h2>用校园邮箱进入真实校园服务平台</h2>
+      <p>登录支持用户名或校园邮箱；注册需要完成邮箱验证码校验，并至少填写一种微信或 QQ 联系方式。</p>
       <ul>
         <li>统一浏览二手商品、悬赏任务和技能店铺</li>
         <li>钱包、审核、举报记录集中管理</li>
-        <li>生产环境可接入 Brevo SMTP 发送验证码</li>
+        <li>联系方式只在交易、预约或任务达成后按规则展示</li>
       </ul>
     </div>
 
@@ -57,10 +57,13 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { register, sendRegisterCode } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 
+const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const activeTab = ref('login')
 const loading = ref(false)
@@ -85,6 +88,8 @@ async function handleLogin() {
   try {
     await auth.login(loginForm.username, loginForm.password)
     ElMessage.success('登录成功')
+    const redirect = route.query.redirect
+    await router.push(typeof redirect === 'string' ? redirect : '/')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
   } finally {
