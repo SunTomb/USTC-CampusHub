@@ -53,4 +53,12 @@ public class IdentityController {
         currentUserService.requireSameUser(application.getUser().getId());
         return ApiResponse.ok(paymentService.createRoleDepositPayment(applicationId));
     }
+
+    @PostMapping("/roles/{applicationId}/deposit-wallet-pay")
+    public ApiResponse<PaymentCreation> payDepositWithWallet(@PathVariable Long applicationId) {
+        RoleApplication application = roleApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("身份申请不存在"));
+        Long payerId = currentUserService.requireSameUser(application.getUser().getId());
+        return ApiResponse.ok(paymentService.payRoleDepositWithWallet(applicationId, payerId));
+    }
 }

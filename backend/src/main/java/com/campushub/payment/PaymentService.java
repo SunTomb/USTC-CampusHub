@@ -1,6 +1,7 @@
 package com.campushub.payment;
 
 import com.campushub.common.BusinessException;
+import com.campushub.identity.IdentityService;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.wallet.WalletAccount;
@@ -8,6 +9,8 @@ import com.campushub.wallet.WalletAccountRepository;
 import com.campushub.wallet.WalletFlow;
 import com.campushub.wallet.WalletFlowRepository;
 import com.campushub.wallet.WalletOperationService;
+import com.campushub.wallet.WalletService;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
@@ -28,6 +31,8 @@ public class PaymentService {
     private final WalletAccountRepository walletAccountRepository;
     private final WalletFlowRepository walletFlowRepository;
     private final WalletOperationService walletOperationService;
+    private final WalletService walletService;
+    private final IdentityService identityService;
 
     public PaymentService(
             PaymentProvider paymentProvider,
@@ -38,7 +43,9 @@ public class PaymentService {
             RoleApplicationRepository roleApplicationRepository,
             WalletAccountRepository walletAccountRepository,
             WalletFlowRepository walletFlowRepository,
-            WalletOperationService walletOperationService) {
+            WalletOperationService walletOperationService,
+            WalletService walletService,
+            IdentityService identityService) {
         this.paymentProvider = paymentProvider;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.paymentOrderRepository = paymentOrderRepository;
@@ -48,6 +55,8 @@ public class PaymentService {
         this.walletAccountRepository = walletAccountRepository;
         this.walletFlowRepository = walletFlowRepository;
         this.walletOperationService = walletOperationService;
+        this.walletService = walletService;
+        this.identityService = identityService;
     }
 
     @Transactional
@@ -83,6 +92,42 @@ public class PaymentService {
             return creation;
         }
         return PaymentOrderSummary.toCreation(order);
+    }
+
+    @Transactional
+    public PaymentCreation payRoleDepositWithWallet(Long applicationId, Long payerId) {
+        RoleApplication application = roleApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException("身份申请不存在"));
+        if (!application.getUser().getId().equals(payerId)) {
+            throw new BusinessException("只能支付自己的身份保证金");
+        }
+        if ("PAID".equals(application.getDepositStatus())) {
+            throw new BusinessException("身份保证金已支付");
+        }
+        if (application.getDepositAmount() == null || application.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("该身份无需支付保证金");
+        }
+        walletService.debit(
+                payerId,
+                application.getDepositAmount(),
+                "ROLE_DEPOSIT",
+                "ROLE_DEPOSIT",
+                application.getId(),
+                "role-deposit-wallet:" + application.getId(),
+                "USER",
+                payerId,
+                "身份保证金余额支付");
+        application.markDepositPaid();
+        roleApplicationRepository.save(application);
+        identityService.assignRoleAfterDeposit(application);
+        return new PaymentCreation(
+                "WALLET",
+                "WALLET-RD-" + application.getId(),
+                null,
+                "wallet://role-deposit/" + application.getId(),
+                "PAID",
+                null,
+                "余额支付成功");
     }
 
     @Transactional(readOnly = true)
@@ -287,6 +332,7 @@ public class PaymentService {
         if (!"PAID".equals(application.getDepositStatus())) {
             application.markDepositPaid();
             roleApplicationRepository.save(application);
+            identityService.assignRoleAfterDeposit(application);
         }
     }
 

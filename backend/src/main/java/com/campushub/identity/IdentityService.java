@@ -1,5 +1,6 @@
 package com.campushub.identity;
 
+import com.campushub.auth.UserRoleService;
 import com.campushub.common.BusinessException;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
@@ -12,10 +13,15 @@ public class IdentityService {
 
     private final RoleApplicationRepository roleApplicationRepository;
     private final UserRepository userRepository;
+    private final UserRoleService userRoleService;
 
-    public IdentityService(RoleApplicationRepository roleApplicationRepository, UserRepository userRepository) {
+    public IdentityService(
+            RoleApplicationRepository roleApplicationRepository,
+            UserRepository userRepository,
+            UserRoleService userRoleService) {
         this.roleApplicationRepository = roleApplicationRepository;
         this.userRepository = userRepository;
+        this.userRoleService = userRoleService;
     }
 
     @Transactional
@@ -61,6 +67,7 @@ public class IdentityService {
                 .orElseThrow(() -> new BusinessException("审核人不存在"));
 
         application.markApproved(reviewer);
+        assignRoleAfterDeposit(application);
         return RoleApplicationSummary.from(application);
     }
 
@@ -73,6 +80,15 @@ public class IdentityService {
 
         application.markRejected(reviewer);
         return RoleApplicationSummary.from(application);
+    }
+
+    @Transactional
+    public void assignRoleAfterDeposit(RoleApplication application) {
+        if (!"APPROVED".equals(application.getReviewStatus())) {
+            return;
+        }
+        PlatformRoleType roleType = parseRoleType(application.getRoleType());
+        userRoleService.assignRole(application.getUser().getId(), roleType.grantedRoleCode());
     }
 
     private PlatformRoleType parseRoleType(String roleType) {

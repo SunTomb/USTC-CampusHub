@@ -24,8 +24,8 @@ class IdentityServiceIntegrationTest {
 
         assertThat(summary.roleType()).isEqualTo("RUNNER");
         assertThat(summary.depositAmount()).isEqualByComparingTo(new BigDecimal("5.00"));
-        assertThat(summary.depositStatus()).isEqualTo("PAID");
-        assertThat(summary.reviewStatus()).isEqualTo("APPROVED");
+        assertThat(summary.depositStatus()).isEqualTo("PENDING");
+        assertThat(summary.reviewStatus()).isEqualTo("PENDING_PAYMENT");
     }
 
     @Test
@@ -51,7 +51,7 @@ class IdentityServiceIntegrationTest {
 
         assertThat(summary.roleType()).isEqualTo("SHOP_MERCHANT");
         assertThat(summary.depositAmount()).isEqualByComparingTo(new BigDecimal("20.00"));
-        assertThat(summary.depositStatus()).isEqualTo("PAID");
-        assertThat(summary.reviewStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(summary.depositStatus()).isEqualTo("PENDING");
+        assertThat(summary.reviewStatus()).isEqualTo("PENDING_PAYMENT");
     }
 }
