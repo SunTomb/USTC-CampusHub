@@ -83,30 +83,22 @@ const registerForm = reactive({
   qqContact: '',
 })
 
+function normalizedRedirect() {
+  const redirect = route.query.redirect
+  if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) return redirect
+  return '/'
+}
+
 async function handleLogin() {
   loading.value = true
   try {
     await auth.login(loginForm.username, loginForm.password)
     ElMessage.success('登录成功')
-    const redirect = route.query.redirect
-    await router.push(typeof redirect === 'string' ? redirect : '/')
+    await router.push(normalizedRedirect())
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
   } finally {
     loading.value = false
-  }
-}
-
-async function handleSendCode() {
-  codeLoading.value = true
-  try {
-    const result = await sendRegisterCode(registerForm.email)
-    codeHint.value = `验证码已发送至 ${result.email}，${result.ttlMinutes} 分钟内有效。`
-    ElMessage.success('验证码已发送')
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '发送失败')
-  } finally {
-    codeLoading.value = false
   }
 }
 

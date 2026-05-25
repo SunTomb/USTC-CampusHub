@@ -128,6 +128,8 @@ async function submit(roleType: string) {
     const result = await applyRole(userId, { roleType, applyNote: notes[roleType] })
     applications[roleType] = result
     ElMessage.success(result.depositStatus === 'PENDING' ? '申请已提交，请继续支付保证金' : '申请已提交')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '申请失败，请稍后重试')
   } finally {
     loadingRole.value = null
   }
@@ -141,6 +143,8 @@ async function payDeposit(applicationId: number) {
     if (result.payUrl && !result.payUrl.startsWith('mock://')) {
       window.open(result.payUrl, '_blank', 'noopener,noreferrer')
     }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '保证金支付失败，请稍后重试')
   } finally {
     payingApplicationId.value = null
   }
