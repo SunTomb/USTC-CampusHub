@@ -609,3 +609,40 @@ Verification still useful later:
 - Authenticated normal-student and `yeshenghao@mail.ustc.edu.cn` admin Playwriter checks require user-known passwords; do not reset production passwords or read password hashes just for smoke verification.
 - After an authenticated check is available, confirm `/wallet` still shows payment-center Alipay continue-pay and WeChat QR entries in the logged-in UI.
 
+## Latest Phase 13 account UX fix handoff, 2026-05-25
+
+Latest local/GitHub/production `master` is synchronized at `be1ebc5` (`fix account registration and profile management`). Production `/opt/campushub` is on `master` at `be1ebc5`; MySQL/backend/web are running.
+
+Implemented after Phase 13 based on user feedback:
+
+- Registration now requires a user-chosen `CampusHub 用户名` instead of silently deriving username from the campus email prefix.
+- Backend `RegisterRequest` includes `username`; `RegistrationService` validates 3-64 letters/digits/underscore and uniqueness before consuming the email verification code.
+- New authenticated profile APIs under `/api/users/me`: `PUT /profile` for username/nickname and `PUT /password` for password changes with current-password verification.
+- Frontend adds `/profile` personal information page and a “个人信息” navigation entry under the account group.
+- Registration page shows the username field and validates it before submit.
+- Default registration mail sender display name is now `USTC CampusHub`; production server `.env` was updated safely without printing secrets, then backend was restarted.
+- Added backend integration tests for requested registration username and current-user profile/password updates.
+
+Verification completed:
+
+- GitHub `master` was pushed to `be1ebc5`; production `/opt/campushub` fast-forwarded to `be1ebc5`.
+- Local frontend targeted tests passed: `src/api/client.test.ts`, `src/views/walletPaymentActions.test.ts`, `src/utils/identity.test.ts`, and `src/config/navigation.test.ts`.
+- Local frontend build passed with only known Vite large chunk and dependency pure-comment warnings.
+- Server Docker frontend build succeeded with the same known warnings.
+- Server Docker backend build succeeded; Maven package completed inside Docker with `BUILD SUCCESS` (`maven.test.skip=true` in Dockerfile as before).
+- Production backend/web containers were recreated and started; MySQL stayed healthy.
+- Server-local API smoke returned HTTP 200 for `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/auth`, and `/profile`; anonymous protected checks returned HTTP 401 for `/api/auth/me`, `/api/admin/ops/analytics/overview`, `/api/users/me/profile`, and `/api/users/me/password`.
+- Playwriter verified `/auth` → “邮箱注册” shows `CampusHub 用户名`; anonymous `/profile` redirects to `/auth?redirect=/profile`; mobile 390x844 checks for `/auth` registration and `/profile` redirect had no document-level horizontal overflow.
+
+Verification caveats:
+
+- `scripts/beta-auth-smoke.sh` could not run because production did not expose `CAMPUSHUB_SMOKE_STUDENT_USERNAME/PASSWORD` or `CAMPUSHUB_SMOKE_ADMIN_USERNAME/PASSWORD`; do not read/reset production passwords just to run smoke.
+- Authenticated Playwriter profile-edit/password-change verification still requires user-known credentials. If available in the next session, verify `/profile` save flows and re-check `/wallet` payment-center/WeChat entries after login.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token/signing secret, database password, manual QR image contents if sensitive, or Alipay key contents.
+- Production real Alipay handling remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
+- Do not edit already-applied migrations V1-V12; the account UX fix did not require a migration.
+- Local machine still lacks Maven; prefer local frontend checks plus server-side Docker backend build/API smoke/Playwriter for full verification.
+
