@@ -192,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   createServiceFeePayment,
@@ -235,9 +235,14 @@ const withdrawalForm = reactive({ channel: 'WECHAT', amount: 10, accountSnapshot
 async function loadWallet() {
   loading.value = true
   try {
+    if (auth.token && !auth.currentUser && !auth.sessionLoaded) {
+      await auth.loadCurrentUser()
+    }
     const userId = currentUserId.value
     if (!userId) {
-      ElMessage.warning('请先登录')
+      if (!auth.token) {
+        ElMessage.warning('请先登录')
+      }
       return
     }
     const authLoadOptions = { skipAuthExpireHandling: true }
@@ -333,6 +338,15 @@ async function submitWithdrawal() {
     ElMessage.error(error instanceof Error ? error.message : '提现提交失败')
   }
 }
+
+watch(
+  () => auth.currentUser?.id,
+  (userId) => {
+    if (userId) {
+      void loadWallet()
+    }
+  },
+)
 
 onMounted(loadWallet)
 </script>
