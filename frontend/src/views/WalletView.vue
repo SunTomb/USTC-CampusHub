@@ -240,13 +240,14 @@ async function loadWallet() {
       ElMessage.warning('请先登录')
       return
     }
+    const authLoadOptions = { skipAuthExpireHandling: true }
     const [walletAccount, walletFlows, fees, rechargeData, withdrawalData, frozenData] = await Promise.all([
-      getWallet(userId),
-      listWalletFlows(userId),
-      listServiceFees(userId),
-      listWalletRecharges(userId),
-      listWalletWithdrawals(userId),
-      listWalletFrozenItems(userId),
+      getWallet(userId, authLoadOptions),
+      listWalletFlows(userId, authLoadOptions),
+      listServiceFees(userId, authLoadOptions),
+      listWalletRecharges(userId, authLoadOptions),
+      listWalletWithdrawals(userId, authLoadOptions),
+      listWalletFrozenItems(userId, authLoadOptions),
     ])
     account.value = walletAccount
     flows.value = walletFlows

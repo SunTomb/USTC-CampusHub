@@ -1175,36 +1175,36 @@ function buildQuery(params?: object) {
   return value ? `?${value}` : ''
 }
 
-export function getWallet(userId: number) {
-  return getApi<WalletAccountSummary>(`/wallet/users/${userId}`)
+export function getWallet(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<WalletAccountSummary>(`/wallet/users/${userId}`, options)
 }
 
-export function listWalletFlows(userId: number) {
-  return getApi<WalletFlowSummary[]>(`/wallet/users/${userId}/flows`)
+export function listWalletFlows(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<WalletFlowSummary[]>(`/wallet/users/${userId}/flows`, options)
 }
 
 export function createWalletRecharge(userId: number, payload: { channel: string; amount: number; remark?: string }) {
   return postApi<WalletRechargeSummary>(`/wallet/users/${userId}/recharges`, payload)
 }
 
-export function listWalletRecharges(userId: number) {
-  return getApi<WalletRechargeSummary[]>(`/wallet/users/${userId}/recharges`)
+export function listWalletRecharges(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<WalletRechargeSummary[]>(`/wallet/users/${userId}/recharges`, options)
 }
 
 export function createWalletWithdrawal(userId: number, payload: { amount: number; channel: string; accountSnapshot?: string }) {
   return postApi<WalletWithdrawalSummary>(`/wallet/users/${userId}/withdrawals`, payload)
 }
 
-export function listWalletWithdrawals(userId: number) {
-  return getApi<WalletWithdrawalSummary[]>(`/wallet/users/${userId}/withdrawals`)
+export function listWalletWithdrawals(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<WalletWithdrawalSummary[]>(`/wallet/users/${userId}/withdrawals`, options)
 }
 
-export function listWalletFrozenItems(userId: number) {
-  return getApi<WalletFrozenRecordSummary[]>(`/wallet/users/${userId}/frozen-items`)
+export function listWalletFrozenItems(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<WalletFrozenRecordSummary[]>(`/wallet/users/${userId}/frozen-items`, options)
 }
 
-export function listServiceFees(userId: number) {
-  return getApi<ServiceFeeSummary[]>(`/payment/users/${userId}/service-fees`)
+export function listServiceFees(userId: number, options?: { skipAuthExpireHandling?: boolean }) {
+  return getApi<ServiceFeeSummary[]>(`/payment/users/${userId}/service-fees`, options)
 }
 
 export function createServiceFeePayment(feeId: number) {
