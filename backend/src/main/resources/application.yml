@@ -21,7 +21,7 @@ campushub:
   jwt:
     issuer: ${CAMPUSHUB_JWT_ISSUER:campushub-local}
     secret: ${CAMPUSHUB_JWT_SECRET:campushub-local-development-secret-with-enough-length}
-    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:720}
+    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:43200}
   beta:
     demo-reset-enabled: ${CAMPUSHUB_BETA_DEMO_RESET_ENABLED:false}
     student:

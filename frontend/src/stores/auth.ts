@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', {
         return
       }
       try {
-        this.currentUser = await getCurrentUser()
+        this.currentUser = await getCurrentUser({ skipAuthExpireHandling: true })
       } catch {
         this.clearSession()
       } finally {

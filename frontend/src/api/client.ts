@@ -7,6 +7,16 @@ export interface ApiResponse<T> {
   data?: T
 }
 
+export interface ApiRequestOptions {
+  skipAuthExpireHandling?: boolean
+}
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipAuthExpireHandling?: boolean
+  }
+}
+
 export function unwrapApiResponse<T>(response: ApiResponse<T>): T {
   if (!response.success) {
     throw new Error(response.message || '请求失败')
@@ -31,6 +41,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      if (error.config?.skipAuthExpireHandling) {
+        return Promise.reject(new Error(error.response.data?.message || '请先登录'))
+      }
       useAuthStore().clearSession()
       return Promise.reject(new Error('登录已过期，请重新登录'))
     }
@@ -41,17 +54,17 @@ apiClient.interceptors.response.use(
   },
 )
 
-export async function getApi<T>(url: string): Promise<T> {
-  const response = await apiClient.get<ApiResponse<T>>(url)
+export async function getApi<T>(url: string, options?: ApiRequestOptions): Promise<T> {
+  const response = await apiClient.get<ApiResponse<T>>(url, options)
   return unwrapApiResponse(response.data)
 }
 
-export async function postApi<T>(url: string, body?: unknown): Promise<T> {
-  const response = await apiClient.post<ApiResponse<T>>(url, body)
+export async function postApi<T>(url: string, body?: unknown, options?: ApiRequestOptions): Promise<T> {
+  const response = await apiClient.post<ApiResponse<T>>(url, body, options)
   return unwrapApiResponse(response.data)
 }
 
-export async function putApi<T>(url: string, body?: unknown): Promise<T> {
-  const response = await apiClient.put<ApiResponse<T>>(url, body)
+export async function putApi<T>(url: string, body?: unknown, options?: ApiRequestOptions): Promise<T> {
+  const response = await apiClient.put<ApiResponse<T>>(url, body, options)
   return unwrapApiResponse(response.data)
 }

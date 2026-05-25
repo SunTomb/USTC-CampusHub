@@ -33,7 +33,7 @@ campushub:
   jwt:
     issuer: ${CAMPUSHUB_JWT_ISSUER:campushub}
     secret: ${CAMPUSHUB_JWT_SECRET}
-    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:720}
+    expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:43200}
   file-storage:
     root: ${CAMPUSHUB_FILE_ROOT:/var/lib/campushub/uploads}
   payment:

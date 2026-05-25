@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi } from './client'
+import { getApi, postApi, putApi, type ApiRequestOptions } from './client'
 
 export interface LoginPayload {
   username: string
@@ -837,8 +837,8 @@ export function register(payload: RegisterPayload) {
   return postApi<RegisterResponse>('/auth/register', payload)
 }
 
-export function getCurrentUser() {
-  return getApi<CurrentUser>('/auth/me')
+export function getCurrentUser(options?: ApiRequestOptions) {
+  return getApi<CurrentUser>('/auth/me', options)
 }
 
 export function updateCurrentUserProfile(payload: { username: string; nickname: string }) {
