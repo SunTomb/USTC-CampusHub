@@ -12,15 +12,6 @@
       </div>
     </div>
 
-    <div class="business-cta-card">
-      <div>
-        <p class="eyebrow">Recommended Next Step</p>
-        <h3>{{ primaryCta.label }}</h3>
-        <p>CampusHub 会根据登录状态和已解锁身份展示最适合的下一步入口。</p>
-      </div>
-      <el-button type="primary" @click="router.push(primaryCta.to)">{{ primaryCta.label }}</el-button>
-    </div>
-
     <EmptyState
       v-if="!loading && goods.length === 0"
       eyebrow="Second-hand"
@@ -62,15 +53,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listGoods, type GoodsSummary } from '@/api/campushub'
-import { useAuthStore } from '@/stores/auth'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const router = useRouter()
-const auth = useAuthStore()
 const goods = ref<GoodsSummary[]>([])
 const loading = ref(false)
 
@@ -85,19 +74,6 @@ const zoneMap: Record<string, string> = {
   SCIENCE_ISLAND: '科学岛',
   OTHER: '其他',
 }
-
-const primaryCta = computed(() => {
-  if (!auth.currentUser) {
-    return { label: '登录后继续', to: '/auth' }
-  }
-  if (auth.isAdmin) {
-    return { label: '进入运营后台', to: '/admin/ops' }
-  }
-  if (auth.canAccessIdentity('goodsPublisher')) {
-    return { label: '发布二手', to: '/goods/publish' }
-  }
-  return { label: '申请二手发布者', to: '/roles' }
-})
 
 function zoneLabel(zone: string) {
   return zoneMap[zone] ?? zone

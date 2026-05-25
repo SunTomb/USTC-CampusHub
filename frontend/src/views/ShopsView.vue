@@ -12,15 +12,6 @@
       </div>
     </div>
 
-    <div class="business-cta-card">
-      <div>
-        <p class="eyebrow">Recommended Next Step</p>
-        <h3>{{ primaryCta.label }}</h3>
-        <p>CampusHub 会根据登录状态和已解锁身份展示最适合的下一步入口。</p>
-      </div>
-      <el-button type="primary" @click="router.push(primaryCta.to)">{{ primaryCta.label }}</el-button>
-    </div>
-
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="filters">
         <el-form-item label="校区">
@@ -93,19 +84,6 @@ const filteredShops = computed(() => shops.value.filter((shop) => {
   if (keyword && !`${shop.name} ${shop.description} ${shop.serviceArea}`.toLowerCase().includes(keyword)) return false
   return true
 }))
-
-const primaryCta = computed(() => {
-  if (!auth.currentUser) {
-    return { label: '登录后继续', to: '/auth' }
-  }
-  if (auth.isAdmin) {
-    return { label: '进入运营后台', to: '/admin/ops' }
-  }
-  if (auth.canAccessIdentity('shopMerchant')) {
-    return { label: '店铺工作台', to: '/shops/merchant' }
-  }
-  return { label: '申请店铺商家', to: '/roles' }
-})
 
 async function loadShops() {
   loading.value = true

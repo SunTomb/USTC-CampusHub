@@ -12,15 +12,6 @@
       </div>
     </div>
 
-    <div class="business-cta-card">
-      <div>
-        <p class="eyebrow">Recommended Next Step</p>
-        <h3>{{ primaryCta.label }}</h3>
-        <p>CampusHub 会根据登录状态和已解锁身份展示最适合的下一步入口。</p>
-      </div>
-      <el-button type="primary" @click="router.push(primaryCta.to)">{{ primaryCta.label }}</el-button>
-    </div>
-
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="filters">
         <el-form-item label="起点">
@@ -206,19 +197,6 @@ const filteredTasks = computed(() => tasks.value.filter((task) => {
   if (filters.acceptanceMode && task.acceptanceMode !== filters.acceptanceMode) return false
   return true
 }))
-
-const primaryCta = computed(() => {
-  if (!auth.currentUser) {
-    return { label: '登录后继续', to: '/auth' }
-  }
-  if (auth.isAdmin) {
-    return { label: '进入运营后台', to: '/admin/ops' }
-  }
-  if (auth.canAccessIdentity('runner')) {
-    return { label: '进入跑腿大厅', to: '/tasks' }
-  }
-  return { label: '申请跑腿身份', to: '/roles' }
-})
 
 async function loadTasks() {
   loading.value = true
