@@ -646,3 +646,43 @@ Important constraints remain:
 - Do not edit already-applied migrations V1-V12; the account UX fix did not require a migration.
 - Local machine still lacks Maven; prefer local frontend checks plus server-side Docker backend build/API smoke/Playwriter for full verification.
 
+
+
+## Latest Phase 14 real-feedback deployment handoff, 2026-05-25
+
+Latest local/GitHub/production `master` includes Phase 14 real-user feedback fixes through commit `f2d9911` (`add domain admin workspaces`). Production `/opt/campushub` was fast-forwarded to `f2d9911`; backend/web images were rebuilt and containers restarted successfully.
+
+Implemented Phase 14:
+
+- Long-lived login defaults: JWT fallback expiration is 43200 minutes, while env override remains supported.
+- Frontend 401 handling supports quiet protected-load calls so `/auth/me` restore and wallet data loading do not clear a valid-looking session with a disruptive expired-login toast.
+- Recoverable unpaid identity applications: pending-payment, failed, and expired role-deposit applications can be reused for payment retry instead of blocking with “该身份已申请”.
+- Role deposits support both Alipay/payment-center creation and wallet-balance payment; WeChat identity-deposit payment remains intentionally unsupported.
+- V13 seeds platform role codes `ROLE_RUNNER`, `ROLE_GOODS_PUBLISHER`, and `ROLE_SHOP_MERCHANT`.
+- V14 seeds `ROLE_MASTER_ADMIN`, `ROLE_TRADE_ADMIN`, and `ROLE_SHOWCASE_ADMIN`, and grants master/admin compatibility to `yeshenghao@mail.ustc.edu.cn` / `yeshenghao`.
+- Users can apply for trade/showcase admin roles from `/roles`; these are zero-deposit, manual-review applications.
+- Master admin page `/admin/master/admin-applications` reviews trade/showcase admin applications.
+- Trade admin page `/admin/trade` manages runner tasks, goods, and runner/goods after-sale dispute surfaces.
+- Showcase admin page `/admin/showcase` manages project ads, shops, service items, shop orders, and shop-merchant identity review.
+- Visible legacy “内容审核” navigation was removed from the frontend.
+
+Verification after Phase 14:
+
+- Local frontend `npm --prefix frontend run build` passed with only known Vite large chunk and dependency pure-comment warnings.
+- Production Docker backend/web build completed, then backend/web containers restarted with MySQL healthy.
+- Server-local smoke through `127.0.0.1:18080` returned HTTP 200 for `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/roles`, `/admin/master/admin-applications`, `/admin/trade`, and `/admin/showcase`.
+- Anonymous admin API smoke returned HTTP 401 for `/api/admin/master/admin-applications`, `/api/admin/trade/tasks`, and `/api/admin/showcase/shops`.
+- Playwriter guest checks confirmed protected `/admin/trade` and `/roles` redirect to `/auth?...`, without the “登录已过期” message and without document-level horizontal overflow.
+
+Important constraints remain:
+
+- Never read, print, copy, or commit real `.env`, SMTP password, JWT secret, payment-center token/signing secret, database password, manual QR image contents if sensitive, or Alipay key contents.
+- Production real Alipay handling remains in API-Transfer-Station; CampusHub must not handle Alipay key bodies directly.
+- Do not edit already-applied migrations V1-V14; add V15+ only for future schema changes.
+- Use low-impact production verification on the small shared server.
+- Avoid PowerShell under CC Switch + Codex Provider; prefer dedicated tools and short Bash commands.
+
+Useful follow-up:
+
+- Authenticated Playwriter checks for master/trade/showcase pages still require user-known credentials; do not reset production passwords or read password hashes just for smoke verification.
+- Future refinements can add richer audit logs and domain-specific dispute workflow statuses, but Phase 14 intentionally kept management actions lightweight.
