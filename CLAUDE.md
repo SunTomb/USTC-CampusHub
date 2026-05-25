@@ -650,7 +650,7 @@ Important constraints remain:
 
 ## Latest Phase 14 real-feedback deployment handoff, 2026-05-25
 
-Latest local/GitHub/production `master` includes Phase 14 real-user feedback fixes through commit `f2d9911` (`add domain admin workspaces`). Production `/opt/campushub` was fast-forwarded to `f2d9911`; backend/web images were rebuilt and containers restarted successfully.
+Latest local/GitHub/production `master` includes Phase 14 real-user feedback fixes through commit `721afe4` (`fetch wallet flow relations for summaries`). Production `/opt/campushub` was fast-forwarded to `721afe4`; backend/web images were rebuilt and containers restarted successfully.
 
 Implemented Phase 14:
 
@@ -673,6 +673,7 @@ Verification after Phase 14:
 - Server-local smoke through `127.0.0.1:18080` returned HTTP 200 for `/api/goods`, `/api/tasks`, `/api/shops`, `/api/project-ads`, `/roles`, `/admin/master/admin-applications`, `/admin/trade`, and `/admin/showcase`.
 - Anonymous admin API smoke returned HTTP 401 for `/api/admin/master/admin-applications`, `/api/admin/trade/tasks`, and `/api/admin/showcase/shops`.
 - Playwriter guest checks confirmed protected `/admin/trade` and `/roles` redirect to `/auth?...`, without the “登录已过期” message and without document-level horizontal overflow.
+- Follow-up wallet verification found `/api/wallet/users/{id}/flows` was the remaining failing call behind the wallet page. `fe9d199` fixed the wallet auth-restore race, `9e8abab` fixed JWT filter downstream-error handling so controller errors are not misreported as 401, and `721afe4` fetches wallet-flow relations for summaries. User confirmed the wallet center now works normally after deployment.
 
 Important constraints remain:
 
