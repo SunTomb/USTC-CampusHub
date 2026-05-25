@@ -1,5 +1,5 @@
 <template>
-  <el-container class="app-shell">
+  <el-container :class="['app-shell', { 'sidebar-collapsed': sidebarCollapsed }]">
     <el-aside width="272px" class="sidebar desktop-sidebar">
       <div class="brand brand-premium">
         <span class="brand-mark">CH</span>
@@ -7,6 +7,7 @@
           <strong>校集 CampusHub</strong>
           <span>真实校园服务运营平台</span>
         </div>
+        <el-button class="sidebar-toggle" size="small" text @click="sidebarCollapsed = true">收起</el-button>
       </div>
 
       <div class="sidebar-identity">
@@ -29,7 +30,8 @@
       </nav>
     </el-aside>
 
-    <el-container>
+    <el-container class="content-shell">
+      <el-button v-if="sidebarCollapsed" class="desktop-sidebar-toggle" type="primary" circle @click="sidebarCollapsed = false">☰</el-button>
       <el-header class="header premium-header">
         <div class="mobile-header-brand">
           <span class="brand-mark mobile-brand-mark">CH</span>
@@ -108,6 +110,7 @@ import IdentityBadge from '@/components/common/IdentityBadge.vue'
 const auth = useAuthStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
+const sidebarCollapsed = ref(false)
 const identityProfile = computed(() => auth.identityProfile)
 const navGroups = computed(() => getVisibleNavGroups(identityProfile.value))
 const mobileTabItems = computed(() => getMobileTabItems(identityProfile.value))

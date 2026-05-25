@@ -11,7 +11,15 @@ body {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content-shell {
+  position: relative;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .payment-meta {
@@ -84,13 +92,44 @@ body {
 
 .main-content {
   min-width: 0;
+  height: calc(100vh - 116px);
+  overflow-y: auto;
 }
 
 .sidebar {
+  height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #0f172a;
   border-right: 1px solid rgba(148, 163, 184, 0.22);
   color: #e2e8f0;
+  transition: width 0.2s ease, transform 0.2s ease;
+}
+
+.desktop-sidebar {
+  flex: 0 0 272px !important;
+  width: 272px !important;
+}
+
+.sidebar-collapsed .desktop-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  flex-basis: 0 !important;
+  border-right: 0;
+  overflow: hidden;
+}
+
+.sidebar-toggle {
+  margin-left: auto;
+  color: #cbd5e1;
+}
+
+.desktop-sidebar-toggle {
+  position: fixed;
+  top: 18px;
+  left: 16px;
+  z-index: 2100;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
 }
 
 .brand {
@@ -105,8 +144,12 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 14px;
-  padding: 24px 20px 22px;
+  padding: 24px 14px 22px 20px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.brand-premium > div {
+  min-width: 0;
 }
 
 .brand-mark {
@@ -1254,9 +1297,22 @@ body {
 
   .app-shell {
     display: block;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
+  .content-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .desktop-sidebar {
+    display: none;
+  }
+
+  .desktop-sidebar-toggle {
     display: none;
   }
 
@@ -1382,7 +1438,9 @@ body {
   }
 
   .main-content {
+    height: auto;
     padding: 14px !important;
+    overflow: visible;
   }
 
   .page-stack {
