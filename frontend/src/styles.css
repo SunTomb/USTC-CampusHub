@@ -198,6 +198,36 @@ h3,
   letter-spacing: 0.04em;
 }
 
+.brand-mark-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.brand-logo-img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(198, 146, 44, 0.28));
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease;
+}
+
+.brand-mark-wrap:hover .brand-logo-img,
+.mobile-header-brand:hover .brand-logo-img,
+.mobile-directory-brand:hover .brand-logo-img {
+  transform: translateY(-1px) scale(1.04);
+  filter: drop-shadow(0 8px 18px rgba(232, 196, 104, 0.42));
+}
+
+.mobile-brand-logo-img {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+}
+
 .brand-premium strong {
   display: block;
   color: #f8fafc;

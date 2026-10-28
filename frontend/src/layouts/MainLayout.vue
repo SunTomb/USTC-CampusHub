@@ -5,7 +5,7 @@
     <el-aside width="264px" class="sidebar desktop-sidebar">
       <div class="brand brand-premium">
         <div class="brand-mark-wrap" @click="router.push('/')" style="cursor: pointer">
-          <span class="brand-mark">校集</span>
+          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img" />
         </div>
         <div class="brand-text" @click="router.push('/')" style="cursor: pointer">
           <strong>校集 CampusHub</strong>
@@ -58,7 +58,7 @@
 
       <el-header class="header premium-header">
         <div class="mobile-header-brand" @click="router.push('/')">
-          <span class="brand-mark mobile-brand-mark">校集</span>
+          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img mobile-brand-logo-img" />
           <div>
             <strong>校集 CampusHub</strong>
             <small>{{ currentPageContext.tag }}</small>
@@ -111,7 +111,7 @@
     <el-drawer v-model="mobileMenuOpen" title="校集 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
         <div class="mobile-directory-brand">
-          <span class="brand-mark">校集</span>
+          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img" />
           <div>
             <strong>校集 CampusHub</strong>
             <small>闲置流转 · 顺路跑腿 · 同窗小店 · 组队展示</small>
