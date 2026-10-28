@@ -2,73 +2,94 @@
   <section class="page-stack" v-loading="loading">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Goods Detail</p>
+        <p class="eyebrow">二手市集 · 好物详情</p>
         <h2>{{ detail?.title || '商品详情' }}</h2>
-        <p>商品联系方式按购买意向展示，交易本金由买卖双方线下自行协商。</p>
+        <p>提交购买意向即可解锁卖家微信或 QQ；支持校内当面交接或发起线上余额担保交易。</p>
       </div>
-      <el-button @click="router.push('/goods')">返回市场</el-button>
+      <el-button @click="router.push('/goods')">返回二手市集</el-button>
     </div>
 
     <EmptyState
       v-if="!loading && !detail"
-      eyebrow="Goods Detail"
-      title="商品详情暂不可用"
-      description="商品可能已下架、售出或被平台处理。你可以返回二手市场继续浏览。"
-      action-text="返回二手市场"
+      eyebrow="好物详情"
+      title="该商品暂不可查看"
+      description="商品可能已经售出、由卖家下架或正在核验中，去市集看看其他好物吧。"
+      action-text="返回二手市集"
       @action="router.push('/goods')"
     />
 
     <div v-if="detail" class="goods-detail">
       <div class="goods-gallery">
-        <div v-if="detail.images.length === 0" class="goods-cover goods-cover-large">CampusHub</div>
+        <div v-if="detail.images.length === 0" class="goods-cover goods-cover-large cover-tone-0">
+          <div class="goods-cover-art">
+            <span class="cover-art-zone">{{ formatCampusZone(detail.campusZone) }}</span>
+            <strong class="cover-art-glyph">{{ detail.title.slice(0, 1) || '物' }}</strong>
+            <small class="cover-art-sub">{{ detail.conditionLevel || '校友闲置' }}</small>
+          </div>
+        </div>
         <img v-else :src="detail.images[0].file.storagePath" :alt="detail.title" />
       </div>
 
       <el-card class="goods-main-panel">
         <div class="goods-price-row goods-price-large">
-          <strong>¥{{ detail.price }}</strong>
-          <span v-if="detail.originalPrice">原价 ¥{{ detail.originalPrice }}</span>
+          <strong class="mono-num">¥{{ detail.price }}</strong>
+          <span v-if="detail.originalPrice" class="mono-num">原价 ¥{{ detail.originalPrice }}</span>
         </div>
-        <p>{{ detail.description }}</p>
+        <p class="preserve-lines">{{ detail.description }}</p>
         <div class="goods-meta detail-meta">
-          <span>{{ detail.conditionLevel }}</span>
-          <span>{{ zoneLabel(detail.campusZone) }}</span>
-          <span>{{ detail.tradeLocation }}</span>
-          <span>{{ detail.deliveryMethod }}</span>
+          <span class="meta-pill">{{ detail.conditionLevel }}</span>
+          <span class="meta-pill">{{ formatCampusZone(detail.campusZone) }}</span>
+          <span class="meta-pill">📍 {{ detail.tradeLocation }}</span>
+          <span class="meta-pill">{{ formatDeliveryMethod(detail.deliveryMethod) }}</span>
         </div>
         <div class="detail-actions">
-          <el-button type="primary" :disabled="isOwner" @click="intentDialog = true">我想要</el-button>
-          <el-button :disabled="isOwner" @click="startEscrowTrade">创建线上托管订单</el-button>
-          <el-button @click="favorite">收藏 {{ detail.favoriteCount }}</el-button>
-          <el-button @click="reportDialog = true">举报</el-button>
-          <el-button v-if="isOwner && detail.status === 'PUBLISHED'" type="warning" @click="markSold">标记售出</el-button>
+          <el-button type="primary" :disabled="isOwner" @click="intentDialog = true">我想要（解锁联系方式）</el-button>
+          <el-button :disabled="isOwner" @click="startEscrowTrade">发起线上余额担保</el-button>
+          <el-button @click="favorite">收藏 ({{ detail.favoriteCount }})</el-button>
+          <el-button @click="reportDialog = true">反馈异常</el-button>
+          <el-button v-if="isOwner && detail.status === 'PUBLISHED'" type="warning" @click="markSold">标记已售出</el-button>
         </div>
-        <el-alert type="info" show-icon title="线上托管交易会从买方余额冻结商品金额和平台服务费，确认交易成功后划转给卖方。" />
+        <el-alert
+          type="info"
+          show-icon
+          :closable="false"
+          title="交易提示：你既可以解锁联系方式后与校友约定校内当面一手交钱一手交货，也可以发起线上余额担保（先冻结你的钱包余额，当面验收无误点击确认后再放款给卖家）。"
+        />
         <div v-if="currentEscrowOrder" class="info-card escrow-card">
-          <strong>托管订单 {{ currentEscrowOrder.orderNo }}</strong>
-          <p>状态：{{ currentEscrowOrder.escrowStatus }}；本金 ¥{{ currentEscrowOrder.escrowAmount }}；服务费 ¥{{ currentEscrowOrder.platformServiceFee }}</p>
+          <div class="panel-topline">
+            <strong>担保订单 <span class="mono-num">{{ currentEscrowOrder.orderNo }}</span></strong>
+            <el-tag :type="statusTone(currentEscrowOrder.escrowStatus)">{{ formatStatus(currentEscrowOrder.escrowStatus) }}</el-tag>
+          </div>
+          <p>
+            商品金额：<span class="mono-num">¥{{ currentEscrowOrder.escrowAmount }}</span> ·
+            服务费：<span class="mono-num">¥{{ currentEscrowOrder.platformServiceFee }}</span>
+          </p>
           <div class="payment-actions">
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'PENDING_FREEZE'" @click="freezeEscrowTrade">冻结余额</el-button>
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'FROZEN'" type="success" @click="confirmEscrowTrade">确认完成</el-button>
+            <el-button v-if="currentEscrowOrder.escrowStatus === 'PENDING_FREEZE'" type="primary" size="small" @click="freezeEscrowTrade">
+              冻结担保资金
+            </el-button>
+            <el-button v-if="currentEscrowOrder.escrowStatus === 'FROZEN'" type="success" size="small" @click="confirmEscrowTrade">
+              确认收货并放款
+            </el-button>
           </div>
         </div>
       </el-card>
 
       <el-card class="seller-panel">
-        <template #header>卖家与联系方式</template>
-        <p>{{ detail.sellerNickname }} · 信用 {{ detail.sellerCreditScore }}</p>
-        <p class="hint">CampusHub 只提供可信展示、联系意向和治理记录，不托管线下交易本金。</p>
-        <el-alert v-if="!detail.contactVisible" title="提交购买意向后可查看微信/QQ 联系方式" type="info" show-icon />
-        <el-alert v-else :title="detail.contactSnapshot || '联系方式已开放'" type="success" show-icon />
+        <template #header>校友卖家与联络方式</template>
+        <p><strong>{{ detail.sellerNickname }}</strong> · 校内信用分 <span class="mono-num">{{ detail.sellerCreditScore }}</span></p>
+        <p class="hint">为防止公开骚扰，卖家的微信号或 QQ 仅对提交了购买意向的同学展示。</p>
+        <el-alert v-if="!detail.contactVisible" title="点击上方「我想要」提交购买意向后，即可在此查看卖家微信 / QQ" type="info" show-icon :closable="false" />
+        <el-alert v-else :title="`卖家联系方式：${detail.contactSnapshot || '已开放查看'}`" type="success" show-icon :closable="false" />
       </el-card>
 
       <el-card class="interaction-panel">
-        <template #header>留言评论</template>
+        <template #header>同窗问一问</template>
         <div class="comment-form">
-          <el-input v-model="commentText" placeholder="询问成色、交易时间等" />
-          <el-button type="primary" @click="submitComment">发送</el-button>
+          <el-input v-model="commentText" placeholder="询问实物细节、使用时长或方便交接的时间..." />
+          <el-button type="primary" @click="submitComment">留言</el-button>
         </div>
-        <el-empty v-if="detail.comments.length === 0" description="暂无评论" />
+        <el-empty v-if="detail.comments.length === 0" description="还没有人提问，来问第一个问题吧" />
         <div v-for="comment in detail.comments" :key="comment.id" class="comment-item">
           <strong>{{ comment.userNickname }}</strong>
           <span>{{ comment.content }}</span>
@@ -76,13 +97,13 @@
       </el-card>
 
       <el-card class="review-list">
-        <template #header>卖家评价</template>
+        <template #header>历史买家评价</template>
         <div class="comment-form">
           <el-rate v-model="reviewRating" />
-          <el-input v-model="reviewText" placeholder="交易后评价卖家" />
-          <el-button @click="submitReview">评价</el-button>
+          <el-input v-model="reviewText" placeholder="完成交接后，写下对卖家的评价..." />
+          <el-button @click="submitReview">发布评价</el-button>
         </div>
-        <el-empty v-if="detail.sellerReviews.length === 0" description="暂无评价" />
+        <el-empty v-if="detail.sellerReviews.length === 0" description="暂无历史评价" />
         <div v-for="review in detail.sellerReviews" :key="review.id" class="comment-item">
           <strong>{{ review.reviewerNickname }} · {{ review.rating }} 星</strong>
           <span>{{ review.content }}</span>
@@ -90,20 +111,20 @@
       </el-card>
     </div>
 
-    <el-dialog v-model="intentDialog" title="提交购买意向" width="420px">
-      <el-input v-model="intentMessage" type="textarea" :rows="3" placeholder="说明想交易的时间或问题" />
+    <el-dialog v-model="intentDialog" title="发送购买意向" width="420px">
+      <el-input v-model="intentMessage" type="textarea" :rows="3" placeholder="告诉卖家你想在哪个校区交接、什么时间方便..." />
       <template #footer>
         <el-button @click="intentDialog = false">取消</el-button>
-        <el-button type="primary" @click="createIntent">提交</el-button>
+        <el-button type="primary" @click="createIntent">确认并解锁联系方式</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="reportDialog" title="举报商品" width="420px">
-      <el-input v-model="reportReason" placeholder="举报原因" />
-      <el-input v-model="reportDescription" type="textarea" :rows="3" placeholder="补充说明" class="dialog-field" />
+    <el-dialog v-model="reportDialog" title="反馈商品问题" width="420px">
+      <el-input v-model="reportReason" placeholder="问题简述（如：虚假价格、违禁物品）" />
+      <el-input v-model="reportDescription" type="textarea" :rows="3" placeholder="详细情况说明" class="dialog-field" />
       <template #footer>
         <el-button @click="reportDialog = false">取消</el-button>
-        <el-button type="danger" @click="submitReport">举报</el-button>
+        <el-button type="danger" @click="submitReport">提交反馈</el-button>
       </template>
     </el-dialog>
   </section>
@@ -128,6 +149,7 @@ import {
   type GoodsOrderSummary,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import { formatCampusZone, formatDeliveryMethod, formatStatus, statusTone } from '@/utils/display'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
@@ -139,18 +161,15 @@ const intentDialog = ref(false)
 const reportDialog = ref(false)
 const intentMessage = ref('')
 const commentText = ref('')
-const reportReason = ref('虚假信息')
+const reportReason = ref('信息不实')
 const reportDescription = ref('')
 const reviewRating = ref(5)
-const reviewText = ref('交易顺利')
+const reviewText = ref('校友很爽快，成色和描述一致！')
 const currentEscrowOrder = ref<GoodsOrderSummary | null>(null)
 
 const goodsId = computed(() => Number(route.params.id))
 const viewerId = computed(() => auth.currentUser?.id)
 const isOwner = computed(() => Boolean(detail.value && viewerId.value && detail.value.sellerId === viewerId.value))
-
-const zoneMap: Record<string, string> = { CENTRAL: '中校区', WEST: '西校区', EAST: '东校区', NORTH: '北校区', SOUTH: '南校区', HIGH_TECH: '高新校区', ADVANCED_RESEARCH_INSTITUTE: '先研院', SCIENCE_ISLAND: '科学岛', OTHER: '其他' }
-function zoneLabel(zone: string) { return zoneMap[zone] ?? zone }
 
 async function loadDetail() {
   loading.value = true
@@ -176,14 +195,14 @@ async function createIntent() {
   if (!requireLogin()) return
   await createGoodsIntent(goodsId.value, viewerId.value!, intentMessage.value)
   intentDialog.value = false
-  ElMessage.success('已提交购买意向，联系方式已开放')
+  ElMessage.success('已发送购买意向，卖家联系方式已为你开放')
   await loadDetail()
 }
 
 async function favorite() {
   if (!requireLogin()) return
   await favoriteTarget(viewerId.value!, { targetType: 'GOODS', targetId: goodsId.value })
-  ElMessage.success('已收藏')
+  ElMessage.success('已收入收藏夹')
   await loadDetail()
 }
 
@@ -198,39 +217,39 @@ async function submitReport() {
   if (!requireLogin()) return
   await reportTarget(viewerId.value!, { targetType: 'GOODS', targetId: goodsId.value, reason: reportReason.value, description: reportDescription.value })
   reportDialog.value = false
-  ElMessage.success('举报已提交')
+  ElMessage.success('反馈已提交，站务将尽快核查')
 }
 
 async function submitReview() {
   if (!requireLogin() || !detail.value) return
   await createReview(viewerId.value!, { targetUserId: detail.value.sellerId, targetType: 'GOODS', targetId: goodsId.value, rating: reviewRating.value, content: reviewText.value })
-  ElMessage.success('评价已提交')
+  ElMessage.success('评价已发布')
   await loadDetail()
 }
 
 async function markSold() {
   if (!requireLogin()) return
   await markGoodsSold(goodsId.value, viewerId.value!)
-  ElMessage.success('已标记售出')
+  ElMessage.success('已标记为售出')
   await loadDetail()
 }
 
 async function startEscrowTrade() {
   if (!requireLogin()) return
   currentEscrowOrder.value = await createGoodsEscrowOrder(goodsId.value, viewerId.value!)
-  ElMessage.success('线上托管订单已创建')
+  ElMessage.success('线上担保订单已创建，请继续冻结余额')
 }
 
 async function freezeEscrowTrade() {
   if (!requireLogin() || !currentEscrowOrder.value) return
   currentEscrowOrder.value = await freezeGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('托管金额已冻结')
+  ElMessage.success('担保资金已冻结')
 }
 
 async function confirmEscrowTrade() {
   if (!requireLogin() || !currentEscrowOrder.value) return
   currentEscrowOrder.value = await confirmGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('交易已确认完成，托管金额已划转')
+  ElMessage.success('交易确认完成，货款已划转给卖家')
   await loadDetail()
 }
 

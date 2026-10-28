@@ -1,17 +1,26 @@
 <template>
-  <el-container :class="['app-shell', { 'sidebar-collapsed': sidebarCollapsed }]">
-    <el-aside width="272px" class="sidebar desktop-sidebar">
+  <el-container :class="['app-shell', `theme-${currentChannelTone}`, { 'sidebar-collapsed': sidebarCollapsed }]">
+    <div class="ambient-aurora" aria-hidden="true"></div>
+
+    <el-aside width="264px" class="sidebar desktop-sidebar">
       <div class="brand brand-premium">
-        <span class="brand-mark">CH</span>
-        <div>
-          <strong>校集 CampusHub</strong>
-          <span>真实校园服务运营平台</span>
+        <div class="brand-mark-wrap" @click="router.push('/')" style="cursor: pointer">
+          <span class="brand-mark">校集</span>
         </div>
-        <el-button class="sidebar-toggle" size="small" text @click="sidebarCollapsed = true">收起</el-button>
+        <div class="brand-text" @click="router.push('/')" style="cursor: pointer">
+          <strong>校集 CampusHub</strong>
+          <span>中国科大 · 校园生活共同体</span>
+        </div>
+        <el-button class="sidebar-toggle" size="small" text title="收起侧栏" @click="sidebarCollapsed = true">
+          <el-icon><Fold /></el-icon>
+        </el-button>
       </div>
 
       <div class="sidebar-identity">
-        <p class="eyebrow">Current Identity</p>
+        <div class="sidebar-identity-head">
+          <span class="sidebar-seal">瀚海通行证</span>
+          <span class="sidebar-status-dot"></span>
+        </div>
         <strong>{{ identityProfile.displayName }}</strong>
         <IdentityBadge :identities="identityProfile.identities" compact />
       </div>
@@ -19,43 +28,66 @@
       <nav class="nav-groups" aria-label="桌面端主导航">
         <section v-for="group in navGroups" :key="group.key" class="nav-group">
           <p>{{ group.label }}</p>
-          <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="nav-link">
-            <span class="nav-link-icon">{{ navIcon(item) }}</span>
-            <span>
+          <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="nav-link" :title="item.description">
+            <span class="nav-link-icon">
+              <el-icon><component :is="resolveIcon(item.icon)" /></el-icon>
+            </span>
+            <span class="nav-link-body">
               <strong>{{ item.label }}</strong>
-              <small>{{ item.description }}</small>
             </span>
           </RouterLink>
         </section>
       </nav>
+
+      <div class="sidebar-footer">
+        <span>USTC · 东区 / 西区 / 中区 / 高新</span>
+      </div>
     </el-aside>
 
     <el-container class="content-shell">
-      <el-button v-if="sidebarCollapsed" class="desktop-sidebar-toggle" type="primary" circle @click="sidebarCollapsed = false">☰</el-button>
+      <el-button
+        v-if="sidebarCollapsed"
+        class="desktop-sidebar-toggle"
+        type="primary"
+        circle
+        title="展开侧栏"
+        @click="sidebarCollapsed = false"
+      >
+        <el-icon><Expand /></el-icon>
+      </el-button>
+
       <el-header class="header premium-header">
-        <div class="mobile-header-brand">
-          <span class="brand-mark mobile-brand-mark">CH</span>
+        <div class="mobile-header-brand" @click="router.push('/')">
+          <span class="brand-mark mobile-brand-mark">校集</span>
           <div>
-            <p class="eyebrow">Campus Service OS</p>
             <strong>校集 CampusHub</strong>
+            <small>{{ currentPageContext.tag }}</small>
           </div>
         </div>
+
         <div class="mobile-nav-trigger">
-          <el-button plain @click="mobileMenuOpen = true">完整目录</el-button>
+          <el-button plain size="small" @click="mobileMenuOpen = true">
+            <el-icon style="margin-right: 4px"><Grid /></el-icon>目录
+          </el-button>
         </div>
+
         <div class="header-copy">
-          <p class="eyebrow">Campus Service OS</p>
-          <h1>校集 CampusHub</h1>
-          <p>二手交易 × 跑腿悬赏 × 学生店铺 × 信用治理 × 钱包运营</p>
+          <span class="channel-ribbon">{{ currentPageContext.tag }}</span>
+          <span class="channel-divider">·</span>
+          <p class="channel-subtitle">{{ currentPageContext.subtitle }}</p>
         </div>
+
         <div class="session-box premium-session-box">
           <IdentityBadge :identities="identityProfile.identities" compact />
-          <span v-if="auth.currentUser">{{ auth.currentUser.nickname }}</span>
-          <span v-else>未登录游客</span>
+          <RouterLink v-if="auth.currentUser" to="/profile" class="session-user-link">
+            {{ auth.currentUser.nickname }}
+          </RouterLink>
+          <span v-else class="session-guest-label">未登录访客</span>
           <el-button v-if="auth.token" size="small" plain @click="logout">退出</el-button>
-          <el-button v-else size="small" type="primary" @click="router.push('/auth')">登录注册</el-button>
+          <el-button v-else size="small" type="primary" @click="router.push('/auth')">登录 / 加入</el-button>
         </div>
       </el-header>
+
       <el-main class="main-content">
         <RouterView />
       </el-main>
@@ -63,11 +95,15 @@
 
     <nav class="mobile-tabbar" aria-label="移动端主导航">
       <RouterLink v-for="item in mobileTabItems" :key="item.path" :to="item.path" class="mobile-tabbar-item">
-        <span class="mobile-tabbar-icon">{{ navIcon(item) }}</span>
+        <span class="mobile-tabbar-icon">
+          <el-icon><component :is="resolveIcon(item.icon)" /></el-icon>
+        </span>
         <span>{{ item.label }}</span>
       </RouterLink>
       <button type="button" class="mobile-tabbar-item mobile-tabbar-button" @click="mobileMenuOpen = true">
-        <span class="mobile-tabbar-icon">☰</span>
+        <span class="mobile-tabbar-icon">
+          <el-icon><Grid /></el-icon>
+        </span>
         <span>更多</span>
       </button>
     </nav>
@@ -75,24 +111,33 @@
     <el-drawer v-model="mobileMenuOpen" title="校集 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
         <div class="mobile-directory-brand">
-          <span class="brand-mark">CH</span>
+          <span class="brand-mark">校集</span>
           <div>
-            <p class="eyebrow">Campus Service OS</p>
             <strong>校集 CampusHub</strong>
-            <small>二手交易 × 跑腿悬赏 × 学生店铺 × 信用治理 × 钱包运营</small>
+            <small>闲置流转 · 顺路跑腿 · 同窗小店 · 组队展示</small>
           </div>
         </div>
         <div class="sidebar-identity mobile-directory-identity">
-          <p class="eyebrow">当前身份</p>
+          <span class="sidebar-seal">当前通行证</span>
           <strong>{{ identityProfile.displayName }}</strong>
           <IdentityBadge :identities="identityProfile.identities" compact />
         </div>
         <section v-for="group in navGroups" :key="group.key" class="mobile-directory-group">
           <p>{{ group.label }}</p>
-          <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="mobile-directory-link" @click="mobileMenuOpen = false">
-            <span>{{ navIcon(item) }}</span>
-            <strong>{{ item.label }}</strong>
-            <small>{{ item.description }}</small>
+          <RouterLink
+            v-for="item in group.items"
+            :key="item.path"
+            :to="item.path"
+            class="mobile-directory-link"
+            @click="mobileMenuOpen = false"
+          >
+            <span class="mobile-dir-icon">
+              <el-icon><component :is="resolveIcon(item.icon)" /></el-icon>
+            </span>
+            <div>
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.description }}</small>
+            </div>
           </RouterLink>
         </section>
       </div>
@@ -101,27 +146,113 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, type Component } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  Avatar,
+  Bell,
+  Briefcase,
+  CirclePlus,
+  CreditCard,
+  DataAnalysis,
+  DocumentChecked,
+  Expand,
+  Fold,
+  Goods,
+  Grid,
+  HomeFilled,
+  Key,
+  Management,
+  Medal,
+  Money,
+  Position,
+  Promotion,
+  ScaleToOriginal,
+  Shop,
+  Tickets,
+  User,
+  UserFilled,
+  Wallet,
+} from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import { getMobileTabItems, getVisibleNavGroups } from '@/config/navigation'
+import { findNavItemByPath, getMobileTabItems, getVisibleNavGroups } from '@/config/navigation'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const mobileMenuOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const identityProfile = computed(() => auth.identityProfile)
 const navGroups = computed(() => getVisibleNavGroups(identityProfile.value))
 const mobileTabItems = computed(() => getMobileTabItems(identityProfile.value))
 
+const iconRegistry: Record<string, Component> = {
+  HomeFilled,
+  Position,
+  Goods,
+  Shop,
+  Promotion,
+  DocumentChecked,
+  UserFilled,
+  User,
+  Wallet,
+  Bell,
+  Medal,
+  Key,
+  CirclePlus,
+  Management,
+  Briefcase,
+  Avatar,
+  Tickets,
+  DataAnalysis,
+  ScaleToOriginal,
+  CreditCard,
+  Money,
+}
+
+function resolveIcon(name: string): Component {
+  return iconRegistry[name] ?? Grid
+}
+
+const currentChannelTone = computed(() => {
+  const path = route.path
+  if (path.startsWith('/tasks')) return 'teal'
+  if (path.startsWith('/goods')) return 'terracotta'
+  if (path.startsWith('/shops')) return 'cobalt'
+  if (path.startsWith('/project-ads')) return 'indigo'
+  if (path.startsWith('/wallet') || path.startsWith('/roles')) return 'amber'
+  return 'navy'
+})
+
+const currentPageContext = computed(() => {
+  const matched = findNavItemByPath(route.path)
+  if (matched) {
+    return {
+      tag: matched.label,
+      subtitle: matched.description,
+    }
+  }
+  if (route.path.startsWith('/goods/')) {
+    return { tag: '二手市集 · 详情', subtitle: '确认成色与交接校区，提交意向后即可查看校友联系方式' }
+  }
+  if (route.path.startsWith('/tasks/')) {
+    return { tag: '跑腿悬赏 · 履约台', subtitle: '实时同步取件与送达节点，凭完成码或图片确认交接' }
+  }
+  if (route.path.startsWith('/shops/')) {
+    return { tag: '学生小店 · 预约', subtitle: '浏览同学主理的技能服务，在线预约时间与需求' }
+  }
+  if (route.path.startsWith('/project-ads/')) {
+    return { tag: '项目广场 · 展示', subtitle: '发现科大同窗的科研组队、竞赛招募与创意作品' }
+  }
+  return {
+    tag: '瀚海校集',
+    subtitle: '连接中区、西区、东区与高新园区的校园生活服务平台',
+  }
+})
+
 function logout() {
   auth.clearSession()
   router.push('/auth')
-}
-
-function navIcon(item: { icon: string; label: string }) {
-  const trimmedIcon = item.icon.trim()
-  return trimmedIcon.length <= 2 ? trimmedIcon : item.label.slice(0, 1)
 }
 </script>

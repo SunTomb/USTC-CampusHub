@@ -1,82 +1,100 @@
 <template>
   <section class="page-stack">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Showcase Admin</p>
-        <h2>展示管理后台</h2>
-        <p>管理项目广告、学生店铺、店铺服务和商家身份审核。</p>
+        <p class="eyebrow">站务中枢 · 项目与学生店铺巡查</p>
+        <h2>展示管理工作台</h2>
+        <p>核验项目广场招募信息、审批技能店主理人入驻申请，并维护学生店铺与服务秩序。</p>
       </div>
-      <el-button :loading="loading" @click="loadAll">刷新</el-button>
+      <el-button :loading="loading" @click="loadAll">刷新数据</el-button>
     </div>
 
-    <el-tabs>
-      <el-tab-pane label="广告管理">
+    <el-tabs class="tabs-surface premium-panel">
+      <el-tab-pane label="项目展示审核">
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="projectAds" stripe class="data-table">
-            <el-table-column prop="title" label="广告" min-width="180" />
-            <el-table-column prop="publisherNickname" label="发布者" width="120" />
-            <el-table-column prop="status" label="状态" width="130" />
-            <el-table-column label="操作" width="220">
+            <el-table-column prop="title" label="项目标题" min-width="180" />
+            <el-table-column prop="publisherNickname" label="发起人" width="120" />
+            <el-table-column prop="status" label="状态" width="130">
+              <template #default="{ row }">
+                <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240">
               <template #default="{ row }">
                 <el-button size="small" type="primary" @click="approveProjectAd(row.id)">通过</el-button>
-                <el-button size="small" @click="rejectProjectAd(row.id)">拒绝</el-button>
-                <el-button size="small" type="danger" @click="blockProjectAd(row.id)">屏蔽</el-button>
+                <el-button size="small" @click="rejectProjectAd(row.id)">退回</el-button>
+                <el-button size="small" type="danger" plain @click="blockProjectAd(row.id)">屏蔽</el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="商店管理">
+      <el-tab-pane label="学生小店管理">
         <div class="responsive-card-grid merchant-applications">
           <article v-for="item in merchantApplications" :key="item.id" class="info-card">
-            <strong>{{ item.userNickname }} · 店铺商家申请</strong>
-            <p>保证金：{{ item.depositStatus }} · 审核：{{ item.reviewStatus }}</p>
-            <p v-if="item.applyNote">{{ item.applyNote }}</p>
+            <div class="panel-topline">
+              <strong>{{ item.userNickname }} · 技能店主理人申请</strong>
+              <el-tag :type="statusTone(item.reviewStatus)" size="small">{{ formatStatus(item.reviewStatus) }}</el-tag>
+            </div>
+            <p>保证金状态：{{ formatStatus(item.depositStatus) }}</p>
+            <p v-if="item.applyNote">申请说明：{{ item.applyNote }}</p>
             <div class="payment-actions inline-card-actions">
-              <el-button size="small" type="primary" @click="approveMerchant(item.id)">通过商家</el-button>
-              <el-button size="small" @click="rejectMerchant(item.id)">拒绝</el-button>
+              <el-button size="small" type="primary" @click="approveMerchant(item.id)">准予开店</el-button>
+              <el-button size="small" type="danger" plain @click="rejectMerchant(item.id)">婉拒申请</el-button>
             </div>
           </article>
         </div>
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="shops" stripe class="data-table">
-            <el-table-column prop="name" label="店铺" min-width="180" />
-            <el-table-column prop="ownerNickname" label="店主" width="120" />
-            <el-table-column prop="status" label="状态" width="120" />
-            <el-table-column label="操作" width="220">
+            <el-table-column prop="name" label="店铺名称" min-width="180" />
+            <el-table-column prop="ownerNickname" label="主理人" width="120" />
+            <el-table-column prop="status" label="营业状态" width="130">
               <template #default="{ row }">
-                <el-button size="small" @click="resumeShop(row.id)">恢复</el-button>
-                <el-button size="small" @click="pauseShop(row.id)">暂停</el-button>
-                <el-button size="small" type="danger" @click="blockShop(row.id)">封禁</el-button>
+                <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240">
+              <template #default="{ row }">
+                <el-button size="small" @click="resumeShop(row.id)">恢复营业</el-button>
+                <el-button size="small" @click="pauseShop(row.id)">暂停接单</el-button>
+                <el-button size="small" type="danger" plain @click="blockShop(row.id)">关闭店铺</el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="服务管理">
+      <el-tab-pane label="店铺服务单项">
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="serviceItems" stripe class="data-table">
-            <el-table-column prop="title" label="服务" min-width="180" />
-            <el-table-column prop="shopName" label="店铺" width="140" />
-            <el-table-column prop="status" label="状态" width="120" />
+            <el-table-column prop="title" label="服务名称" min-width="180" />
+            <el-table-column prop="shopName" label="所属小店" width="140" />
+            <el-table-column prop="status" label="状态" width="130">
+              <template #default="{ row }">
+                <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button size="small" type="danger" @click="offShelfService(row.id)">下架</el-button>
+                <el-button size="small" type="danger" plain @click="offShelfService(row.id)">下架服务</el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="商店服务售后纠纷">
+      <el-tab-pane label="服务预约记录">
         <div class="responsive-card-grid">
           <article v-for="order in shopOrders" :key="order.id" class="info-card">
-            <strong>{{ order.serviceItemTitle }}</strong>
-            <p>客户：{{ order.customerNickname }} · 服务者：{{ order.providerNickname }}</p>
-            <p>状态：{{ order.status }} · 金额：¥{{ order.amount }}</p>
-            <p v-if="order.cancelReason">取消原因：{{ order.cancelReason }}</p>
+            <div class="panel-topline">
+              <strong>{{ order.serviceItemTitle }}</strong>
+              <el-tag :type="statusTone(order.status)" size="small">{{ formatStatus(order.status) }}</el-tag>
+            </div>
+            <p>预约同学：{{ order.customerNickname }} · 主理人：{{ order.providerNickname }}</p>
+            <p>约定金额：<span class="mono-num">¥{{ order.amount }}</span></p>
+            <p v-if="order.cancelReason">取消说明：{{ order.cancelReason }}</p>
           </article>
         </div>
       </el-tab-pane>
@@ -108,6 +126,7 @@ import {
   type ServiceOrderSummary,
   type ShopSummary,
 } from '@/api/campushub'
+import { formatStatus, statusTone } from '@/utils/display'
 
 const loading = ref(false)
 const projectAds = ref<ProjectAdSummary[]>([])
@@ -139,39 +158,39 @@ async function loadAll() {
 }
 
 async function approveProjectAd(id: number) {
-  await runAction(() => approveAdminShowcaseProjectAd(id, { note: '展示管理员通过' }), '广告已通过')
+  await runAction(() => approveAdminShowcaseProjectAd(id, { note: '展示管理员核验通过' }), '项目已准予展示')
 }
 
 async function rejectProjectAd(id: number) {
-  await runAction(() => rejectAdminShowcaseProjectAd(id, { note: '展示管理员拒绝' }), '广告已拒绝')
+  await runAction(() => rejectAdminShowcaseProjectAd(id, { note: '展示管理员退回修改' }), '项目已退回')
 }
 
 async function blockProjectAd(id: number) {
-  await runAction(() => blockAdminShowcaseProjectAd(id, { note: '展示管理员屏蔽' }), '广告已屏蔽')
+  await runAction(() => blockAdminShowcaseProjectAd(id, { note: '展示管理员巡查屏蔽' }), '项目已屏蔽')
 }
 
 async function pauseShop(id: number) {
-  await runAction(() => pauseAdminShowcaseShop(id, '展示管理员暂停'), '店铺已暂停')
+  await runAction(() => pauseAdminShowcaseShop(id, '展示管理员暂停'), '小店已暂停接单')
 }
 
 async function resumeShop(id: number) {
-  await runAction(() => resumeAdminShowcaseShop(id, '展示管理员恢复'), '店铺已恢复')
+  await runAction(() => resumeAdminShowcaseShop(id, '展示管理员恢复'), '小店已恢复营业')
 }
 
 async function blockShop(id: number) {
-  await runAction(() => blockAdminShowcaseShop(id, '展示管理员封禁'), '店铺已封禁')
+  await runAction(() => blockAdminShowcaseShop(id, '展示管理员关闭'), '小店已关闭')
 }
 
 async function offShelfService(id: number) {
-  await runAction(() => offShelfAdminShowcaseServiceItem(id, '展示管理员下架'), '服务已下架')
+  await runAction(() => offShelfAdminShowcaseServiceItem(id, '展示管理员下架'), '服务项目已下架')
 }
 
 async function approveMerchant(id: number) {
-  await runAction(() => approveAdminShowcaseShopMerchantApplication(id), '商家身份已通过')
+  await runAction(() => approveAdminShowcaseShopMerchantApplication(id), '已准予开通主理人身份')
 }
 
 async function rejectMerchant(id: number) {
-  await runAction(() => rejectAdminShowcaseShopMerchantApplication(id), '商家身份已拒绝')
+  await runAction(() => rejectAdminShowcaseShopMerchantApplication(id), '已婉拒主理人申请')
 }
 
 async function runAction(action: () => Promise<unknown>, successMessage: string) {

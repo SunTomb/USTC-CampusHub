@@ -1,41 +1,41 @@
 <template>
-  <section class="page policy-page">
-    <div class="page-header">
+  <section class="page-stack policy-page">
+    <div class="page-heading">
       <div>
-        <p class="eyebrow">Beta readiness</p>
-        <h2>校集 CampusHub 使用说明与风险提示</h2>
-        <p class="page-subtitle">本页面说明平台服务边界、隐私规则、交易风险和钱包资金规则，适用于内测和 Beta 使用。</p>
+        <p class="eyebrow">瀚海校集 · 社区公约与安全须知</p>
+        <h2>使用说明与交易保障约定</h2>
+        <p>为维护清朗、守信、安全的中国科大校园互助环境，请在参与市集流转、跑腿委托与技能预约前仔细阅读以下约定。</p>
       </div>
     </div>
 
-    <el-card class="content-card">
-      <h3>服务协议摘要</h3>
-      <p>CampusHub 是校园二手交易与学生微服务信息平台，提供跑腿任务、二手商品、学生店铺、项目广告、站内通知、信用治理和钱包服务费能力。</p>
-      <p>平台用于校园内测与课程设计演示，不承诺覆盖所有真实商业场景。管理员可对违规内容、异常交易和风险账户进行审核、限制或下架。</p>
-    </el-card>
+    <div class="policy-grid">
+      <el-card shadow="never" class="premium-panel">
+        <span class="eyebrow">一、社区定位</span>
+        <h3>同窗互助与生活集市</h3>
+        <p>校集（CampusHub）面向中国科大各校区同学提供跑腿悬赏、二手闲置流转、学生技能小店与项目招募展示服务。</p>
+        <p>所有注册成员均通过校园邮箱验证。站务团队有权对虚假信息、校外推销广告、违禁物品与失信行为进行下架或限制。</p>
+      </el-card>
 
-    <el-card class="content-card">
-      <h3>隐私与联系方式</h3>
-      <p>注册和业务流程可能收集邮箱、昵称、学号占位、微信或 QQ 联系方式。联系方式用于交易达成后的沟通，并按业务规则向相关交易方展示。</p>
-      <p>请不要在留言、举报、审核备注或公开内容中填写密码、验证码、支付 token、身份证号、银行卡号或支付宝密钥等敏感信息。</p>
-    </el-card>
+      <el-card shadow="never" class="premium-panel">
+        <span class="eyebrow">二、隐私保护机制</span>
+        <h3>联系方式按需解锁</h3>
+        <p>注册时填写的微信号或 QQ 仅用于同窗交易达成后的联络。在商品列表、跑腿大厅或店铺主页上，你的私人联系方式不会对公众直接暴露。</p>
+        <p>请勿在公开标题、评论留言或个人简介中填写银行卡号、身份证号、寝室床位或取件密码等敏感信息。</p>
+      </el-card>
 
-    <el-card class="content-card">
-      <h3>交易风险提示</h3>
-      <p>线下微信/QQ 沟通和交易需要用户自行核验对方身份、商品状态、服务范围和交付结果。平台治理能力可以处理举报、信用和限制，但不能完全消除线下交易风险。</p>
-      <p>遇到欺诈、骚扰、虚假宣传或安全问题，请保留记录并通过举报或管理员渠道反馈。</p>
-    </el-card>
+      <el-card shadow="never" class="premium-panel">
+        <span class="eyebrow">三、资金与结算方式</span>
+        <h3>透明账本与线上担保</h3>
+        <p>二手商品支持「校内当面直接交接」与「线上钱包余额担保（确认收货后放款）」两种方式；跑腿酬金与店铺服务费由双方在履约完成后直接结算。</p>
+        <p>钱包支持支付宝收银台实时充值（0.6% 通道手续费）与微信扫码免手续费人工核对充值（扫码时请备注校园邮箱或用户名）。</p>
+      </el-card>
 
-    <el-card class="content-card">
-      <h3>钱包与支付边界</h3>
-      <p>CampusHub 钱包用于余额、冻结余额、角色保证金、服务费、充值、提现和二手线上托管演示。真实支付宝收款由外部 API-Transfer-Station 支付中心处理。</p>
-      <p>CampusHub 不读取、不复制、不保存支付宝私钥/公钥正文。提现和部分微信充值仍需要管理员人工审核。</p>
-    </el-card>
-
-    <el-card class="content-card">
-      <h3>Beta 数据边界</h3>
-      <p>内测期间可能存在标记为 Beta 或 Demo 的账号、订单、钱包记录和审核记录。这些数据用于验收矩阵和演示，不代表真实用户交易。</p>
-      <p>真实用户数据修复、删除或生产恢复必须经过单独确认，不能用宽泛删除或重置命令处理。</p>
-    </el-card>
+      <el-card shadow="never" class="premium-panel">
+        <span class="eyebrow">四、校内交接安全建议</span>
+        <h3>当面验货，留存凭证</h3>
+        <p>线下交接建议优先选择教学楼大厅、图书馆门口、食堂或菜鸟驿站等公共场所，当面核验数码产品功能与物品成色。</p>
+        <p>如遇对方爽约、货不对板或言语不当，请保留聊天与现场照片凭证，随时通过页面上的「反馈问题」入口交由站务同学介入协调。</p>
+      </el-card>
+    </div>
   </section>
 </template>

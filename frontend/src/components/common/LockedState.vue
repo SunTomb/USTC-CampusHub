@@ -24,8 +24,8 @@ withDefaults(defineProps<{
   secondaryText?: string
   secondaryTo?: string
 }>(), {
-  icon: 'LOCK',
-  eyebrow: 'Capability Locked',
+  icon: '印',
+  eyebrow: '身份权限指引',
   primaryText: '',
   primaryTo: '',
   secondaryText: '',

@@ -2,66 +2,93 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">My Showcase</p>
-        <h2>我的项目广告</h2>
-        <p>发布项目组队、作品展示、社团招募或校园活动，审核通过后公开展示。</p>
+        <p class="eyebrow">创客工作台 · 招募与作品管理</p>
+        <h2>我发布的项目展示</h2>
+        <p>发起科研比赛组队、个人作品集、实验室纳新或校园活动，经站务核验后在广场展示。</p>
       </div>
-      <el-button v-if="auth.currentUser" type="primary" @click="openCreate">新建项目广告</el-button>
+      <el-button v-if="auth.currentUser" type="primary" @click="openCreate">发起新项目 / 招募</el-button>
     </div>
 
     <LockedState
       v-if="!auth.currentUser"
-      title="登录后管理项目广告"
-      description="登录后可以发布项目组队、作品展示、社团招募和活动宣传。"
-      primary-text="登录注册"
+      title="登录后即可发布项目与招募"
+      description="使用科大邮箱登录后，可免费发布大创组队、竞赛招募、作品集与社团活动。"
+      primary-text="去登录 / 注册"
       primary-to="/auth"
       secondary-text="返回项目广场"
       secondary-to="/project-ads"
     />
 
-    <div v-else class="mobile-table-wrapper">
-      <el-table v-loading="loading" :data="projects" class="table-card">
-        <el-table-column prop="title" label="标题" min-width="180" />
-        <el-table-column prop="adType" label="类型" width="130" />
-        <el-table-column prop="status" label="状态" width="130" />
-        <el-table-column prop="featured" label="精选" width="90">
-          <template #default="{ row }">{{ row.featured ? '是' : '否' }}</template>
+    <div v-else class="mobile-table-wrapper premium-panel">
+      <el-table v-loading="loading" :data="projects" stripe>
+        <el-table-column prop="title" label="项目标题" min-width="180" />
+        <el-table-column prop="adType" label="所属栏目" width="150">
+          <template #default="{ row }">{{ formatAdType(row.adType) }}</template>
         </el-table-column>
-        <el-table-column prop="expiresAt" label="过期时间" width="150">
-          <template #default="{ row }">{{ row.expiresAt ? formatDate(row.expiresAt) : '长期' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="280">
+        <el-table-column prop="status" label="展示状态" width="130">
           <template #default="{ row }">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" type="primary" @click="submit(row)">提交审核</el-button>
-            <el-button size="small" type="danger" @click="close(row)">下架</el-button>
+            <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="featured" label="精选推荐" width="100">
+          <template #default="{ row }">{{ row.featured ? '精选' : '常规' }}</template>
+        </el-table-column>
+        <el-table-column prop="expiresAt" label="有效截止" width="150">
+          <template #default="{ row }">{{ row.expiresAt ? formatDate(row.expiresAt) : '长期有效' }}</template>
+        </el-table-column>
+        <el-table-column label="管理操作" width="280">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">修改</el-button>
+            <el-button size="small" type="primary" plain @click="submit(row)">提交审核</el-button>
+            <el-button size="small" type="danger" plain @click="close(row)">结束下架</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑项目广告' : '新建项目广告'" width="720px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑项目展示' : '发起新项目 / 招募'" width="720px">
       <el-form :model="form" label-position="top" class="project-form">
-        <FormSection title="展示内容" description="标题、摘要、类型和标签决定同学是否会继续查看详情。">
-          <el-form-item label="类型"><el-select v-model="form.adType"><el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
-          <el-form-item label="摘要"><el-input v-model="form.summary" /></el-form-item>
-          <el-form-item label="标签"><el-input v-model="form.tags" placeholder="用英文逗号分隔，如 Vue,摄影,招募" /></el-form-item>
+        <FormSection title="核心信息" description="清晰的标题、一句话摘要与技术/方向标签，能吸引志同道合的同学。">
+          <el-form-item label="所属栏目">
+            <el-select v-model="form.adType" class="wide">
+              <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="项目标题"><el-input v-model="form.title" placeholder="如：2026 国创 AI 医疗影像组招募前端与算法队友" /></el-form-item>
+          <el-form-item label="一句话简介"><el-input v-model="form.summary" placeholder="显示在列表卡片上的核心亮点" /></el-form-item>
+          <el-form-item label="关键词标签"><el-input v-model="form.tags" placeholder="用英文逗号分隔，如 PyTorch,Vue3,大创,西区" /></el-form-item>
         </FormSection>
-        <FormSection title="校区、联系方式与有效期" description="联系方式按规则展示；过期内容不会继续出现在公开列表。">
-          <el-form-item label="校区"><el-input v-model="form.campusZone" placeholder="EAST / WEST / CENTRAL / OTHER" /></el-form-item>
-          <el-form-item label="联系方式"><el-input v-model="form.contactInfo" /></el-form-item>
-          <el-form-item label="展示规则"><el-select v-model="form.contactVisibility"><el-option label="公开" value="PUBLIC" /><el-option label="登录后" value="LOGIN_ONLY" /><el-option label="互动后" value="INTERACTION_ONLY" /><el-option label="隐藏" value="HIDDEN" /></el-select></el-form-item>
-          <el-form-item label="过期时间"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
+
+        <FormSection title="校区、联络规则与有效期" description="你可以自由控制联络方式的可见范围。">
+          <el-form-item label="主要活动校区">
+            <el-select v-model="form.campusZone" class="wide">
+              <el-option label="东校区" value="EAST" />
+              <el-option label="西校区" value="WEST" />
+              <el-option label="中校区" value="CENTRAL" />
+              <el-option label="高新校区" value="HIGH_TECH" />
+              <el-option label="先研院 / 科学岛 / 全校" value="OTHER" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="联络方式（微信 / QQ / 邮箱）"><el-input v-model="form.contactInfo" /></el-form-item>
+          <el-form-item label="联络方式展示范围">
+            <el-select v-model="form.contactVisibility" class="wide">
+              <el-option label="所有人直接可见" value="PUBLIC" />
+              <el-option label="仅登录校友可见" value="LOGIN_ONLY" />
+              <el-option label="收藏或留言互动后可见" value="INTERACTION_ONLY" />
+              <el-option label="暂不公开（仅通过留言沟通）" value="HIDDEN" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="招募截止时间（选填）"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="wide" /></el-form-item>
         </FormSection>
-        <FormSection title="详情与附件" description="说明项目目标、招募要求、作品链接或活动安排。">
+
+        <FormSection title="详细介绍与外部链接" description="详细说明背景目标、分工需求或附上 GitHub / 飞书文档链接。">
           <el-form-item label="详细说明"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item>
-          <el-form-item label="外部链接"><el-input v-model="form.linkUrl" /></el-form-item>
+          <el-form-item label="外部链接（选填）"><el-input v-model="form.linkUrl" placeholder="https://..." /></el-form-item>
         </FormSection>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+        <el-button type="primary" @click="save">保存项目</el-button>
       </template>
     </el-dialog>
   </section>
@@ -81,6 +108,7 @@ import {
   type ProjectAdType,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import { formatAdType, formatStatus, statusTone } from '@/utils/display'
 import LockedState from '@/components/common/LockedState.vue'
 import FormSection from '@/components/common/FormSection.vue'
 
@@ -91,11 +119,11 @@ const dialogVisible = ref(false)
 const editingId = ref<number | null>(null)
 
 const typeOptions: Array<{ label: string; value: ProjectAdType }> = [
-  { label: '项目组队', value: 'TEAM_UP' },
-  { label: '作品展示', value: 'PORTFOLIO' },
-  { label: '社团招募', value: 'CLUB_RECRUITMENT' },
+  { label: '科研/竞赛组队', value: 'TEAM_UP' },
+  { label: '个人作品集', value: 'PORTFOLIO' },
+  { label: '社团与实验室纳新', value: 'CLUB_RECRUITMENT' },
   { label: '校园活动', value: 'CAMPUS_EVENT' },
-  { label: '其他', value: 'OTHER' },
+  { label: '其他展示', value: 'OTHER' },
 ]
 
 const form = reactive<ProjectAdPayload>({
@@ -125,20 +153,42 @@ async function loadProjects() {
 
 function openCreate() {
   editingId.value = null
-  Object.assign(form, { title: '', adType: 'TEAM_UP', summary: '', description: '', tags: '', campusZone: 'EAST', linkUrl: '', contactInfo: auth.currentUser?.wechatContact || auth.currentUser?.qqContact || '', contactVisibility: 'LOGIN_ONLY', expiresAt: '' })
+  Object.assign(form, {
+    title: '',
+    adType: 'TEAM_UP',
+    summary: '',
+    description: '',
+    tags: '',
+    campusZone: 'EAST',
+    linkUrl: '',
+    contactInfo: auth.currentUser?.wechatContact || auth.currentUser?.qqContact || '',
+    contactVisibility: 'LOGIN_ONLY',
+    expiresAt: '',
+  })
   dialogVisible.value = true
 }
 
 function openEdit(project: ProjectAdSummary) {
   editingId.value = project.id
-  Object.assign(form, { title: project.title, adType: project.adType, summary: project.summary || '', description: project.description, tags: project.tags || '', campusZone: project.campusZone || 'EAST', linkUrl: project.linkUrl || '', contactInfo: project.contactInfo || auth.currentUser?.wechatContact || auth.currentUser?.qqContact || '', contactVisibility: project.contactVisibility || 'LOGIN_ONLY', expiresAt: project.expiresAt || '' })
+  Object.assign(form, {
+    title: project.title,
+    adType: project.adType,
+    summary: project.summary || '',
+    description: project.description,
+    tags: project.tags || '',
+    campusZone: project.campusZone || 'EAST',
+    linkUrl: project.linkUrl || '',
+    contactInfo: project.contactInfo || auth.currentUser?.wechatContact || auth.currentUser?.qqContact || '',
+    contactVisibility: project.contactVisibility || 'LOGIN_ONLY',
+    expiresAt: project.expiresAt || '',
+  })
   dialogVisible.value = true
 }
 
 async function save() {
   if (!auth.currentUser) return
   if (!form.title.trim() || !form.description.trim() || !form.contactInfo.trim()) {
-    ElMessage.error('请填写标题、说明和联系方式')
+    ElMessage.error('请填写标题、详细说明与联络方式')
     return
   }
   const payload = { ...form, expiresAt: form.expiresAt || null }
@@ -148,7 +198,7 @@ async function save() {
     await createProjectAd(auth.currentUser.id, payload)
   }
   dialogVisible.value = false
-  ElMessage.success('已保存，等待审核后公开展示')
+  ElMessage.success('已保存，提交审核通过后即可在广场展示')
   await loadProjects()
 }
 
@@ -162,7 +212,7 @@ async function submit(project: ProjectAdSummary) {
 async function close(project: ProjectAdSummary) {
   if (!auth.currentUser) return
   await closeProjectAd(project.id, auth.currentUser.id)
-  ElMessage.success('已下架')
+  ElMessage.success('已结束展示并下架')
   await loadProjects()
 }
 

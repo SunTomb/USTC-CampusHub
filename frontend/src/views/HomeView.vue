@@ -1,22 +1,88 @@
 <template>
   <section class="home-page page-stack">
-    <div class="home-hero">
-      <div>
-        <p class="eyebrow">CampusHub Service OS</p>
-        <h2>{{ heroTitle }}</h2>
-        <p>{{ heroDescription }}</p>
-        <IdentityBadge :identities="identityProfile.identities" />
-        <div class="home-hero-actions">
-          <el-button v-if="!auth.isAuthenticated" type="primary" size="large" @click="router.push('/auth')">使用校园邮箱加入</el-button>
-          <el-button v-else type="primary" size="large" @click="router.push('/notifications')">查看我的通知</el-button>
-          <el-button size="large" plain @click="router.push('/policy')">查看协议与风险</el-button>
+    <div class="bento-hero-grid">
+      <div class="home-hero spotlight-surface" @mousemove="handleSpotlight">
+        <div class="hero-content">
+          <div class="hero-eyebrow-bar">
+            <span class="seal-pill">瀚海校集 · USTC</span>
+            <span class="hero-zone-ticker">中校区 · 西校区 · 东校区 · 高新园区 · 先研院</span>
+          </div>
+          <h2>{{ heroTitle }}</h2>
+          <p>{{ heroDescription }}</p>
+          <IdentityBadge :identities="identityProfile.identities" />
+          <div class="home-hero-actions">
+            <el-button v-if="!auth.isAuthenticated" type="primary" size="large" @click="router.push('/auth')">
+              凭科大邮箱加入
+            </el-button>
+            <el-button v-else type="primary" size="large" @click="router.push('/tasks')">
+              去逛悬赏与市集
+            </el-button>
+            <el-button size="large" class="hero-ghost-btn" @click="router.push('/goods')">浏览校友闲置</el-button>
+            <el-button size="large" text class="hero-link-btn" @click="router.push('/policy')">社区公约与保障 →</el-button>
+          </div>
         </div>
       </div>
-      <div class="home-hero-panel">
-        <span>已上线能力</span>
-        <strong>12 个阶段</strong>
-        <p>跑腿、二手、店铺、项目、治理、运营、钱包与真实支付中心闭环。</p>
+
+      <aside class="home-passport-card spotlight-surface" @mousemove="handleSpotlight">
+        <div class="passport-top">
+          <div>
+            <span class="passport-label">CAMPUS PASS · 校园通行证</span>
+            <h3>{{ auth.isAuthenticated ? identityProfile.displayName : '访客通行卡' }}</h3>
+          </div>
+          <span class="passport-emblem">科</span>
+        </div>
+
+        <p class="passport-desc">
+          {{
+            auth.isAuthenticated
+              ? '已绑定科大校园邮箱，可随时发起同城跑腿、流转闲置或预约同窗技能。'
+              : '完成 @mail.ustc.edu.cn 邮箱验证后，即可解锁实名校友互助与交易权限。'
+          }}
+        </p>
+
+        <div class="passport-metrics">
+          <div>
+            <span>已点亮身份</span>
+            <strong class="mono-num">{{ identityProfile.identities.length }} 项</strong>
+          </div>
+          <div>
+            <span>隐私保护</span>
+            <strong>意向达成后可见</strong>
+          </div>
+        </div>
+
+        <div class="passport-footer">
+          <el-button v-if="!auth.isAuthenticated" type="primary" class="wide" @click="router.push('/auth')">
+            立即验证校园邮箱
+          </el-button>
+          <div v-else class="passport-quick-links">
+            <el-button size="small" plain @click="router.push('/wallet')">钱包账本</el-button>
+            <el-button size="small" plain @click="router.push('/roles')">身份印章</el-button>
+            <el-button size="small" plain @click="router.push('/notifications')">站内信箱</el-button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="campus-marquee-bar">
+      <span class="marquee-tag">校区直通</span>
+      <div class="marquee-items">
+        <span @click="router.push('/tasks')">🏃 东区西区代取急件 · 顺路悬赏立达</span>
+        <span class="dot">·</span>
+        <span @click="router.push('/goods')">📦 毕业季教材、数码、单车校友直出</span>
+        <span class="dot">·</span>
+        <span @click="router.push('/shops')">🎨 校园约拍、装机清灰、LaTeX 排版小店</span>
+        <span class="dot">·</span>
+        <span @click="router.push('/project-ads')">🚀 大创国创、数学建模与实验室纳新广场</span>
       </div>
+    </div>
+
+    <div class="section-header-line">
+      <div>
+        <span class="section-kicker">身份与板块入口</span>
+        <h3>四大校园生活场景</h3>
+      </div>
+      <span class="section-sub">支持随时切换买家与创作者视角</span>
     </div>
 
     <div class="capability-grid">
@@ -38,21 +104,36 @@
 
     <div class="home-section-grid">
       <section class="premium-panel">
-        <p class="eyebrow">Next Best Actions</p>
-        <h3>建议下一步</h3>
+        <span class="eyebrow">常用直达</span>
+        <h3>现在可以从这里开始</h3>
         <div class="action-list">
           <button v-for="action in nextActions" :key="action.to" type="button" @click="router.push(action.to)">
-            <strong>{{ action.title }}</strong>
-            <span>{{ action.description }}</span>
+            <div class="action-item-main">
+              <strong>{{ action.title }}</strong>
+              <span>{{ action.description }}</span>
+            </div>
+            <span class="action-arrow">→</span>
           </button>
         </div>
       </section>
 
-      <section class="premium-panel">
-        <p class="eyebrow">Trust Boundary</p>
-        <h3>平台边界</h3>
-        <p>CampusHub 只保存本地钱包账本、服务费、保证金和业务状态；支付宝真实支付仍由 API-Transfer-Station 支付中心处理。</p>
-        <p>微信充值采用人工审核，请按页面提示备注校园邮箱或 CampusHub 用户名。</p>
+      <section class="premium-panel editorial-note-panel">
+        <span class="eyebrow">交易与隐私守则</span>
+        <h3>同窗互信，安心交接</h3>
+        <ul class="editorial-pledge-list">
+          <li>
+            <strong>微信号与 QQ 隐私保护</strong>
+            <span>你的联系方式不会在大厅公开展示，仅在接单、预约或提交购买意向后向交易对方开放。</span>
+          </li>
+          <li>
+            <strong>透明账本与灵活交接</strong>
+            <span>支持校友线下面交，也支持二手商品线上余额担保冻结；支付宝充值即时到账，微信扫码由站务同学人工核对。</span>
+          </li>
+          <li>
+            <strong>实名学籍与信用累积</strong>
+            <span>每一次准时送达、如实描述与友善沟通，都会沉淀为你的科大校内信用誉分。</span>
+          </li>
+        </ul>
       </section>
     </div>
   </section>
@@ -69,71 +150,98 @@ const router = useRouter()
 const auth = useAuthStore()
 const identityProfile = computed(() => auth.identityProfile)
 
-const heroTitle = computed(() => auth.isAuthenticated ? `${identityProfile.value.displayName}，欢迎回到校集` : '把校园二手、跑腿和学生服务放进一个可信平台')
-const heroDescription = computed(() => auth.isAuthenticated
-  ? '根据你已解锁的身份，CampusHub 会优先展示最相关的钱包、通知、工作台和管理入口。'
-  : '使用校园邮箱注册后，可充值钱包、申请身份、发布二手、承接跑腿、经营店铺并接收站内通知。')
+const heroTitle = computed(() =>
+  auth.isAuthenticated
+    ? `${identityProfile.value.displayName}，今日校园里有什么新鲜事？`
+    : '中区取件、西区出闲置、高新找队友——科大人自己的校园生活集市',
+)
+
+const heroDescription = computed(() =>
+  auth.isAuthenticated
+    ? '无论是顺路帮带一份快递、出掉书架上的旧教材，还是在周末接一场校园约拍，这里都为你准备好了趁手的工作台。'
+    : '凭科大邮箱验证加入，把散落在各个微信群与朋友圈里的跑腿互助、闲置流转、技能小店和比赛招募汇聚一处。',
+)
 
 const hasIdentity = (key: string) => identityProfile.value.identities.some((identity) => identity.key === key)
 
 const capabilityCards = computed(() => [
   {
     icon: '跑',
-    title: '跑腿接单者',
-    description: hasIdentity('runner') ? '你已解锁抢单、申请和任务工作台能力。' : '支付 5 元保证金后自动开通，适合快递、外卖、打印代取。',
-    badge: hasIdentity('runner') ? '已解锁' : '可申请',
+    title: '顺路跑腿员',
+    description: hasIdentity('runner')
+      ? '你已开通跑腿接单权限，可随时抢单或申请跨校区代取、代送任务。'
+      : '缴纳 5 元诚信保证金即可实时开通，课间顺路帮同学代取快递、急送材料。',
+    badge: hasIdentity('runner') ? '已开通' : '5元保证金即开',
     tone: 'green' as const,
     locked: !hasIdentity('runner'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('runner') ? '/tasks' : '/roles',
-    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('runner') ? '进入跑腿大厅' : '申请身份',
+    action: !auth.isAuthenticated ? '去登录开通' : hasIdentity('runner') ? '进入跑腿大厅' : '去开通身份',
   },
   {
-    icon: '二',
-    title: '二手发布者',
-    description: hasIdentity('goodsPublisher') ? '你可以发布和管理二手商品。' : '支付 10 元保证金后自动开通，用于可信二手发布。',
-    badge: hasIdentity('goodsPublisher') ? '已解锁' : '可申请',
+    icon: '闲',
+    title: '闲置发布者',
+    description: hasIdentity('goodsPublisher')
+      ? '你已开通闲置发布权限，可随时上架教材、数码、单车与宿舍好物。'
+      : '缴纳 10 元诚信保证金即可实时开通，让闲置好物在同校校友之间安心流转。',
+    badge: hasIdentity('goodsPublisher') ? '已开通' : '10元保证金即开',
     tone: 'orange' as const,
     locked: !hasIdentity('goodsPublisher'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('goodsPublisher') ? '/goods/publish' : '/roles',
-    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('goodsPublisher') ? '发布二手' : '申请身份',
+    action: !auth.isAuthenticated ? '去登录开通' : hasIdentity('goodsPublisher') ? '上架闲置好物' : '去开通身份',
   },
   {
     icon: '店',
-    title: '店铺商家',
-    description: hasIdentity('shopMerchant') ? '你可以维护店铺、服务项目和预约。' : '支付 20 元保证金并通过人工审核后开通。',
-    badge: hasIdentity('shopMerchant') ? '已解锁' : '需审核',
+    title: '技能店主理人',
+    description: hasIdentity('shopMerchant')
+      ? '你已拥有主理人身份，可管理个人小店、上架服务项目并处理同窗预约。'
+      : '适合摄影约拍、电脑清灰、科研绘图、贴膜维修等长期技能服务，经站务核验后开店。',
+    badge: hasIdentity('shopMerchant') ? '营业中' : '20元保证金+核验',
     tone: 'blue' as const,
     locked: !hasIdentity('shopMerchant'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('shopMerchant') ? '/shops/merchant' : '/roles',
-    action: !auth.isAuthenticated ? '登录后申请' : hasIdentity('shopMerchant') ? '店铺工作台' : '申请身份',
+    action: !auth.isAuthenticated ? '去登录开通' : hasIdentity('shopMerchant') ? '进入店铺工作台' : '申请开店',
   },
   {
-    icon: '管',
-    title: '运营管理员',
-    description: hasIdentity('admin') ? '你可以进入审核、治理、运营、支付和钱包后台。' : '管理员能力仅对授权账号展示。',
-    badge: hasIdentity('admin') ? '管理员' : '受限',
+    icon: '展',
+    title: '项目与站务共治',
+    description: hasIdentity('admin')
+      ? '你拥有站务管理权限，可巡查全站运营指标、受理社区反馈与核对资金账务。'
+      : '免费发布大创组队、竞赛招募与作品集展示；亦可申请成为交易或展示管理员参与共治。',
+    badge: hasIdentity('admin') ? '站务管理' : '全员开放',
     tone: 'dark' as const,
-    locked: !hasIdentity('admin'),
-    to: hasIdentity('admin') ? '/admin/ops' : '/policy',
-    action: hasIdentity('admin') ? '进入运营后台' : '了解规则',
+    locked: false,
+    to: hasIdentity('admin') ? '/admin/ops' : '/project-ads',
+    action: hasIdentity('admin') ? '进入运营看板' : '去逛项目广场',
   },
 ])
 
 const nextActions = computed(() => {
-  if (!auth.isAuthenticated) return [
-    { title: '注册或登录', description: '使用校园邮箱加入，继续后续充值和身份申请。', to: '/auth' },
-    { title: '先浏览服务', description: '看看当前校园二手、跑腿、店铺和项目广告。', to: '/tasks' },
-    { title: '了解风险边界', description: '阅读平台资金、隐私和交易风险说明。', to: '/policy' },
-  ]
-  if (hasIdentity('admin')) return [
-    { title: '查看运营数据', description: '进入跨业务运营看板和导出入口。', to: '/admin/ops' },
-    { title: '处理治理队列', description: '查看举报、违规、信用和限制。', to: '/admin/governance' },
-    { title: '查看支付监控', description: '确认支付订单和回调事件状态。', to: '/admin/payment' },
-  ]
+  if (!auth.isAuthenticated) {
+    return [
+      { title: '验证科大邮箱加入', description: '支持 @mail.ustc.edu.cn 与 @ustc.edu.cn 邮箱一键收码注册。', to: '/auth' },
+      { title: '先去市集与跑腿大厅逛逛', description: '无需登录即可浏览各校区最新上架的闲置好物与悬赏急单。', to: '/goods' },
+      { title: '了解社区交易与隐私约定', description: '查看联系方式解锁机制、线上余额担保与站内信用规则。', to: '/policy' },
+    ]
+  }
+  if (hasIdentity('admin')) {
+    return [
+      { title: '查看全站运营数据与报表', description: '按日期查看各板块转化漏斗、校区活跃度并导出 CSV。', to: '/admin/ops' },
+      { title: '处理社区举报与信用记录', description: '及时响应同学反馈，维护清朗守信的校园交易环境。', to: '/admin/governance' },
+      { title: '核对充值与提现申请', description: '处理微信扫码充值入账与余额提现打款。', to: '/admin/wallet' },
+    ]
+  }
   return [
-    { title: '充值钱包', description: '使用支付宝支付中心或微信人工充值。', to: '/wallet' },
-    { title: '申请身份', description: '解锁跑腿、二手发布或店铺商家能力。', to: '/roles' },
-    { title: '查看通知', description: '关注身份、支付、治理和交易提醒。', to: '/notifications' },
+    { title: '查看我的钱包与账单', description: '管理可用余额、支付宝实时充值、微信扫码充值与提现。', to: '/wallet' },
+    { title: '点亮更多创作者身份', description: '一键开通跑腿接单员、闲置卖家或申请技能店主理人。', to: '/roles' },
+    { title: '查收最新站内通知', description: '及时跟进你的接单进度、买家意向与预约提醒。', to: '/notifications' },
   ]
 })
+
+function handleSpotlight(event: MouseEvent) {
+  const target = event.currentTarget as HTMLElement | null
+  if (!target) return
+  const rect = target.getBoundingClientRect()
+  target.style.setProperty('--mouse-x', `${event.clientX - rect.left}px`)
+  target.style.setProperty('--mouse-y', `${event.clientY - rect.top}px`)
+}
 </script>

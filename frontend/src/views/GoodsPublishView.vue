@@ -2,76 +2,85 @@
   <section class="page-stack goods-publish-form">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Publish</p>
-        <h2>发布二手商品</h2>
-        <p>需要先开通 10 元二手发布者保证金身份；平台不托管交易本金。</p>
+        <p class="eyebrow">闲置上架 · 校友流转</p>
+        <h2>上架闲置好物</h2>
+        <p>开通闲置发布者身份（10 元诚信保证金）即可随时发布好物，联系方式默认在买家提交意向后展示。</p>
       </div>
-      <el-button @click="router.push('/roles')">身份保证金</el-button>
+      <el-button @click="router.push('/roles')">查看我的身份印章</el-button>
     </div>
 
-    <el-alert v-if="!auth.currentUser" title="请先登录后发布商品" type="warning" show-icon />
+    <el-alert v-if="!auth.currentUser" title="请先登录校园账号后再上架闲置" type="warning" show-icon />
 
     <LockedState
       v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher') && !auth.isAdmin"
-      title="需要二手发布者身份"
-      description="支付 10 元保证金后可解锁二手商品发布能力。"
-      primary-text="去申请身份"
+      title="需先点亮「闲置发布者」身份"
+      description="缴纳 10 元诚信保证金即可实时自动开通，让校内二手交易更真实可靠。"
+      primary-text="去开通身份"
       primary-to="/roles"
-      secondary-text="返回二手市场"
+      secondary-text="返回二手市集"
       secondary-to="/goods"
     />
 
-    <el-card v-else>
+    <el-card v-else shadow="never" class="premium-panel">
       <el-form label-position="top" :model="form" class="form-section-stack">
-        <FormSection title="商品信息" description="标题、分类和成色决定买家是否会继续查看详情。">
-          <el-form-item label="标题">
-            <el-input v-model="form.title" placeholder="例如：九成新机械键盘" />
+        <FormSection title="物品基本情况" description="真实的成色说明与细节描述，能帮你的好物更快找到下一位主人。">
+          <el-form-item label="物品名称">
+            <el-input v-model="form.title" placeholder="例如：九五新 Keychron 机械键盘 / 数学分析教材全套" />
           </el-form-item>
-          <el-form-item label="描述">
-            <el-input v-model="form.description" type="textarea" :rows="4" placeholder="说明成色、配件、交易说明" />
+          <el-form-item label="成色与细节说明">
+            <el-input v-model="form.description" type="textarea" :rows="4" placeholder="说明购入时间、使用痕迹、包含配件或附赠物品..." />
           </el-form-item>
           <div class="form-grid">
-            <el-form-item label="分类 ID">
-              <el-input-number v-model="form.categoryId" :min="1" />
+            <el-form-item label="物品分类">
+              <el-select v-model="form.categoryId">
+                <el-option label="数码与外设" :value="1" />
+                <el-option label="教材与考研资料" :value="2" />
+                <el-option label="代步车与运动器材" :value="3" />
+                <el-option label="宿舍电器与生活好物" :value="4" />
+                <el-option label="其他闲置" :value="5" />
+              </el-select>
             </el-form-item>
-            <el-form-item label="成色">
-              <el-input v-model="form.conditionLevel" />
+            <el-form-item label="成色印象">
+              <el-input v-model="form.conditionLevel" placeholder="如：九成新 / 全新未拆" />
             </el-form-item>
           </div>
         </FormSection>
-        <FormSection title="价格与地点" description="标清价格、原价和交易校区，便于校内线下沟通。">
+
+        <FormSection title="转让价格与交接地点" description="注明所在校区与常去地点，方便同校区同学顺路自提。">
           <div class="form-grid">
-            <el-form-item label="价格">
-              <el-input-number v-model="form.price" :min="0.01" :precision="2" />
+            <el-form-item label="转让价（元）">
+              <el-input-number v-model="form.price" :min="0.01" :precision="2" class="wide" />
             </el-form-item>
-            <el-form-item label="原价">
-              <el-input-number v-model="form.originalPrice" :min="0" :precision="2" />
+            <el-form-item label="入手原价（选填）">
+              <el-input-number v-model="form.originalPrice" :min="0" :precision="2" class="wide" />
             </el-form-item>
-            <el-form-item label="校区">
+            <el-form-item label="所在校区">
               <el-select v-model="form.campusZone">
                 <el-option v-for="zone in zones" :key="zone.value" :label="zone.label" :value="zone.value" />
               </el-select>
             </el-form-item>
           </div>
           <div class="form-grid">
-            <el-form-item label="交易地点">
-              <el-input v-model="form.tradeLocation" />
+            <el-form-item label="建议交接点">
+              <el-input v-model="form.tradeLocation" placeholder="如：西区三教一楼 / 中区桃李苑门口" />
             </el-form-item>
-            <el-form-item label="交易方式">
+            <el-form-item label="交接方式">
               <el-select v-model="form.deliveryMethod">
-                <el-option label="线下面交" value="OFFLINE_MEETUP" />
-                <el-option label="自取" value="SELF_PICKUP" />
-                <el-option label="协商" value="NEGOTIATED" />
+                <el-option label="校内当面交接" value="OFFLINE_MEETUP" />
+                <el-option label="买家宿舍楼下自提" value="SELF_PICKUP" />
+                <el-option label="双方私聊协商" value="NEGOTIATED" />
               </el-select>
             </el-form-item>
           </div>
         </FormSection>
-        <FormSection title="联系与风险提示" description="联系方式默认在买家提交购买意向后展示，请勿在描述中直接写手机号或敏感信息。">
-          <el-alert title="CampusHub 不托管交易本金，不做逐单保证金冻结；线下交易请保留必要聊天和交接证据。" type="info" show-icon />
+
+        <FormSection title="隐私保护约定" description="系统会自动关联你注册时填写的微信号或 QQ，仅对提交了购买意向的校友开放。">
+          <el-alert title="请勿在公开的商品描述中直接暴露个人手机号、宿舍门牌号或收款码图片。" type="info" show-icon :closable="false" />
         </FormSection>
+
         <div class="form-actions">
           <el-button @click="router.push('/goods')">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="submit">发布</el-button>
+          <el-button type="primary" :loading="submitting" @click="submit">确认上架</el-button>
         </div>
       </el-form>
     </el-card>
@@ -120,13 +129,13 @@ async function submit() {
     return
   }
   if (!form.title || !form.description || !form.tradeLocation) {
-    ElMessage.error('请填写完整商品信息')
+    ElMessage.error('请填写完整商品名称、描述与交接地点')
     return
   }
   submitting.value = true
   try {
     const detail = await publishGoods(auth.currentUser.id, form)
-    ElMessage.success('商品已发布')
+    ElMessage.success('闲置好物已上架')
     router.push(`/goods/${detail.id}`)
   } catch (error) {
     const message = error instanceof Error ? error.message : '发布失败'

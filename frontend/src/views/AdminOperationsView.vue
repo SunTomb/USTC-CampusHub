@@ -2,9 +2,9 @@
   <section class="page-stack">
     <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Operations Console</p>
-        <h2>运营数据</h2>
-        <p>汇总跨业务运营指标、异常和导出入口，支持低影响处理与全链路状态追溯。</p>
+        <p class="eyebrow">站务中枢 · 全站运营看板</p>
+        <h2>运营数据与报表中心</h2>
+        <p>实时总览跑腿、二手、小店与项目广场的活跃指标、校区热力分布及费用统计，支持一键导出脱敏 CSV 报表。</p>
       </div>
       <div class="ops-heading-actions">
         <el-date-picker
@@ -16,45 +16,46 @@
           value-format="YYYY-MM-DD"
           :clearable="true"
         />
-        <el-button type="primary" :loading="analyticsLoading" @click="loadAnalytics">刷新分析</el-button>
-        <el-button :loading="loading" @click="load">刷新监控</el-button>
+        <el-button type="primary" :loading="analyticsLoading" @click="loadAnalytics">更新统计区间</el-button>
+        <el-button :loading="loading" @click="load">刷新实时队列</el-button>
       </div>
     </div>
 
     <div class="ops-metrics" v-if="dashboard">
-      <div><span>已发布任务</span><strong>{{ dashboard.publishedTasks }}</strong></div>
-      <div><span>履约中</span><strong>{{ dashboard.acceptedTasks }}</strong></div>
-      <div><span>已完成</span><strong>{{ dashboard.completedTasks }}</strong></div>
-      <div><span>开放异常</span><strong>{{ dashboard.openIssues }}</strong></div>
-      <div><span>待审身份</span><strong>{{ dashboard.pendingRoleApplications }}</strong></div>
+      <div><span>待接跑腿单</span><strong class="mono-num">{{ dashboard.publishedTasks }}</strong></div>
+      <div><span>派送进行中</span><strong class="mono-num">{{ dashboard.acceptedTasks }}</strong></div>
+      <div><span>已送达结单</span><strong class="mono-num">{{ dashboard.completedTasks }}</strong></div>
+      <div><span>待处理异常</span><strong class="mono-num">{{ dashboard.openIssues }}</strong></div>
+      <div><span>待核验身份</span><strong class="mono-num">{{ dashboard.pendingRoleApplications }}</strong></div>
     </div>
 
     <section class="ops-analytics-panel premium-panel" v-loading="analyticsLoading">
       <div class="panel-topline">
-        <span>运营分析</span>
-        <span v-if="overview">{{ overview.startDate }} 至 {{ overview.endDate }}</span>
+        <strong>核心运营指标概览</strong>
+        <span v-if="overview" class="mono-num">{{ overview.startDate }} 至 {{ overview.endDate }}</span>
       </div>
       <div class="analytics-grid" v-if="overview">
         <div v-for="card in overview.cards" :key="card.key">
           <span>{{ card.label }}</span>
-          <strong>{{ formatMetricValue(card) }}</strong>
+          <strong class="mono-num">{{ formatMetricValue(card) }}</strong>
         </div>
       </div>
     </section>
 
     <el-tabs class="tabs-surface premium-panel" v-loading="loading">
-      <el-tab-pane label="业务漏斗">
+      <el-tab-pane label="业务转化漏斗">
         <div class="funnel-grid" v-if="funnels">
           <div class="funnel-card" v-for="funnel in funnels.funnels" :key="funnel.businessKey">
             <h3>{{ funnel.businessName }}</h3>
             <div class="funnel-step" v-for="step in funnel.steps" :key="step.key">
               <span>{{ step.label }}</span>
-              <strong>{{ formatMetricValue(step) }}</strong>
+              <strong class="mono-num">{{ formatMetricValue(step) }}</strong>
             </div>
           </div>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="校区分析">
+
+      <el-tab-pane label="校区活跃分布">
         <div class="zone-grid" v-if="zones">
           <div class="zone-card" v-for="group in zoneGroups" :key="group.key">
             <h3>{{ group.title }}</h3>
@@ -62,130 +63,173 @@
               <div class="zone-row" v-for="item in group.items" :key="item.key">
                 <div class="zone-row-main">
                   <span>{{ item.label }}</span>
-                  <strong>{{ item.count }}</strong>
+                  <strong class="mono-num">{{ item.count }}</strong>
                 </div>
                 <el-progress :percentage="zonePercentage(item.count, group.items)" :stroke-width="8" />
               </div>
             </div>
-            <p class="hint" v-else>暂无数据</p>
+            <p class="hint" v-else>该区间暂无记录</p>
           </div>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="费用与导出">
+
+      <el-tab-pane label="账务汇总与报表导出">
         <div class="fee-grid" v-if="fees">
           <div>
-            <span>服务费记录</span>
-            <strong>{{ fees.serviceFeeCount }}</strong>
+            <span>服务费笔数</span>
+            <strong class="mono-num">{{ fees.serviceFeeCount }}</strong>
           </div>
           <div>
-            <span>已付服务费</span>
-            <strong>¥{{ fees.paidServiceFeeAmount }}</strong>
+            <span>已结服务费</span>
+            <strong class="mono-num">¥{{ fees.paidServiceFeeAmount }}</strong>
           </div>
           <div>
-            <span>待付服务费</span>
-            <strong>¥{{ fees.pendingServiceFeeAmount }}</strong>
+            <span>待结服务费</span>
+            <strong class="mono-num">¥{{ fees.pendingServiceFeeAmount }}</strong>
           </div>
           <div>
-            <span>身份申请</span>
-            <strong>{{ fees.roleApplicationCount }}</strong>
+            <span>身份开通申请</span>
+            <strong class="mono-num">{{ fees.roleApplicationCount }}</strong>
           </div>
           <div>
-            <span>身份保证金</span>
-            <strong>¥{{ fees.roleDepositAmount }}</strong>
+            <span>保证金总额</span>
+            <strong class="mono-num">¥{{ fees.roleDepositAmount }}</strong>
           </div>
         </div>
-        <div class="fee-grid" v-if="fees">
+        <div class="fee-grid" v-if="fees" style="margin-top: 14px">
           <div v-for="card in fees.serviceFeesByTargetType" :key="`fee-${card.key}`">
-            <span>服务费：{{ card.label }}</span>
-            <strong>{{ formatMetricValue(card) }}</strong>
+            <span>服务费 · {{ card.label }}</span>
+            <strong class="mono-num">{{ formatMetricValue(card) }}</strong>
           </div>
           <div v-for="card in fees.roleDepositsByType" :key="`deposit-${card.key}`">
-            <span>保证金：{{ card.label }}</span>
-            <strong>{{ formatMetricValue(card) }}</strong>
+            <span>保证金 · {{ card.label }}</span>
+            <strong class="mono-num">{{ formatMetricValue(card) }}</strong>
           </div>
         </div>
         <div class="export-grid">
-          <el-button @click="exportCsv('tasks')">导出跑腿任务 CSV</el-button>
-          <el-button @click="exportCsv('goods')">导出二手商品 CSV</el-button>
-          <el-button @click="exportCsv('shop-orders')">导出店铺预约 CSV</el-button>
-          <el-button @click="exportCsv('project-ads')">导出项目广告 CSV</el-button>
-          <el-button @click="exportCsv('governance')">导出治理记录 CSV</el-button>
-          <el-button @click="exportCsv('fees')">导出费用记录 CSV</el-button>
+          <el-button @click="exportCsv('tasks')">导出跑腿任务报表 (CSV)</el-button>
+          <el-button @click="exportCsv('goods')">导出二手商品报表 (CSV)</el-button>
+          <el-button @click="exportCsv('shop-orders')">导出店铺预约报表 (CSV)</el-button>
+          <el-button @click="exportCsv('project-ads')">导出项目展示报表 (CSV)</el-button>
+          <el-button @click="exportCsv('governance')">导出社区治理报表 (CSV)</el-button>
+          <el-button @click="exportCsv('fees')">导出账务费用报表 (CSV)</el-button>
         </div>
-        <p class="hint">CSV 导出不会主动包含密钥、令牌、密码、完整联系方式等敏感字段；治理说明、管理员备注等自由文本仍需谨慎填写，避免录入敏感信息。</p>
+        <p class="hint">导出的 CSV 报表已自动隐去密码与完整私人联系方式，方便站务归档留存。</p>
       </el-tab-pane>
-      <el-tab-pane label="任务监控">
+
+      <el-tab-pane label="跑腿任务巡查">
         <el-table :data="tasks" stripe>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="title" label="任务" />
-          <el-table-column prop="acceptanceMode" label="模式" width="100" />
-          <el-table-column prop="workflowStatus" label="状态" width="150" />
-          <el-table-column prop="rewardAmount" label="报酬" width="100" />
-          <el-table-column prop="publisherNickname" label="发布者" width="140" />
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="异常任务">
-        <el-table :data="issues" stripe>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="taskTitle" label="任务" />
-          <el-table-column prop="issueType" label="类型" width="160" />
-          <el-table-column prop="description" label="说明" />
-          <el-table-column prop="reporterNickname" label="上报人" width="140" />
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="身份保证金">
-        <el-table :data="roles" stripe>
-          <el-table-column prop="userNickname" label="用户" />
-          <el-table-column prop="roleType" label="身份" width="160" />
-          <el-table-column prop="depositAmount" label="保证金" width="120" />
-          <el-table-column prop="depositStatus" label="支付" width="120" />
-          <el-table-column prop="reviewStatus" label="审核" width="160" />
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="店铺预约">
-        <el-table :data="shopOrders" stripe>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="shopName" label="店铺" min-width="140" />
-          <el-table-column prop="serviceItemTitle" label="服务" min-width="160" />
-          <el-table-column prop="customerNickname" label="顾客" width="120" />
-          <el-table-column prop="providerNickname" label="商家" width="120" />
-          <el-table-column prop="status" label="状态" width="120" />
-          <el-table-column prop="appointmentTime" label="预约时间" min-width="170" />
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="项目广告">
-        <div class="ops-toolbar">
-          <el-select v-model="projectStatus" clearable placeholder="状态" @change="loadProjectAds">
-            <el-option label="待审核" value="PENDING_REVIEW" />
-            <el-option label="已公开" value="APPROVED" />
-            <el-option label="已拒绝" value="REJECTED" />
-            <el-option label="已下架" value="CLOSED" />
-            <el-option label="违规下架" value="BLOCKED" />
-          </el-select>
-          <el-button @click="loadProjectAds">刷新项目广告</el-button>
-        </div>
-        <el-table :data="projectAds" stripe>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="title" label="标题" min-width="180" />
-          <el-table-column prop="adType" label="类型" width="130" />
-          <el-table-column prop="publisherNickname" label="发布者" width="130" />
-          <el-table-column prop="status" label="状态" width="130" />
-          <el-table-column prop="featured" label="精选" width="90">
-            <template #default="{ row }">{{ row.featured ? '是' : '否' }}</template>
+          <el-table-column prop="id" label="编号" width="80">
+            <template #default="{ row }"><span class="mono-num">#{{ row.id }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="360">
+          <el-table-column prop="title" label="任务标题" />
+          <el-table-column prop="acceptanceMode" label="模式" width="110">
+            <template #default="{ row }">{{ row.acceptanceMode === 'GRAB' ? '即时抢单' : '报名筛选' }}</template>
+          </el-table-column>
+          <el-table-column prop="workflowStatus" label="履约状态" width="140">
             <template #default="{ row }">
-              <el-button size="small" type="success" @click="approve(row)">通过</el-button>
-              <el-button size="small" type="warning" @click="feature(row)">精选</el-button>
-              <el-button size="small" @click="unfeature(row)">取消精选</el-button>
-              <el-button size="small" type="danger" @click="reject(row)">拒绝</el-button>
-              <el-button size="small" type="danger" @click="block(row)">下架</el-button>
+              <el-tag :type="statusTone(row.workflowStatus)" size="small">{{ formatStatus(row.workflowStatus) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="rewardAmount" label="酬金" width="100">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.rewardAmount }}</span></template>
+          </el-table-column>
+          <el-table-column prop="publisherNickname" label="委托人" width="140" />
+        </el-table>
+      </el-tab-pane>
+
+      <el-tab-pane label="跑腿异常报备">
+        <el-table :data="issues" stripe>
+          <el-table-column prop="id" label="编号" width="80">
+            <template #default="{ row }"><span class="mono-num">#{{ row.id }}</span></template>
+          </el-table-column>
+          <el-table-column prop="taskTitle" label="关联任务" />
+          <el-table-column prop="issueType" label="异常类别" width="160">
+            <template #default="{ row }">{{ formatIssueType(row.issueType) }}</template>
+          </el-table-column>
+          <el-table-column prop="description" label="现场说明" />
+          <el-table-column prop="reporterNickname" label="报备同学" width="140" />
+        </el-table>
+      </el-tab-pane>
+
+      <el-tab-pane label="身份保证金队列">
+        <el-table :data="roles" stripe>
+          <el-table-column prop="userNickname" label="申请同学" />
+          <el-table-column prop="roleType" label="申请身份" width="160">
+            <template #default="{ row }">{{ formatRoleType(row.roleType) }}</template>
+          </el-table-column>
+          <el-table-column prop="depositAmount" label="保证金" width="120">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.depositAmount }}</span></template>
+          </el-table-column>
+          <el-table-column prop="depositStatus" label="缴纳状态" width="130">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.depositStatus)" size="small">{{ formatStatus(row.depositStatus) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reviewStatus" label="核验状态" width="140">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.reviewStatus)" size="small">{{ formatStatus(row.reviewStatus) }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
-      <el-tab-pane label="举报与违规">
-        <p class="hint">举报处理和违规记录继续复用审核治理页面，后续会统一到运营后台。</p>
+
+      <el-tab-pane label="小店预约巡查">
+        <el-table :data="shopOrders" stripe>
+          <el-table-column prop="id" label="编号" width="80">
+            <template #default="{ row }"><span class="mono-num">#{{ row.id }}</span></template>
+          </el-table-column>
+          <el-table-column prop="shopName" label="店铺名" min-width="140" />
+          <el-table-column prop="serviceItemTitle" label="预约项目" min-width="160" />
+          <el-table-column prop="customerNickname" label="预约同学" width="120" />
+          <el-table-column prop="providerNickname" label="主理人" width="120" />
+          <el-table-column prop="status" label="状态" width="130">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="appointmentTime" label="预约时间" min-width="170" />
+        </el-table>
+      </el-tab-pane>
+
+      <el-tab-pane label="项目广场审核">
+        <div class="ops-toolbar">
+          <el-select v-model="projectStatus" clearable placeholder="按状态筛选" @change="loadProjectAds">
+            <el-option label="待审核" value="PENDING_REVIEW" />
+            <el-option label="展示中" value="APPROVED" />
+            <el-option label="未通过" value="REJECTED" />
+            <el-option label="已结束" value="CLOSED" />
+            <el-option label="已屏蔽" value="BLOCKED" />
+          </el-select>
+          <el-button @click="loadProjectAds">刷新列表</el-button>
+        </div>
+        <el-table :data="projectAds" stripe>
+          <el-table-column prop="id" label="编号" width="80">
+            <template #default="{ row }"><span class="mono-num">#{{ row.id }}</span></template>
+          </el-table-column>
+          <el-table-column prop="title" label="标题" min-width="180" />
+          <el-table-column prop="adType" label="栏目" width="140">
+            <template #default="{ row }">{{ formatAdType(row.adType) }}</template>
+          </el-table-column>
+          <el-table-column prop="publisherNickname" label="发起人" width="130" />
+          <el-table-column prop="status" label="状态" width="130">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="featured" label="精选" width="90">
+            <template #default="{ row }">{{ row.featured ? '精选' : '常规' }}</template>
+          </el-table-column>
+          <el-table-column label="管理操作" width="360">
+            <template #default="{ row }">
+              <el-button size="small" type="success" @click="approve(row)">通过</el-button>
+              <el-button size="small" type="warning" @click="feature(row)">设为精选</el-button>
+              <el-button size="small" @click="unfeature(row)">取消精选</el-button>
+              <el-button size="small" type="danger" plain @click="reject(row)">退回</el-button>
+              <el-button size="small" type="danger" @click="block(row)">下架</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-tab-pane>
     </el-tabs>
   </section>
@@ -225,6 +269,7 @@ import {
   type TaskIssueSummary,
   type ZoneMetricSummary,
 } from '@/api/campushub'
+import { formatAdType, formatIssueType, formatRoleType, formatStatus, statusTone } from '@/utils/display'
 
 type OpsExportKind = 'tasks' | 'goods' | 'shop-orders' | 'project-ads' | 'governance' | 'fees'
 
@@ -249,12 +294,12 @@ const zoneGroups = computed(() => {
   }
 
   return [
-    { key: 'taskOriginZones', title: '任务起点校区', items: zones.value.taskOriginZones },
-    { key: 'taskDestinationZones', title: '任务终点校区', items: zones.value.taskDestinationZones },
-    { key: 'taskRoutes', title: '任务路线', items: zones.value.taskRoutes },
-    { key: 'goodsZones', title: '二手交易校区', items: zones.value.goodsZones },
-    { key: 'shopZones', title: '学生店铺校区', items: zones.value.shopZones },
-    { key: 'projectAdZones', title: '项目广告校区', items: zones.value.projectAdZones },
+    { key: 'taskOriginZones', title: '跑腿取件校区分布', items: zones.value.taskOriginZones },
+    { key: 'taskDestinationZones', title: '跑腿送达校区分布', items: zones.value.taskDestinationZones },
+    { key: 'taskRoutes', title: '高频跨校区跑腿路线', items: zones.value.taskRoutes },
+    { key: 'goodsZones', title: '二手闲置所在校区', items: zones.value.goodsZones },
+    { key: 'shopZones', title: '学生店铺常驻校区', items: zones.value.shopZones },
+    { key: 'projectAdZones', title: '项目展示活跃校区', items: zones.value.projectAdZones },
   ]
 })
 
@@ -343,20 +388,20 @@ async function loadProjectAds() {
 }
 
 async function approve(row: ProjectAdSummary) {
-  await approveProjectAd(row.id, 4, { note: '内容完整，允许展示' })
-  ElMessage.success('已通过')
+  await approveProjectAd(row.id, 4, { note: '内容完整，准予展示' })
+  ElMessage.success('已通过展示')
   await loadProjectAds()
 }
 
 async function reject(row: ProjectAdSummary) {
-  await rejectProjectAd(row.id, 4, { note: '请补充项目说明或联系方式' })
-  ElMessage.success('已拒绝')
+  await rejectProjectAd(row.id, 4, { note: '请补充项目说明或有效联络方式' })
+  ElMessage.success('已退回修改')
   await loadProjectAds()
 }
 
 async function feature(row: ProjectAdSummary) {
   await featureProjectAd(row.id, 4, { featuredPriority: 10 })
-  ElMessage.success('已设为精选')
+  ElMessage.success('已设为广场精选')
   await loadProjectAds()
 }
 
@@ -367,7 +412,7 @@ async function unfeature(row: ProjectAdSummary) {
 }
 
 async function block(row: ProjectAdSummary) {
-  await blockProjectAd(row.id, 4, { note: '运营后台下架' })
+  await blockProjectAd(row.id, 4, { note: '站务巡查下架' })
   ElMessage.success('已下架')
   await loadProjectAds()
 }

@@ -5,8 +5,9 @@ import {
   listAdminPaymentCallbackEvents,
   listAdminPaymentOrders,
   type PaymentCallbackEventSummary,
-  type PaymentOrderSummary
+  type PaymentOrderSummary,
 } from '../api/campushub'
+import { formatChannel, formatStatus, formatTargetType, statusTone } from '../utils/display'
 import EmptyState from '../components/common/EmptyState.vue'
 
 const loading = ref(false)
@@ -19,12 +20,12 @@ async function loadPayments() {
   try {
     const [orderData, eventData] = await Promise.all([
       listAdminPaymentOrders(status.value || undefined),
-      listAdminPaymentCallbackEvents()
+      listAdminPaymentCallbackEvents(),
     ])
     orders.value = orderData
     events.value = eventData
   } catch (error) {
-    ElMessage.error('支付监控数据加载失败')
+    ElMessage.error('收银台监控数据加载失败')
   } finally {
     loading.value = false
   }
@@ -37,47 +38,73 @@ onMounted(loadPayments)
   <section class="page-stack">
     <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Operations Console</p>
-        <h2>支付监控</h2>
-        <p>查看服务费与身份保证金支付订单，保持低影响排查并追溯回调处理状态。</p>
+        <p class="eyebrow">站务中枢 · 收银台账务对账</p>
+        <h2>支付监控中心</h2>
+        <p>核查支付宝收银台充值单、身份保证金与平台服务费订单的入账状态及回调日志。</p>
       </div>
       <div class="payment-actions">
-        <el-select v-model="status" clearable placeholder="全部状态" style="width: 180px" @change="loadPayments">
-          <el-option label="待支付" value="PENDING" />
-          <el-option label="已支付" value="PAID" />
-          <el-option label="失败" value="FAILED" />
-          <el-option label="已过期" value="EXPIRED" />
+        <el-select v-model="status" clearable placeholder="全部订单状态" style="width: 180px" @change="loadPayments">
+          <el-option label="待完成支付" value="PENDING" />
+          <el-option label="已支付到账" value="PAID" />
+          <el-option label="支付未完成" value="FAILED" />
+          <el-option label="订单已过期" value="EXPIRED" />
         </el-select>
-        <el-button @click="loadPayments">刷新</el-button>
+        <el-button @click="loadPayments">刷新对账</el-button>
       </div>
     </div>
 
     <el-tabs class="tabs-surface premium-panel">
-      <el-tab-pane label="支付订单">
-        <EmptyState v-if="!orders.length && !loading" title="暂无支付订单" description="创建服务费或身份保证金支付单后会出现在这里。" />
-        <el-table v-else v-loading="loading" :data="orders" class="mobile-safe-table">
-          <el-table-column prop="orderNo" label="本地订单号" min-width="180" />
-          <el-table-column prop="businessType" label="业务类型" min-width="120" />
-          <el-table-column prop="payerNickname" label="付款用户" min-width="120" />
-          <el-table-column prop="amount" label="金额" min-width="90" />
-          <el-table-column prop="provider" label="Provider" min-width="130" />
-          <el-table-column prop="status" label="状态" min-width="100" />
-          <el-table-column prop="expiresAt" label="过期时间" min-width="170" />
-          <el-table-column prop="failureReason" label="失败原因" min-width="180" />
+      <el-tab-pane label="收银台订单流水">
+        <EmptyState v-if="!orders.length && !loading" title="暂无收银台订单" description="用户发起充值、缴纳保证金或支付服务费后会在此生成对账单。" />
+        <el-table v-else v-loading="loading" :data="orders" class="mobile-safe-table" stripe>
+          <el-table-column prop="orderNo" label="收银台订单号" min-width="180">
+            <template #default="{ row }"><span class="mono-num">{{ row.orderNo }}</span></template>
+          </el-table-column>
+          <el-table-column prop="businessType" label="关联业务" min-width="130">
+            <template #default="{ row }">{{ formatTargetType(row.businessType) }}</template>
+          </el-table-column>
+          <el-table-column prop="payerNickname" label="付款同学" min-width="120" />
+          <el-table-column prop="amount" label="金额" min-width="100">
+            <template #default="{ row }"><strong class="mono-num">¥{{ row.amount }}</strong></template>
+          </el-table-column>
+          <el-table-column prop="provider" label="收款通道" min-width="140">
+            <template #default="{ row }">{{ formatChannel(row.provider) }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" min-width="120">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="expiresAt" label="有效截止" min-width="170" />
+          <el-table-column prop="failureReason" label="异常备注" min-width="180" />
         </el-table>
       </el-tab-pane>
 
-      <el-tab-pane label="回调事件">
-        <EmptyState v-if="!events.length && !loading" title="暂无回调事件" description="支付中心回调会记录幂等事件和处理结果。" />
-        <el-table v-else v-loading="loading" :data="events" class="mobile-safe-table">
-          <el-table-column prop="eventId" label="事件 ID" min-width="170" />
-          <el-table-column prop="orderNo" label="订单号" min-width="180" />
-          <el-table-column prop="status" label="状态" min-width="100" />
-          <el-table-column prop="amount" label="金额" min-width="90" />
-          <el-table-column prop="verified" label="已校验" min-width="90" />
-          <el-table-column prop="handled" label="已处理" min-width="90" />
-          <el-table-column prop="failureReason" label="失败原因" min-width="180" />
-          <el-table-column prop="createdAt" label="时间" min-width="170" />
+      <el-tab-pane label="异步回调通知日志">
+        <EmptyState v-if="!events.length && !loading" title="暂无回调通知日志" description="收银台完成支付后的签名核验与入账回调会记录于此。" />
+        <el-table v-else v-loading="loading" :data="events" class="mobile-safe-table" stripe>
+          <el-table-column prop="eventId" label="回调事件号" min-width="170">
+            <template #default="{ row }"><span class="mono-num">{{ row.eventId }}</span></template>
+          </el-table-column>
+          <el-table-column prop="orderNo" label="关联订单号" min-width="180">
+            <template #default="{ row }"><span class="mono-num">{{ row.orderNo }}</span></template>
+          </el-table-column>
+          <el-table-column prop="status" label="通知状态" min-width="120">
+            <template #default="{ row }">
+              <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="amount" label="金额" min-width="100">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.amount }}</span></template>
+          </el-table-column>
+          <el-table-column prop="verified" label="签名核验" min-width="100">
+            <template #default="{ row }">{{ row.verified ? '已通过' : '未通过' }}</template>
+          </el-table-column>
+          <el-table-column prop="handled" label="入账处理" min-width="100">
+            <template #default="{ row }">{{ row.handled ? '已入账' : '待处理' }}</template>
+          </el-table-column>
+          <el-table-column prop="failureReason" label="异常说明" min-width="180" />
+          <el-table-column prop="createdAt" label="接收时间" min-width="170" />
         </el-table>
       </el-tab-pane>
     </el-tabs>

@@ -2,190 +2,254 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Wallet Center</p>
-        <h2>钱包与充值</h2>
-        <p>支付宝充值通过 API-Transfer-Station 支付中心创建真实支付链接；微信充值进入人工审核，请备注校园邮箱或 CampusHub 用户名。</p>
+        <p class="eyebrow">我的书院 · 资金与账本</p>
+        <h2>钱包与充值中心</h2>
+        <p>支付宝充值通过收银台实时到账；微信扫码充值免手续费，支付时备注你的科大邮箱或用户名即可由站务核对入账。</p>
       </div>
-      <el-button :loading="loading" @click="loadWallet">刷新</el-button>
+      <el-button :loading="loading" @click="loadWallet">刷新账本</el-button>
     </div>
 
-    <div v-if="account" class="wallet-strip">
+    <div v-if="account" class="wallet-strip spotlight-surface">
       <div>
-        <span>账户</span>
+        <span>持卡校友</span>
         <strong>{{ account.nickname }}</strong>
       </div>
       <div>
         <span>可用余额</span>
-        <strong>¥{{ account.balance }}</strong>
+        <strong class="mono-num">¥{{ account.balance }}</strong>
       </div>
       <div>
-        <span>冻结金额</span>
-        <strong>¥{{ account.frozenBalance }}</strong>
+        <span>担保 / 提现冻结中</span>
+        <strong class="mono-num">¥{{ account.frozenBalance }}</strong>
       </div>
       <div>
-        <span>状态</span>
-        <el-tag type="success">{{ account.status }}</el-tag>
+        <span>账户状态</span>
+        <div>
+          <el-tag :type="statusTone(account.status)" effect="dark">{{ formatStatus(account.status) }}</el-tag>
+        </div>
       </div>
     </div>
 
-    <el-tabs class="wallet-tabs">
-      <el-tab-pane label="充值">
-        <div class="payment-actions">
-          <el-button type="primary" @click="rechargeDialogVisible = true">发起充值</el-button>
+    <el-tabs class="wallet-tabs tabs-surface premium-panel">
+      <el-tab-pane label="余额充值">
+        <div class="payment-actions" style="margin-bottom: 14px">
+          <el-button type="primary" @click="rechargeDialogVisible = true">发起余额充值</el-button>
         </div>
-        <EmptyState v-if="!loading && recharges.length === 0" eyebrow="Recharge" title="暂无充值记录" description="支付宝充值会创建支付中心订单，微信充值进入人工审核。" compact />
+        <EmptyState
+          v-if="!loading && recharges.length === 0"
+          eyebrow="余额充值"
+          title="还没有充值记录"
+          description="支持支付宝实时到账或微信扫码免手续费充值。"
+          compact
+        />
         <div v-else class="responsive-card-grid">
           <article v-for="item in recharges" :key="item.id" class="info-card">
-            <strong>{{ item.channel }} 充值 ¥{{ item.amount }}</strong>
-            <p>实际支付：¥{{ item.payAmount }}，手续费：¥{{ item.channelFee }}</p>
-            <p>状态：{{ item.status }}</p>
-            <p v-if="item.paymentOrderNo">支付单：{{ item.paymentOrderNo }}</p>
-            <p v-if="item.paymentProvider">支付渠道：{{ item.paymentProvider }}</p>
+            <div class="panel-topline">
+              <strong>{{ formatChannel(item.channel) }} · <span class="mono-num">¥{{ item.amount }}</span></strong>
+              <el-tag :type="statusTone(item.status)" size="small">{{ formatStatus(item.status) }}</el-tag>
+            </div>
+            <p>实付金额：<span class="mono-num">¥{{ item.payAmount }}</span>（通道手续费：<span class="mono-num">¥{{ item.channelFee }}</span>）</p>
+            <p v-if="item.paymentOrderNo">收银台单号：<span class="mono-num">{{ item.paymentOrderNo }}</span></p>
+            <p v-if="item.paymentProvider">收款通道：{{ formatChannel(item.paymentProvider) }}</p>
             <div class="payment-actions inline-card-actions">
-              <el-button v-if="item.paymentPayUrl && item.status !== 'PAID'" size="small" type="primary" @click="openRechargePayUrl(item)">继续支付</el-button>
-              <el-button v-if="item.wechatQrUrl && item.status === 'PENDING_REVIEW'" size="small" @click="showWechatQr(item)">查看微信收款码</el-button>
+              <el-button v-if="item.paymentPayUrl && item.status !== 'PAID'" size="small" type="primary" @click="openRechargePayUrl(item)">
+                继续支付
+              </el-button>
+              <el-button v-if="item.wechatQrUrl && item.status === 'PENDING_REVIEW'" size="small" @click="showWechatQr(item)">
+                查看微信收款码
+              </el-button>
             </div>
           </article>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="提现">
-        <div class="payment-actions">
-          <el-button @click="withdrawalDialogVisible = true">申请提现</el-button>
+      <el-tab-pane label="余额提现">
+        <div class="payment-actions" style="margin-bottom: 14px">
+          <el-button @click="withdrawalDialogVisible = true">申请余额提现</el-button>
         </div>
-        <EmptyState v-if="!loading && withdrawals.length === 0" eyebrow="Withdraw" title="暂无提现申请" description="提现提交后会冻结余额，等待管理员人工审核和打款。" compact />
+        <EmptyState
+          v-if="!loading && withdrawals.length === 0"
+          eyebrow="余额提现"
+          title="暂无提现申请"
+          description="提交提现申请后将冻结对应余额，由站务核对无误后人工转账至你的收款账户。"
+          compact
+        />
         <div v-else class="responsive-card-grid">
           <article v-for="item in withdrawals" :key="item.id" class="info-card">
-            <strong>{{ item.channel }} 提现 ¥{{ item.amount }}</strong>
-            <p>状态：{{ item.status }}</p>
-            <p v-if="item.accountSnapshot">账号摘要：{{ item.accountSnapshot }}</p>
-            <p v-if="item.reviewNote">审核备注：{{ item.reviewNote }}</p>
+            <div class="panel-topline">
+              <strong>{{ formatChannel(item.channel) }}提现 · <span class="mono-num">¥{{ item.amount }}</span></strong>
+              <el-tag :type="statusTone(item.status)" size="small">{{ formatStatus(item.status) }}</el-tag>
+            </div>
+            <p v-if="item.accountSnapshot">收款账号备注：{{ item.accountSnapshot }}</p>
+            <p v-if="item.reviewNote">站务处理说明：{{ item.reviewNote }}</p>
           </article>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="冻结明细">
-        <EmptyState v-if="!loading && frozenItems.length === 0" eyebrow="Frozen" title="暂无冻结明细" description="线上托管交易和提现冻结会显示在这里。" compact />
+      <el-tab-pane label="冻结资金明细">
+        <EmptyState
+          v-if="!loading && frozenItems.length === 0"
+          eyebrow="冻结明细"
+          title="当前没有冻结中的资金"
+          description="当你发起二手商品线上担保交易或申请余额提现时，暂冻金额会列在这里。"
+          compact
+        />
         <div v-else class="responsive-card-grid">
           <article v-for="item in frozenItems" :key="item.id" class="info-card">
-            <strong>{{ item.businessType }} 冻结 ¥{{ item.amount }}</strong>
-            <p>状态：{{ item.status }}</p>
+            <div class="panel-topline">
+              <strong>{{ formatTargetType(item.businessType) }} · <span class="mono-num">¥{{ item.amount }}</span></strong>
+              <el-tag :type="statusTone(item.status)" size="small">{{ formatStatus(item.status) }}</el-tag>
+            </div>
             <p>{{ item.remark }}</p>
           </article>
         </div>
       </el-tab-pane>
     </el-tabs>
 
-    <el-card shadow="never">
-      <template #header>服务费与支付订单</template>
+    <el-card shadow="never" class="premium-panel">
+      <template #header>平台服务费账单</template>
       <EmptyState
         v-if="!loading && serviceFees.length === 0"
-        eyebrow="Service Fees"
-        title="暂无服务费记录"
-        description="平台服务费和支付中心订单会显示在这里。"
+        eyebrow="服务费账单"
+        title="暂无待结或历史服务费"
+        description="交易产生的轻量平台服务费账单会记录于此。"
         compact
       />
       <div v-else class="mobile-table-wrapper">
         <el-table v-loading="loading" :data="serviceFees" stripe class="data-table">
-          <el-table-column prop="feeNo" label="服务费单号" min-width="170" />
-          <el-table-column prop="targetType" label="业务类型" width="150" />
-          <el-table-column prop="amount" label="金额" width="100">
-            <template #default="{ row }">¥{{ row.amount }}</template>
+          <el-table-column prop="feeNo" label="账单编号" min-width="170">
+            <template #default="{ row }"><span class="mono-num">{{ row.feeNo }}</span></template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100" />
-          <el-table-column prop="paymentProvider" label="Provider" width="130" />
-          <el-table-column prop="paymentOrderNo" label="支付订单" min-width="180" />
-          <el-table-column prop="paidAt" label="支付时间" min-width="170" />
-          <el-table-column label="操作" width="180">
+          <el-table-column prop="targetType" label="关联业务" width="150">
+            <template #default="{ row }">{{ formatTargetType(row.targetType) }}</template>
+          </el-table-column>
+          <el-table-column prop="amount" label="金额" width="110">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.amount }}</span></template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="120">
             <template #default="{ row }">
-              <el-button v-if="row.status !== 'PAID'" size="small" :loading="payingId === row.id" @click="payFee(row.id)">
-                创建支付单
+              <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="paymentProvider" label="支付通道" width="140">
+            <template #default="{ row }">{{ formatChannel(row.paymentProvider) }}</template>
+          </el-table-column>
+          <el-table-column prop="paymentOrderNo" label="收银台单号" min-width="180">
+            <template #default="{ row }"><span class="mono-num">{{ row.paymentOrderNo || '—' }}</span></template>
+          </el-table-column>
+          <el-table-column prop="paidAt" label="完成时间" min-width="170" />
+          <el-table-column label="操作" width="160">
+            <template #default="{ row }">
+              <el-button v-if="row.status !== 'PAID'" size="small" type="primary" plain :loading="payingId === row.id" @click="payFee(row.id)">
+                前往支付
               </el-button>
-              <el-tag v-else type="success">已支付</el-tag>
+              <el-tag v-else type="success" size="small">已结清</el-tag>
             </template>
           </el-table-column>
         </el-table>
       </div>
     </el-card>
 
-    <EmptyState
-      v-if="!loading && flows.length === 0"
-      eyebrow="Ledger"
-      title="暂无钱包流水"
-      description="充值、提现、冻结、划转和服务费变动会显示在这里。"
-    />
-    <div v-else class="mobile-table-wrapper">
-      <el-table v-loading="loading" :data="flows" stripe class="data-table">
-        <el-table-column prop="flowNo" label="流水号" min-width="180" />
-        <el-table-column prop="flowType" label="类型" min-width="130" />
-        <el-table-column prop="direction" label="方向" width="90" />
-        <el-table-column prop="businessType" label="业务" width="140" />
-        <el-table-column prop="amount" label="金额" width="110">
-          <template #default="{ row }">¥{{ row.amount }}</template>
-        </el-table-column>
-        <el-table-column prop="availableBalanceAfter" label="可用余额" width="120">
-          <template #default="{ row }">¥{{ row.availableBalanceAfter ?? row.balanceAfter }}</template>
-        </el-table-column>
-        <el-table-column prop="frozenBalanceAfter" label="冻结余额" width="120">
-          <template #default="{ row }">¥{{ row.frozenBalanceAfter ?? 0 }}</template>
-        </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="180" />
-      </el-table>
-    </div>
+    <el-card shadow="never" class="premium-panel">
+      <template #header>钱包收支流水</template>
+      <EmptyState
+        v-if="!loading && flows.length === 0"
+        eyebrow="收支账本"
+        title="暂无钱包流水记录"
+        description="每一笔充值、提现、担保冻结与放款都会清晰记录在账本中。"
+        compact
+      />
+      <div v-else class="mobile-table-wrapper">
+        <el-table v-loading="loading" :data="flows" stripe class="data-table">
+          <el-table-column prop="flowNo" label="流水单号" min-width="180">
+            <template #default="{ row }"><span class="mono-num">{{ row.flowNo }}</span></template>
+          </el-table-column>
+          <el-table-column prop="flowType" label="账务类型" min-width="140">
+            <template #default="{ row }">{{ formatFlowType(row.flowType) }}</template>
+          </el-table-column>
+          <el-table-column prop="direction" label="收支方向" width="100">
+            <template #default="{ row }">{{ formatDirection(row.direction) }}</template>
+          </el-table-column>
+          <el-table-column prop="businessType" label="所属板块" width="140">
+            <template #default="{ row }">{{ formatTargetType(row.businessType) }}</template>
+          </el-table-column>
+          <el-table-column prop="amount" label="变动金额" width="120">
+            <template #default="{ row }"><strong class="mono-num">¥{{ row.amount }}</strong></template>
+          </el-table-column>
+          <el-table-column prop="availableBalanceAfter" label="变动后可用" width="130">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.availableBalanceAfter ?? row.balanceAfter }}</span></template>
+          </el-table-column>
+          <el-table-column prop="frozenBalanceAfter" label="变动后冻结" width="130">
+            <template #default="{ row }"><span class="mono-num">¥{{ row.frozenBalanceAfter ?? 0 }}</span></template>
+          </el-table-column>
+          <el-table-column prop="remark" label="账务备注" min-width="180" />
+        </el-table>
+      </div>
+    </el-card>
 
-    <el-dialog v-model="rechargeDialogVisible" title="钱包充值" width="420px">
+    <el-dialog v-model="rechargeDialogVisible" title="发起钱包充值" width="440px">
       <el-form label-width="90px" class="dialog-form">
-        <el-form-item label="渠道">
-          <el-select v-model="rechargeForm.channel">
-            <el-option label="支付宝实时到账（0.6% 手续费）" value="ALIPAY" />
-            <el-option label="微信人工审核（免手续费）" value="WECHAT" />
+        <el-form-item label="充值方式">
+          <el-select v-model="rechargeForm.channel" class="wide">
+            <el-option label="支付宝收银台（实时到账，0.6% 通道费）" value="ALIPAY" />
+            <el-option label="微信扫码转账（免手续费，站务人工核对）" value="WECHAT" />
           </el-select>
         </el-form-item>
-        <el-form-item label="金额">
-          <el-input-number v-model="rechargeForm.amount" :min="0.01" :precision="2" />
+        <el-form-item label="充值金额">
+          <el-input-number v-model="rechargeForm.amount" :min="0.01" :precision="2" class="wide" />
         </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="rechargeForm.remark" />
+        <el-form-item label="附言备注">
+          <el-input v-model="rechargeForm.remark" placeholder="选填，可填写用途说明" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="rechargeDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitRecharge">提交</el-button>
+        <el-button type="primary" @click="submitRecharge">确认发起充值</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="wechatQrDialogVisible" title="微信扫码充值" width="420px">
+    <el-dialog v-model="wechatQrDialogVisible" title="微信扫码免手续费充值" width="420px">
       <div v-if="wechatRecharge" class="wechat-qr-box">
-        <p>充值单号：{{ wechatRecharge.rechargeNo }}</p>
-        <p>金额：¥{{ wechatRecharge.amount }}</p>
+        <p>充值单号：<span class="mono-num">{{ wechatRecharge.rechargeNo }}</span></p>
+        <p>应付金额：<strong class="mono-num">¥{{ wechatRecharge.amount }}</strong></p>
         <img v-if="wechatRecharge.wechatQrUrl" :src="wechatRecharge.wechatQrUrl" alt="微信收款二维码" class="wechat-qr-image" />
-        <el-alert type="info" show-icon :title="wechatRecharge.wechatNote || '扫码支付后请备注你的校园邮箱或 CampusHub 用户名，管理员审核后入账。'" />
+        <el-alert
+          type="info"
+          show-icon
+          :closable="false"
+          :title="wechatRecharge.wechatNote || '扫码支付时请务必在付款备注中填写你的科大邮箱或 CampusHub 用户名，站务同学核对后将尽快为你入账。'"
+        />
       </div>
       <template #footer>
-        <el-button type="primary" @click="wechatQrDialogVisible = false">我知道了</el-button>
+        <el-button type="primary" @click="wechatQrDialogVisible = false">我已完成扫码备注</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="withdrawalDialogVisible" title="申请提现" width="420px">
-      <el-alert type="warning" show-icon title="Phase 9 提现为人工审核与人工打款，不会自动调用外部转账通道。" />
+    <el-dialog v-model="withdrawalDialogVisible" title="申请余额提现" width="440px">
+      <el-alert
+        type="warning"
+        show-icon
+        :closable="false"
+        title="提现提交后将暂冻对应余额，由站务同学核对无误后人工转账至你指定的收款方式。"
+      />
       <el-form label-width="90px" class="dialog-form">
-        <el-form-item label="渠道">
-          <el-select v-model="withdrawalForm.channel">
-            <el-option label="微信" value="WECHAT" />
-            <el-option label="支付宝" value="ALIPAY" />
-            <el-option label="线下" value="OFFLINE" />
+        <el-form-item label="收款渠道">
+          <el-select v-model="withdrawalForm.channel" class="wide">
+            <el-option label="微信收款" value="WECHAT" />
+            <el-option label="支付宝收款" value="ALIPAY" />
+            <el-option label="校内当面结算" value="OFFLINE" />
           </el-select>
         </el-form-item>
-        <el-form-item label="金额">
-          <el-input-number v-model="withdrawalForm.amount" :min="0.01" :precision="2" />
+        <el-form-item label="提现金额">
+          <el-input-number v-model="withdrawalForm.amount" :min="0.01" :precision="2" class="wide" />
         </el-form-item>
-        <el-form-item label="账号摘要">
-          <el-input v-model="withdrawalForm.accountSnapshot" placeholder="只填写昵称或尾号，不填写敏感完整凭证" />
+        <el-form-item label="收款说明">
+          <el-input v-model="withdrawalForm.accountSnapshot" placeholder="填写收款账号昵称或尾号提示，请勿填写任何密码" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="withdrawalDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitWithdrawal">提交</el-button>
+        <el-button type="primary" @click="submitWithdrawal">提交提现申请</el-button>
       </template>
     </el-dialog>
   </section>
@@ -213,6 +277,7 @@ import {
 } from '@/api/campushub'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
+import { formatChannel, formatDirection, formatFlowType, formatStatus, formatTargetType, statusTone } from '@/utils/display'
 import { getRechargePaymentAction } from './walletPaymentActions'
 
 const auth = useAuthStore()
@@ -277,7 +342,7 @@ async function payFee(feeId: number) {
     }
     await loadWallet()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '本地支付失败')
+    ElMessage.error(error instanceof Error ? error.message : '支付单创建失败')
   } finally {
     payingId.value = undefined
   }
@@ -291,7 +356,7 @@ async function submitRecharge() {
       return
     }
     const result = await createWalletRecharge(userId, rechargeForm)
-    ElMessage.success(result.channel === 'WECHAT' ? '微信充值已提交人工审核' : '充值支付单已创建')
+    ElMessage.success(result.channel === 'WECHAT' ? '微信充值单已生成，请扫码并备注邮箱或用户名' : '支付宝收银台订单已创建')
     rechargeDialogVisible.value = false
     handleRechargePaymentAction(result)
     await loadWallet()
@@ -331,7 +396,7 @@ async function submitWithdrawal() {
       return
     }
     await createWalletWithdrawal(userId, withdrawalForm)
-    ElMessage.success('提现申请已提交，金额已冻结等待审核')
+    ElMessage.success('提现申请已提交，对应余额已暂冻等待站务核对打款')
     withdrawalDialogVisible.value = false
     await loadWallet()
   } catch (error) {
@@ -368,6 +433,6 @@ onMounted(loadWallet)
   width: min(260px, 80vw);
   max-width: 100%;
   border-radius: 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-subtle);
 }
 </style>
