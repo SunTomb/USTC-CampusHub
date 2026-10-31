@@ -37,7 +37,7 @@ public class GoodsController {
 
     @GetMapping("/{id}")
     public ApiResponse<GoodsDetailSummary> getGoods(@PathVariable Long id, @RequestParam(required = false) Long viewerId) {
-        Long effectiveViewerId = currentUserService.optionalUserId().orElse(viewerId);
+        Long effectiveViewerId = currentUserService.optionalUserId().orElse(null);
         return ApiResponse.ok(goodsService.getDetail(id, effectiveViewerId));
     }
 

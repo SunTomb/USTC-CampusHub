@@ -22,6 +22,10 @@ public class UserRoleService {
                 userId);
     }
 
+    public boolean hasRole(Long userId, String roleCode) {
+        return findRoleCodes(userId).stream().anyMatch(roleCode::equals);
+    }
+
     public void assignRole(Long userId, String roleCode) {
         Long roleId = jdbcTemplate.query(
                 "SELECT id FROM roles WHERE code = ?",

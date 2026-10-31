@@ -10,9 +10,9 @@
     </div>
 
     <LockedState
-      v-if="auth.currentUser && !auth.canAccessIdentity('shopMerchant') && !auth.isAdmin"
+      v-if="auth.currentUser && !auth.canAccessIdentity('shopMerchant')"
       title="需先开通「技能店主理人」身份"
-      description="缴纳 20 元保证金并通过站务核验后，即可开启个人小店、上架服务项目并承接校园预约。"
+      description="阅读技能店主理人服务协议并提交站务核验后，即可申请开启个人小店、上架服务项目并承接校园预约。"
       primary-text="去申请主理人身份"
       primary-to="/roles"
       secondary-text="返回学生店铺"

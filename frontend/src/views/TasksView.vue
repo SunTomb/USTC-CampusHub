@@ -81,7 +81,7 @@
           <div class="card-actions">
             <el-button v-if="task.acceptanceMode === 'GRAB'" type="primary" @click="grab(task.id)">立即抢单</el-button>
             <el-button v-else type="primary" @click="openApply(task)">报名接单</el-button>
-            <el-button plain @click="$router.push(`/tasks/${task.id}/workspace`)">履约台</el-button>
+            <el-button plain @click="openWorkspace(task.id)">履约台</el-button>
           </div>
         </div>
       </article>
@@ -280,7 +280,7 @@ async function publish() {
 }
 
 async function grab(taskId: number) {
-  if (!requireLogin()) return
+  if (!requireRunner()) return
   const user = auth.currentUser
   if (!user) return
   await grabRunnerTask(taskId, user.id)
@@ -289,17 +289,36 @@ async function grab(taskId: number) {
 }
 
 function openApply(task: RewardTaskSummary) {
-  if (!requireLogin()) return
+  if (!requireRunner()) return
   applyTaskId.value = task.id
   applyMessage.value = ''
   applyOpen.value = true
 }
 
 async function apply() {
-  if (!applyTaskId.value || !auth.currentUser) return
+  if (!requireRunner() || !applyTaskId.value || !auth.currentUser) return
   await applyRunnerTask(applyTaskId.value, auth.currentUser.id, { message: applyMessage.value })
   ElMessage.success('接单申请已发送，请留意站内通知')
   applyOpen.value = false
+}
+
+function openWorkspace(taskId: number) {
+  if (!requireRunner()) return
+  router.push(`/tasks/${taskId}/workspace`)
+}
+
+function requireRunner() {
+  if (!auth.currentUser) {
+    ElMessage.warning('请先登录后再接单或查看履约台')
+    router.push('/auth')
+    return false
+  }
+  if (!auth.canAccessIdentity('runner')) {
+    ElMessage.warning('请先阅读并同意顺路跑腿服务协议')
+    router.push('/roles')
+    return false
+  }
+  return true
 }
 
 function requireLogin() {

@@ -39,7 +39,7 @@ export const navItems: NavItem[] = [
   {
     path: '/',
     label: '首页',
-    description: '科大各校区好物、急单与同窗服务总览',
+    description: '校园各校区好物、急单与同窗服务总览',
     group: 'public',
     audiences: ['guest', 'student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin', 'tradeAdmin', 'showcaseAdmin', 'masterAdmin'],
     icon: 'HomeFilled',
@@ -95,7 +95,7 @@ export const navItems: NavItem[] = [
     path: '/auth',
     label: '登录注册',
     mobileLabel: '登录',
-    description: '使用科大邮箱验证加入校集社区',
+    description: '使用校园邮箱验证加入蜗壳社区',
     group: 'public',
     audiences: ['guest'],
     icon: 'UserFilled',
@@ -113,7 +113,7 @@ export const navItems: NavItem[] = [
   {
     path: '/wallet',
     label: '钱包中心',
-    description: '管理账户余额、充值、提现与账单明细',
+    description: '查看账户与历史记录',
     group: 'account',
     audiences: ['student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin', 'tradeAdmin', 'showcaseAdmin', 'masterAdmin'],
     icon: 'Wallet',
@@ -158,7 +158,7 @@ export const navItems: NavItem[] = [
     requiresAuth: true,
     requiredRole: 'goodsPublisher',
     lockedTitle: '需要开通二手发布者身份',
-    lockedDescription: '缴纳 10 元诚信保证金即可实时开通闲置发布权限。',
+    lockedDescription: '阅读闲置发布与交易规范后自动开通发布权限。',
     unlockRoute: '/roles',
   },
   {
@@ -171,7 +171,7 @@ export const navItems: NavItem[] = [
     requiresAuth: true,
     requiredRole: 'shopMerchant',
     lockedTitle: '需要开通店铺商家身份',
-    lockedDescription: '缴纳 20 元保证金并通过站务核验后即可开店接单。',
+    lockedDescription: '阅读技能店主理人协议并提交站务核验后即可申请开店。',
     unlockRoute: '/roles',
   },
   {
@@ -243,7 +243,7 @@ export const navItems: NavItem[] = [
   {
     path: '/admin/wallet',
     label: '钱包运营',
-    description: '人工核对微信扫码充值与余额提现申请',
+    description: '只读查看历史充值、提现与钱包流水',
     group: 'admin',
     audiences: ['admin', 'masterAdmin'],
     icon: 'Money',
@@ -256,12 +256,14 @@ export function canSeeNavItem(profile: IdentityProfile, item: NavItem) {
   return item.audiences.some((audience) => identities.has(audience))
 }
 
-export function getVisibleNavGroups(profile: IdentityProfile): NavGroup[] {
+export function getVisibleNavGroups(profile: IdentityProfile, financialEnabled = false): NavGroup[] {
   return groupOrder
     .map((groupKey) => ({
       key: groupKey,
       label: navGroupLabels[groupKey],
-      items: navItems.filter((item) => item.group === groupKey && canSeeNavItem(profile, item)),
+      items: navItems.filter((item) => item.group === groupKey
+        && (item.path !== '/wallet' || financialEnabled)
+        && canSeeNavItem(profile, item)),
     }))
     .filter((group) => group.items.length > 0)
 }

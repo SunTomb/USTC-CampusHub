@@ -41,6 +41,7 @@ public class ModerationController {
 
     @GetMapping("/reviews")
     public ApiResponse<List<ReviewRecordSummary>> listReviews() {
+        currentUserService.requireAdminId();
         List<ReviewRecordSummary> reviews = reviewRecordRepository.findAll().stream()
                 .map(ReviewRecordSummary::from)
                 .toList();
@@ -49,6 +50,7 @@ public class ModerationController {
 
     @GetMapping("/reports")
     public ApiResponse<List<ReportRecordSummary>> listReports() {
+        currentUserService.requireAdminId();
         List<ReportRecordSummary> reports = reportRecordRepository.findAll().stream()
                 .map(ReportRecordSummary::from)
                 .toList();
@@ -63,6 +65,7 @@ public class ModerationController {
 
     @GetMapping("/violations")
     public ApiResponse<List<ViolationRecordSummary>> listViolations() {
+        currentUserService.requireAdminId();
         List<ViolationRecordSummary> violations = violationRecordRepository.findAll().stream()
                 .map(ViolationRecordSummary::from)
                 .toList();
@@ -71,6 +74,7 @@ public class ModerationController {
 
     @GetMapping("/safety-logs")
     public ApiResponse<List<SafetyLogSummary>> listSafetyLogs() {
+        currentUserService.requireAdminId();
         List<SafetyLogSummary> logs = safetyLogRepository.findAll().stream()
                 .map(SafetyLogSummary::from)
                 .toList();

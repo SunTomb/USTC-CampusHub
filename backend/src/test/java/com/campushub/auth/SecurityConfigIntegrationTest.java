@@ -12,12 +12,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = "campushub.mail.enabled=false")
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Transactional
 class SecurityConfigIntegrationTest {
 
     @Autowired
@@ -25,6 +27,12 @@ class SecurityConfigIntegrationTest {
 
     @Autowired
     private JwtTokenService jwtTokenService;
+
+    @Autowired
+    private com.campushub.user.UserRepository users;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder encoder;
 
     @Test
     void allowsAnonymousPublicReadAndRejectsAnonymousWrite() throws Exception {
@@ -39,9 +47,12 @@ class SecurityConfigIntegrationTest {
 
     @Test
     void loginAcceptsEmailAsIdentifier() throws Exception {
+        var fixture = users.findById(1L).orElseThrow();
+        fixture.resetPasswordHash(encoder.encode("password123"));
+        users.saveAndFlush(fixture);
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"alice@example.edu.cn\",\"password\":\"password123\"}"))
+                        .content("{\"username\":\"alice@campus.example\",\"password\":\"password123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.user.username").value("alice"));

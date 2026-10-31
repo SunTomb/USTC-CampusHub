@@ -24,6 +24,10 @@ public class ServiceOrderController {
 
     @GetMapping
     public ApiResponse<List<ServiceOrderSummary>> listOrders() {
+        currentUserService.requireUserId();
+        if (!currentUserService.isShowcaseReader()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
         return ApiResponse.ok(shopService.listAllOrders());
     }
 

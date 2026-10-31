@@ -60,6 +60,7 @@ public class UserController {
 
     @GetMapping
     public ApiResponse<List<UserSummary>> listUsers() {
+        currentUserService.requireAdminId();
         List<UserSummary> users = userRepository.findAll().stream()
                 .map(UserSummary::from)
                 .toList();
@@ -68,6 +69,11 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ApiResponse<UserSummary> getUser(@PathVariable Long id) {
+        Long currentUserId = currentUserService.requireUserId();
+        if (!currentUserId.equals(id) && !currentUserService.isAdmin()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("user not found"));
         return ApiResponse.ok(UserSummary.from(user));

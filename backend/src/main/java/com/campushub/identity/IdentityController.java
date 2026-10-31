@@ -43,7 +43,11 @@ public class IdentityController {
     public ApiResponse<RoleApplicationSummary> applyRole(
             @PathVariable Long userId,
             @Valid @RequestBody ApplyRoleRequest request) {
-        return ApiResponse.ok(identityService.apply(currentUserService.requireSameUser(userId), request));
+        Long userIdFromSession = currentUserService.requireUserId();
+        if (!userIdFromSession.equals(userId)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "只能由本人确认协议并申请身份");
+        }
+        return ApiResponse.ok(identityService.apply(userIdFromSession, request));
     }
 
     @PostMapping("/roles/{applicationId}/deposit-pay")

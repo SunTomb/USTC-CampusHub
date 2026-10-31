@@ -56,6 +56,9 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void currentUserCanChangePasswordWithCurrentPassword() throws Exception {
+        User fixture = userRepository.findById(1L).orElseThrow();
+        fixture.resetPasswordHash(passwordEncoder.encode("password123"));
+        userRepository.saveAndFlush(fixture);
         String token = jwtTokenService.issueToken(1L, "alice");
 
         mockMvc.perform(put("/api/users/me/password")

@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">闲置上架 · 校友流转</p>
         <h2>上架闲置好物</h2>
-        <p>开通闲置发布者身份（10 元诚信保证金）即可随时发布好物，联系方式默认在买家提交意向后展示。</p>
+        <p>阅读并同意闲置发布与交易规范后即可发布好物，联系方式默认在买家提交意向后展示。</p>
       </div>
       <el-button @click="router.push('/roles')">查看我的身份印章</el-button>
     </div>
@@ -12,9 +12,9 @@
     <el-alert v-if="!auth.currentUser" title="请先登录校园账号后再上架闲置" type="warning" show-icon />
 
     <LockedState
-      v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher') && !auth.isAdmin"
+      v-if="auth.currentUser && !auth.canAccessIdentity('goodsPublisher')"
       title="需先点亮「闲置发布者」身份"
-      description="缴纳 10 元诚信保证金即可实时自动开通，让校内二手交易更真实可靠。"
+      description="请先阅读并同意闲置发布与交易规范，协议确认后即可自动开通发布权限。"
       primary-text="去开通身份"
       primary-to="/roles"
       secondary-text="返回二手市集"

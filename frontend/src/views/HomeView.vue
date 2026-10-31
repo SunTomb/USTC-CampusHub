@@ -4,7 +4,7 @@
       <div class="home-hero spotlight-surface" @mousemove="handleSpotlight">
         <div class="hero-content">
           <div class="hero-eyebrow-bar">
-            <span class="seal-pill">瀚海校集 · USTC</span>
+            <span class="seal-pill">蜗壳 CampusHub</span>
             <span class="hero-zone-ticker">中校区 · 西校区 · 东校区 · 高新园区 · 先研院</span>
           </div>
           <h2>{{ heroTitle }}</h2>
@@ -12,7 +12,7 @@
           <IdentityBadge :identities="identityProfile.identities" />
           <div class="home-hero-actions">
             <el-button v-if="!auth.isAuthenticated" type="primary" size="large" @click="router.push('/auth')">
-              凭科大邮箱加入
+              凭校园邮箱加入
             </el-button>
             <el-button v-else type="primary" size="large" @click="router.push('/tasks')">
               去逛悬赏与市集
@@ -29,14 +29,14 @@
             <span class="passport-label">CAMPUS PASS · 校园通行证</span>
             <h3>{{ auth.isAuthenticated ? identityProfile.displayName : '访客通行卡' }}</h3>
           </div>
-          <span class="passport-emblem">科</span>
+          <span class="passport-emblem">蜗</span>
         </div>
 
         <p class="passport-desc">
           {{
             auth.isAuthenticated
-              ? '已绑定科大校园邮箱，可随时发起同城跑腿、流转闲置或预约同窗技能。'
-              : '完成 @mail.ustc.edu.cn 邮箱验证后，即可解锁实名校友互助与交易权限。'
+              ? '已绑定校园邮箱，可随时发起同城跑腿、流转闲置或预约同窗技能。'
+              : '使用 edu.cn 校园邮箱验证后，可申请身份并参与互助与交易。邮箱验证不等于实名认证。'
           }}
         </p>
 
@@ -56,7 +56,6 @@
             立即验证校园邮箱
           </el-button>
           <div v-else class="passport-quick-links">
-            <el-button size="small" plain @click="router.push('/wallet')">钱包账本</el-button>
             <el-button size="small" plain @click="router.push('/roles')">身份印章</el-button>
             <el-button size="small" plain @click="router.push('/notifications')">站内信箱</el-button>
           </div>
@@ -126,12 +125,12 @@
             <span>你的联系方式不会在大厅公开展示，仅在接单、预约或提交购买意向后向交易对方开放。</span>
           </li>
           <li>
-            <strong>透明账本与灵活交接</strong>
-            <span>支持校友线下面交，也支持二手商品线上余额担保冻结；支付宝充值即时到账，微信扫码由站务同学人工核对。</span>
+            <strong>资金功能暂未开放</strong>
+            <span>当前不创建充值、提现、身份保证金或线上担保业务；线下交接请双方自行核验并保留沟通凭证。</span>
           </li>
           <li>
-            <strong>实名学籍与信用累积</strong>
-            <span>每一次准时送达、如实描述与友善沟通，都会沉淀为你的科大校内信用誉分。</span>
+            <strong>邮箱验证与社区信用</strong>
+            <span>每一次准时送达、如实描述与友善沟通，都有助于维护你的校园信用誉分。</span>
           </li>
         </ul>
       </section>
@@ -153,13 +152,13 @@ const identityProfile = computed(() => auth.identityProfile)
 const heroTitle = computed(() =>
   auth.isAuthenticated
     ? `${identityProfile.value.displayName}，今日校园里有什么新鲜事？`
-    : '中区取件、西区出闲置、高新找队友——科大人自己的校园生活集市',
+    : '中区取件、西区出闲置、高新找队友——同学们自己的校园生活集市',
 )
 
 const heroDescription = computed(() =>
   auth.isAuthenticated
     ? '无论是顺路帮带一份快递、出掉书架上的旧教材，还是在周末接一场校园约拍，这里都为你准备好了趁手的工作台。'
-    : '凭科大邮箱验证加入，把散落在各个微信群与朋友圈里的跑腿互助、闲置流转、技能小店和比赛招募汇聚一处。',
+    : '凭校园邮箱验证加入，把散落在各个微信群与朋友圈里的跑腿互助、闲置流转、技能小店和比赛招募汇聚一处。',
 )
 
 const hasIdentity = (key: string) => identityProfile.value.identities.some((identity) => identity.key === key)
@@ -170,8 +169,8 @@ const capabilityCards = computed(() => [
     title: '顺路跑腿员',
     description: hasIdentity('runner')
       ? '你已开通跑腿接单权限，可随时抢单或申请跨校区代取、代送任务。'
-      : '缴纳 5 元诚信保证金即可实时开通，课间顺路帮同学代取快递、急送材料。',
-    badge: hasIdentity('runner') ? '已开通' : '5元保证金即开',
+      : '阅读跑腿服务协议后自动开通，课间顺路帮同学代取快递、急送材料。',
+    badge: hasIdentity('runner') ? '已开通' : '阅读协议后开通',
     tone: 'green' as const,
     locked: !hasIdentity('runner'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('runner') ? '/tasks' : '/roles',
@@ -182,8 +181,8 @@ const capabilityCards = computed(() => [
     title: '闲置发布者',
     description: hasIdentity('goodsPublisher')
       ? '你已开通闲置发布权限，可随时上架教材、数码、单车与宿舍好物。'
-      : '缴纳 10 元诚信保证金即可实时开通，让闲置好物在同校校友之间安心流转。',
-    badge: hasIdentity('goodsPublisher') ? '已开通' : '10元保证金即开',
+      : '阅读闲置发布与交易规范后自动开通，让闲置好物在同校同学之间安心流转。',
+    badge: hasIdentity('goodsPublisher') ? '已开通' : '阅读协议后开通',
     tone: 'orange' as const,
     locked: !hasIdentity('goodsPublisher'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('goodsPublisher') ? '/goods/publish' : '/roles',
@@ -195,7 +194,7 @@ const capabilityCards = computed(() => [
     description: hasIdentity('shopMerchant')
       ? '你已拥有主理人身份，可管理个人小店、上架服务项目并处理同窗预约。'
       : '适合摄影约拍、电脑清灰、科研绘图、贴膜维修等长期技能服务，经站务核验后开店。',
-    badge: hasIdentity('shopMerchant') ? '营业中' : '20元保证金+核验',
+    badge: hasIdentity('shopMerchant') ? '营业中' : '协议后站务核验',
     tone: 'blue' as const,
     locked: !hasIdentity('shopMerchant'),
     to: !auth.isAuthenticated ? '/auth' : hasIdentity('shopMerchant') ? '/shops/merchant' : '/roles',
@@ -218,20 +217,20 @@ const capabilityCards = computed(() => [
 const nextActions = computed(() => {
   if (!auth.isAuthenticated) {
     return [
-      { title: '验证科大邮箱加入', description: '支持 @mail.ustc.edu.cn 与 @ustc.edu.cn 邮箱一键收码注册。', to: '/auth' },
+      { title: '验证校园邮箱加入', description: '支持 @mail.ustc.edu.cn 与 @ustc.edu.cn 邮箱一键收码注册。', to: '/auth' },
       { title: '先去市集与跑腿大厅逛逛', description: '无需登录即可浏览各校区最新上架的闲置好物与悬赏急单。', to: '/goods' },
-      { title: '了解社区交易与隐私约定', description: '查看联系方式解锁机制、线上余额担保与站内信用规则。', to: '/policy' },
+      { title: '了解社区交易与隐私约定', description: '查看联系方式解锁机制、当面交接建议与站内信用规则。', to: '/policy' },
     ]
   }
   if (hasIdentity('admin')) {
     return [
       { title: '查看全站运营数据与报表', description: '按日期查看各板块转化漏斗、校区活跃度并导出 CSV。', to: '/admin/ops' },
       { title: '处理社区举报与信用记录', description: '及时响应同学反馈，维护清朗守信的校园交易环境。', to: '/admin/governance' },
-      { title: '核对充值与提现申请', description: '处理微信扫码充值入账与余额提现打款。', to: '/admin/wallet' },
+      { title: '查看历史资金记录', description: '查看充值、提现和服务费历史记录；当前不开放新的资金操作。', to: '/admin/wallet' },
     ]
   }
   return [
-    { title: '查看我的钱包与账单', description: '管理可用余额、支付宝实时充值、微信扫码充值与提现。', to: '/wallet' },
+    { title: '了解资金与交接边界', description: '查看当前暂未开放的资金功能说明，以及校内当面交接建议。', to: '/policy' },
     { title: '点亮更多创作者身份', description: '一键开通跑腿接单员、闲置卖家或申请技能店主理人。', to: '/roles' },
     { title: '查收最新站内通知', description: '及时跟进你的接单进度、买家意向与预约提醒。', to: '/notifications' },
   ]

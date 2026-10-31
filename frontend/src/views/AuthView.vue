@@ -1,9 +1,9 @@
 <template>
   <section class="auth-page">
     <div class="auth-copy">
-      <p class="eyebrow">瀚海校集 · 实名学籍准入</p>
-      <h2>凭科大邮箱，走进同窗互助的校园集市</h2>
-      <p>支持使用 CampusHub 用户名或校园邮箱直接登录；首次加入需验证 @mail.ustc.edu.cn / @ustc.edu.cn 邮箱，并填写至少一种校内常用联络方式。</p>
+      <p class="eyebrow">蜗壳 CampusHub · 校园邮箱准入</p>
+      <h2>凭校园邮箱，走进同窗互助的校园集市</h2>
+      <p>支持使用蜗壳用户名或校园邮箱直接登录；首次加入需验证 edu.cn 校园邮箱（如 @mail.ustc.edu.cn / @ustc.edu.cn），并填写至少一种常用联络方式。</p>
       <ul class="auth-feature-list">
         <li>
           <strong>一处连通全校生活</strong>
@@ -14,8 +14,8 @@
           <span>你的微信号或 QQ 不会公开在列表页，仅在接单、预约或提交购买意向后向交易对方开放。</span>
         </li>
         <li>
-          <strong>实名校友信用背书</strong>
-          <span>所有成员均经校园邮箱核验，每一次守信交接都会累积为你的校内信用誉分。</span>
+          <strong>校园邮箱验证</strong>
+          <span>邮箱验证用于确认邮箱可用性，不代表学校认证或交易担保。</span>
         </li>
       </ul>
     </div>
@@ -30,19 +30,19 @@
             <el-form-item label="登录密码">
               <el-input v-model="loginForm.password" type="password" show-password placeholder="请输入密码" />
             </el-form-item>
-            <el-button type="primary" class="wide" size="large" :loading="loading" @click="handleLogin">进入校集</el-button>
+            <el-button type="primary" class="wide" size="large" :loading="loading" @click="handleLogin">进入蜗壳</el-button>
           </el-form>
         </el-tab-pane>
 
         <el-tab-pane label="校园邮箱注册" name="register">
           <el-form label-position="top" @submit.prevent>
-            <el-form-item label="科大校园邮箱">
+            <el-form-item label="校园邮箱">
               <div class="inline-action">
                 <el-input v-model="registerForm.email" placeholder="student@mail.ustc.edu.cn" />
                 <el-button :loading="codeLoading" @click="handleSendCode">获取验证码</el-button>
               </div>
             </el-form-item>
-            <el-form-item label="CampusHub 用户名">
+            <el-form-item label="蜗壳用户名">
               <el-input v-model="registerForm.username" placeholder="3-64 位字母、数字或下划线（可用于登录）" />
             </el-form-item>
             <el-form-item label="邮箱验证码">
@@ -106,7 +106,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(loginForm.username, loginForm.password)
-    ElMessage.success('欢迎回到校集')
+    ElMessage.success('欢迎回到蜗壳')
     await router.push(normalizedRedirect())
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
@@ -117,7 +117,7 @@ async function handleLogin() {
 
 async function handleSendCode() {
   if (!registerForm.email.trim()) {
-    ElMessage.warning('请先填写科大校园邮箱')
+    ElMessage.warning('请先填写校园邮箱')
     return
   }
   codeLoading.value = true

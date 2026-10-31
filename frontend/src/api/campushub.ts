@@ -269,15 +269,31 @@ export interface RoleApplicationSummary {
   depositStatus: string
   depositPaymentOrderNo: string | null
   reviewStatus: string
+  depositPolicy: string
+  agreementStatus: string
+  agreementVersion: string | null
+  agreementConsentedAt: string | null
+  activationMode: string
   applyNote: string | null
   reviewerNickname: string | null
   createdAt: string
   reviewedAt: string | null
 }
 
+export interface PlatformProtocolSummary {
+  agreementCode: string
+  version: string
+  title: string
+  content: string
+  effectiveAt: string
+  acceptedAt: string | null
+}
+
 export interface ApplyRolePayload {
   roleType: string
   applyNote?: string
+  agreementVersion?: string
+  agreementAccepted?: boolean
 }
 
 export interface StationNotificationSummary {
@@ -936,6 +952,10 @@ export function confirmRunnerTask(taskId: number, _publisherId: number, payload:
 
 export function reportRunnerTaskIssue(taskId: number, _userId: number, payload: TaskIssuePayload) {
   return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues`, payload)
+}
+
+export function getCurrentRoleAgreement(roleType: string) {
+  return getApi<PlatformProtocolSummary>(`/platform/protocols/${encodeURIComponent(roleType)}`)
 }
 
 export function applyRole(userId: number, payload: ApplyRolePayload) {

@@ -12,7 +12,7 @@
     <LockedState
       v-if="!auth.currentUser"
       title="登录后即可发布项目与招募"
-      description="使用科大邮箱登录后，可免费发布大创组队、竞赛招募、作品集与社团活动。"
+      description="使用校园邮箱登录后，可免费发布组队招募、竞赛招募、作品集与社团活动。"
       primary-text="去登录 / 注册"
       primary-to="/auth"
       secondary-text="返回项目广场"

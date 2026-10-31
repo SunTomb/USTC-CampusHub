@@ -92,7 +92,7 @@
             <strong class="mono-num">{{ fees.roleApplicationCount }}</strong>
           </div>
           <div>
-            <span>保证金总额</span>
+            <span>历史保证金总额</span>
             <strong class="mono-num">¥{{ fees.roleDepositAmount }}</strong>
           </div>
         </div>
@@ -152,19 +152,15 @@
         </el-table>
       </el-tab-pane>
 
-      <el-tab-pane label="身份保证金队列">
+      <el-tab-pane label="身份申请队列">
         <el-table :data="roles" stripe>
           <el-table-column prop="userNickname" label="申请同学" />
           <el-table-column prop="roleType" label="申请身份" width="160">
             <template #default="{ row }">{{ formatRoleType(row.roleType) }}</template>
           </el-table-column>
-          <el-table-column prop="depositAmount" label="保证金" width="120">
-            <template #default="{ row }"><span class="mono-num">¥{{ row.depositAmount }}</span></template>
-          </el-table-column>
-          <el-table-column prop="depositStatus" label="缴纳状态" width="130">
-            <template #default="{ row }">
-              <el-tag :type="statusTone(row.depositStatus)" size="small">{{ formatStatus(row.depositStatus) }}</el-tag>
-            </template>
+          <el-table-column prop="agreementVersion" label="协议版本" min-width="140" />
+          <el-table-column prop="agreementStatus" label="协议确认" min-width="150">
+            <template #default="{ row }">{{ row.agreementStatus === 'CONSENTED' ? '已同意' : '历史申请' }}</template>
           </el-table-column>
           <el-table-column prop="reviewStatus" label="核验状态" width="140">
             <template #default="{ row }">

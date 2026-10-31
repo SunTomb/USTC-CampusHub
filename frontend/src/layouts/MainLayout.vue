@@ -5,11 +5,11 @@
     <el-aside width="264px" class="sidebar desktop-sidebar">
       <div class="brand brand-premium">
         <div class="brand-mark-wrap" @click="router.push('/')" style="cursor: pointer">
-          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img" />
+          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img" />
         </div>
         <div class="brand-text" @click="router.push('/')" style="cursor: pointer">
-          <strong>校集 CampusHub</strong>
-          <span>中国科大 · 校园生活共同体</span>
+          <strong>蜗壳 CampusHub</strong>
+          <span>独立学生项目 · 校园生活共同体</span>
         </div>
         <el-button class="sidebar-toggle" size="small" text title="收起侧栏" @click="sidebarCollapsed = true">
           <el-icon><Fold /></el-icon>
@@ -18,7 +18,7 @@
 
       <div class="sidebar-identity">
         <div class="sidebar-identity-head">
-          <span class="sidebar-seal">瀚海通行证</span>
+          <span class="sidebar-seal">蜗壳通行证</span>
           <span class="sidebar-status-dot"></span>
         </div>
         <strong>{{ identityProfile.displayName }}</strong>
@@ -40,7 +40,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <span>USTC · 东区 / 西区 / 中区 / 高新</span>
+        <span>蜗壳 · 东区 / 西区 / 中区 / 高新</span>
       </div>
     </el-aside>
 
@@ -58,9 +58,9 @@
 
       <el-header class="header premium-header">
         <div class="mobile-header-brand" @click="router.push('/')">
-          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img mobile-brand-logo-img" />
+          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img mobile-brand-logo-img" />
           <div>
-            <strong>校集 CampusHub</strong>
+            <strong>蜗壳 CampusHub</strong>
             <small>{{ currentPageContext.tag }}</small>
           </div>
         </div>
@@ -108,12 +108,12 @@
       </button>
     </nav>
 
-    <el-drawer v-model="mobileMenuOpen" title="校集 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
+    <el-drawer v-model="mobileMenuOpen" title="蜗壳 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
         <div class="mobile-directory-brand">
-          <img src="/campushub-logo.png" alt="校集 CampusHub" class="brand-logo-img" />
+          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img" />
           <div>
-            <strong>校集 CampusHub</strong>
+            <strong>蜗壳 CampusHub</strong>
             <small>闲置流转 · 顺路跑腿 · 同窗小店 · 组队展示</small>
           </div>
         </div>
@@ -175,6 +175,7 @@ import {
   Wallet,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePlatformStore } from '@/stores/platform'
 import { findNavItemByPath, getMobileTabItems, getVisibleNavGroups } from '@/config/navigation'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 
@@ -184,7 +185,8 @@ const route = useRoute()
 const mobileMenuOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const identityProfile = computed(() => auth.identityProfile)
-const navGroups = computed(() => getVisibleNavGroups(identityProfile.value))
+const platform = usePlatformStore()
+const navGroups = computed(() => getVisibleNavGroups(identityProfile.value, platform.financialEnabled))
 const mobileTabItems = computed(() => getMobileTabItems(identityProfile.value))
 
 const iconRegistry: Record<string, Component> = {
@@ -243,11 +245,11 @@ const currentPageContext = computed(() => {
     return { tag: '学生小店 · 预约', subtitle: '浏览同学主理的技能服务，在线预约时间与需求' }
   }
   if (route.path.startsWith('/project-ads/')) {
-    return { tag: '项目广场 · 展示', subtitle: '发现科大同窗的科研组队、竞赛招募与创意作品' }
+    return { tag: '项目广场 · 展示', subtitle: '发现校园同窗的科研组队、竞赛招募与创意作品' }
   }
   return {
-    tag: '瀚海校集',
-    subtitle: '连接中区、西区、东区与高新园区的校园生活服务平台',
+    tag: '蜗壳 CampusHub',
+    subtitle: '连接东区、西区、中区与高新园区的校园生活服务平台',
   }
 })
 

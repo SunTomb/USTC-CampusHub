@@ -23,7 +23,7 @@
           <el-tag :type="statusTone(item.reviewStatus)" size="small">{{ formatStatus(item.reviewStatus) }}</el-tag>
         </div>
         <p>申请人编号：<span class="mono-num">#{{ item.userId }}</span></p>
-        <p>保证金要求：{{ item.depositStatus === 'NOT_REQUIRED' ? '免保证金' : `¥${item.depositAmount}` }}</p>
+        <p>管理员身份免费申请，由总站务审核。</p>
         <p v-if="item.applyNote">自荐说明：{{ item.applyNote }}</p>
         <p>提交时间：{{ item.createdAt }}</p>
         <div class="payment-actions inline-card-actions">

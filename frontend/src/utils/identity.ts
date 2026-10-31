@@ -51,14 +51,14 @@ const IDENTITY_ITEMS: Record<IdentityKey, IdentityItem> = {
 
 const CAPABILITIES: Record<IdentityKey, string> = {
   guest: '公开浏览校园服务',
-  student: '钱包、通知与信用中心',
+  student: '通知与信用中心',
   runner: '跑腿接单与任务工作台',
   goodsPublisher: '二手商品发布与管理',
   shopMerchant: '店铺服务与预约处理',
-  admin: '治理、支付、钱包与运营后台',
+  admin: '治理、运营与历史账本后台',
   tradeAdmin: '悬赏跑腿、二手交易与售后纠纷后台',
   showcaseAdmin: '项目广告、学生店铺与服务售后后台',
-  masterAdmin: 'CampusHub 全部后台权限',
+  masterAdmin: '蜗壳全部后台权限',
 }
 
 const ROLE_ALIASES: Record<Exclude<IdentityKey, 'guest'>, string[]> = {

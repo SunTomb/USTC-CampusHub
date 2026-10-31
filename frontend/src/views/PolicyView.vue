@@ -2,40 +2,62 @@
   <section class="page-stack policy-page">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">瀚海校集 · 社区公约与安全须知</p>
-        <h2>使用说明与交易保障约定</h2>
-        <p>为维护清朗、守信、安全的中国科大校园互助环境，请在参与市集流转、跑腿委托与技能预约前仔细阅读以下约定。</p>
+        <p class="eyebrow">蜗壳 CampusHub · 服务协议与隐私说明</p>
+        <h2>协议与交易规则</h2>
+        <p>独立学生项目，不代表任何学校或机构。当前不提供充值、提现、收款或线上担保。</p>
       </div>
+      <el-button :loading="loading" @click="load">重新加载</el-button>
     </div>
-
-    <div class="policy-grid">
-      <el-card shadow="never" class="premium-panel">
-        <span class="eyebrow">一、社区定位</span>
-        <h3>同窗互助与生活集市</h3>
-        <p>校集（CampusHub）面向中国科大各校区同学提供跑腿悬赏、二手闲置流转、学生技能小店与项目招募展示服务。</p>
-        <p>所有注册成员均通过校园邮箱验证。站务团队有权对虚假信息、校外推销广告、违禁物品与失信行为进行下架或限制。</p>
-      </el-card>
-
-      <el-card shadow="never" class="premium-panel">
-        <span class="eyebrow">二、隐私保护机制</span>
-        <h3>联系方式按需解锁</h3>
-        <p>注册时填写的微信号或 QQ 仅用于同窗交易达成后的联络。在商品列表、跑腿大厅或店铺主页上，你的私人联系方式不会对公众直接暴露。</p>
-        <p>请勿在公开标题、评论留言或个人简介中填写银行卡号、身份证号、寝室床位或取件密码等敏感信息。</p>
-      </el-card>
-
-      <el-card shadow="never" class="premium-panel">
-        <span class="eyebrow">三、资金与结算方式</span>
-        <h3>透明账本与线上担保</h3>
-        <p>二手商品支持「校内当面直接交接」与「线上钱包余额担保（确认收货后放款）」两种方式；跑腿酬金与店铺服务费由双方在履约完成后直接结算。</p>
-        <p>钱包支持支付宝收银台实时充值（0.6% 通道手续费）与微信扫码免手续费人工核对充值（扫码时请备注校园邮箱或用户名）。</p>
-      </el-card>
-
-      <el-card shadow="never" class="premium-panel">
-        <span class="eyebrow">四、校内交接安全建议</span>
-        <h3>当面验货，留存凭证</h3>
-        <p>线下交接建议优先选择教学楼大厅、图书馆门口、食堂或菜鸟驿站等公共场所，当面核验数码产品功能与物品成色。</p>
-        <p>如遇对方爽约、货不对板或言语不当，请保留聊天与现场照片凭证，随时通过页面上的「反馈问题」入口交由站务同学介入协调。</p>
-      </el-card>
-    </div>
+    <el-alert title="请重点阅读交易责任、必要信息核查与个人信息权利条款。阅读页面本身不会替你提交协议同意。" type="info" show-icon :closable="false" />
+    <el-tabs v-model="selected" class="premium-panel" @tab-change="load">
+      <el-tab-pane v-for="item in agreements" :key="item.key" :label="item.label" :name="item.key" />
+    </el-tabs>
+    <el-card v-loading="loading" shadow="never" class="premium-panel">
+      <template v-if="protocol">
+        <h3>{{ protocol.title }}</h3>
+        <p class="hint">版本 {{ protocol.version }} · 生效时间 {{ protocol.effectiveAt.slice(0, 10) }}</p>
+        <div class="protocol-text">{{ protocol.content }}</div>
+      </template>
+      <EmptyState v-else-if="!loading" title="协议暂时无法加载" description="请稍后重试；协议未加载时不能提交身份申请。" />
+    </el-card>
+    <el-button @click="router.push('/roles')">前往身份解锁</el-button>
   </section>
 </template>
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getCurrentRoleAgreement, type PlatformProtocolSummary } from '@/api/campushub'
+import EmptyState from '@/components/common/EmptyState.vue'
+
+const router = useRouter()
+const selected = ref('USER_SERVICE')
+const protocol = ref<PlatformProtocolSummary | null>(null)
+const loading = ref(false)
+const agreements = [
+  { key: 'USER_SERVICE', label: '用户服务协议' },
+  { key: 'RUNNER', label: '顺路跑腿' },
+  { key: 'GOODS_PUBLISHER', label: '闲置发布' },
+  { key: 'SHOP_MERCHANT', label: '技能店主理人' },
+]
+let requestVersion = 0
+async function load() {
+  const currentRequest = ++requestVersion
+  protocol.value = null
+  loading.value = true
+  try {
+    const response = await getCurrentRoleAgreement(selected.value)
+    if (currentRequest === requestVersion) protocol.value = response
+  } catch (error) {
+    if (currentRequest === requestVersion) ElMessage.error(error instanceof Error ? error.message : '协议加载失败')
+  } finally {
+    if (currentRequest === requestVersion) loading.value = false
+  }
+}
+onMounted(load)
+</script>
+
+<style scoped>
+.protocol-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; }
+</style>

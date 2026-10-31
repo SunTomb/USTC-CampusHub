@@ -1,10 +1,11 @@
 <template>
-  <section class="page-stack" v-loading="loading">
+  <GoodsEscrowDetail v-if="platform.financialEnabled" />
+  <section v-else class="page-stack" v-loading="loading">
     <div class="page-heading">
       <div>
         <p class="eyebrow">二手市集 · 好物详情</p>
         <h2>{{ detail?.title || '商品详情' }}</h2>
-        <p>提交购买意向即可解锁卖家微信或 QQ；支持校内当面交接或发起线上余额担保交易。</p>
+        <p>提交购买意向即可解锁卖家微信或 QQ；当前仅支持双方协商校内当面交接，线上余额担保暂未开放。</p>
       </div>
       <el-button @click="router.push('/goods')">返回二手市集</el-button>
     </div>
@@ -44,7 +45,6 @@
         </div>
         <div class="detail-actions">
           <el-button type="primary" :disabled="isOwner" @click="intentDialog = true">我想要（解锁联系方式）</el-button>
-          <el-button :disabled="isOwner" @click="startEscrowTrade">发起线上余额担保</el-button>
           <el-button @click="favorite">收藏 ({{ detail.favoriteCount }})</el-button>
           <el-button @click="reportDialog = true">反馈异常</el-button>
           <el-button v-if="isOwner && detail.status === 'PUBLISHED'" type="warning" @click="markSold">标记已售出</el-button>
@@ -53,26 +53,8 @@
           type="info"
           show-icon
           :closable="false"
-          title="交易提示：你既可以解锁联系方式后与校友约定校内当面一手交钱一手交货，也可以发起线上余额担保（先冻结你的钱包余额，当面验收无误点击确认后再放款给卖家）。"
+          title="当前资金功能暂未开放。提交购买意向后，你可以与卖家协商校内公共场所当面交接；请自行核验物品并保留沟通凭证。"
         />
-        <div v-if="currentEscrowOrder" class="info-card escrow-card">
-          <div class="panel-topline">
-            <strong>担保订单 <span class="mono-num">{{ currentEscrowOrder.orderNo }}</span></strong>
-            <el-tag :type="statusTone(currentEscrowOrder.escrowStatus)">{{ formatStatus(currentEscrowOrder.escrowStatus) }}</el-tag>
-          </div>
-          <p>
-            商品金额：<span class="mono-num">¥{{ currentEscrowOrder.escrowAmount }}</span> ·
-            服务费：<span class="mono-num">¥{{ currentEscrowOrder.platformServiceFee }}</span>
-          </p>
-          <div class="payment-actions">
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'PENDING_FREEZE'" type="primary" size="small" @click="freezeEscrowTrade">
-              冻结担保资金
-            </el-button>
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'FROZEN'" type="success" size="small" @click="confirmEscrowTrade">
-              确认收货并放款
-            </el-button>
-          </div>
-        </div>
       </el-card>
 
       <el-card class="seller-panel">
@@ -131,27 +113,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { usePlatformStore } from '@/stores/platform'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   commentTarget,
-  confirmGoodsEscrow,
-  createGoodsEscrowOrder,
   createGoodsIntent,
   createReview,
   favoriteTarget,
-  freezeGoodsEscrow,
   getGoodsDetail,
   markGoodsSold,
   reportTarget,
   type GoodsDetailSummary,
-  type GoodsOrderSummary,
 } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
-import { formatCampusZone, formatDeliveryMethod, formatStatus, statusTone } from '@/utils/display'
+import { formatCampusZone, formatDeliveryMethod } from '@/utils/display'
 import EmptyState from '@/components/common/EmptyState.vue'
 
+const platform = usePlatformStore()
+const GoodsEscrowDetail = defineAsyncComponent(() => import('./legacy/GoodsEscrowDetail.vue'))
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -165,7 +146,6 @@ const reportReason = ref('信息不实')
 const reportDescription = ref('')
 const reviewRating = ref(5)
 const reviewText = ref('校友很爽快，成色和描述一致！')
-const currentEscrowOrder = ref<GoodsOrderSummary | null>(null)
 
 const goodsId = computed(() => Number(route.params.id))
 const viewerId = computed(() => auth.currentUser?.id)
@@ -234,24 +214,5 @@ async function markSold() {
   await loadDetail()
 }
 
-async function startEscrowTrade() {
-  if (!requireLogin()) return
-  currentEscrowOrder.value = await createGoodsEscrowOrder(goodsId.value, viewerId.value!)
-  ElMessage.success('线上担保订单已创建，请继续冻结余额')
-}
-
-async function freezeEscrowTrade() {
-  if (!requireLogin() || !currentEscrowOrder.value) return
-  currentEscrowOrder.value = await freezeGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('担保资金已冻结')
-}
-
-async function confirmEscrowTrade() {
-  if (!requireLogin() || !currentEscrowOrder.value) return
-  currentEscrowOrder.value = await confirmGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('交易确认完成，货款已划转给卖家')
-  await loadDetail()
-}
-
-onMounted(loadDetail)
+onMounted(() => { if (!platform.financialEnabled) void loadDetail() })
 </script>

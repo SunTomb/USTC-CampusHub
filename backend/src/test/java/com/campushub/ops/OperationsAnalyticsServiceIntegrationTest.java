@@ -35,6 +35,12 @@ class OperationsAnalyticsServiceIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @org.junit.jupiter.api.BeforeEach
+    void pinSeedDatesToTheFixedReportingClock() {
+        entityManager.createNativeQuery("UPDATE users SET created_at = TIMESTAMP '2026-05-10 09:00:00' WHERE id BETWEEN 1 AND 4").executeUpdate();
+        entityManager.createNativeQuery("UPDATE service_fee_records SET created_at = TIMESTAMP '2026-05-10 09:00:00', paid_at = CASE WHEN status = 'PAID' THEN TIMESTAMP '2026-05-10 10:00:00' ELSE NULL END WHERE id BETWEEN 1 AND 3").executeUpdate();
+    }
+
     @Test
     void defaultsToRecentThirtyDaysWhenDatesAreMissing() {
         AnalyticsDateRange range = parser.parse(null, null);
@@ -63,9 +69,9 @@ class OperationsAnalyticsServiceIntegrationTest {
     void buildsOverviewFromExistingSeedData() {
         AnalyticsDateRange range = new AnalyticsDateRange(
                 LocalDate.of(2020, 1, 1),
-                LocalDate.of(2026, 5, 22),
+                LocalDate.now(),
                 LocalDateTime.of(2020, 1, 1, 0, 0),
-                LocalDateTime.of(2026, 5, 23, 0, 0)
+                LocalDate.now().plusDays(1).atStartOfDay()
         );
 
         OperationsAnalyticsOverview overview = analyticsService.overview(range);

@@ -4,6 +4,7 @@ import com.campushub.common.BusinessException;
 import com.campushub.identity.IdentityService;
 import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationRepository;
+import com.campushub.platform.FinancialWriteGuard;
 import com.campushub.wallet.WalletAccount;
 import com.campushub.wallet.WalletAccountRepository;
 import com.campushub.wallet.WalletFlow;
@@ -33,6 +34,7 @@ public class PaymentService {
     private final WalletOperationService walletOperationService;
     private final WalletService walletService;
     private final IdentityService identityService;
+    private final FinancialWriteGuard financialWriteGuard;
 
     public PaymentService(
             PaymentProvider paymentProvider,
@@ -45,7 +47,8 @@ public class PaymentService {
             WalletFlowRepository walletFlowRepository,
             WalletOperationService walletOperationService,
             WalletService walletService,
-            IdentityService identityService) {
+            IdentityService identityService,
+            FinancialWriteGuard financialWriteGuard) {
         this.paymentProvider = paymentProvider;
         this.serviceFeeRecordRepository = serviceFeeRecordRepository;
         this.paymentOrderRepository = paymentOrderRepository;
@@ -57,10 +60,12 @@ public class PaymentService {
         this.walletOperationService = walletOperationService;
         this.walletService = walletService;
         this.identityService = identityService;
+        this.financialWriteGuard = financialWriteGuard;
     }
 
     @Transactional
     public PaymentCreation createServiceFeePayment(Long serviceFeeId) {
+        financialWriteGuard.assertEnabled();
         ServiceFeeRecord fee = findServiceFee(serviceFeeId);
         if ("PAID".equals(fee.getStatus())) {
             throw new BusinessException("服务费已支付");
@@ -82,7 +87,7 @@ public class PaymentService {
                     fee.getPayer().getId(),
                     fee.getFeeNo(),
                     fee.getAmount(),
-                    "CampusHub 服务费 " + fee.getFeeNo(),
+                    "蜗壳 CampusHub 服务费 " + fee.getFeeNo(),
                     paymentCenterProperties.getCallbackUrl(),
                     paymentCenterProperties.getExpireMinutes()));
             order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
@@ -95,7 +100,17 @@ public class PaymentService {
     }
 
     @Transactional
+    public PaymentCreation createMockServiceFeePayment(Long serviceFeeId) {
+        financialWriteGuard.assertEnabled();
+        if (!(paymentProvider instanceof MockPaymentProvider)) {
+            throw new BusinessException("本地模拟支付仅在 mock provider 下可用");
+        }
+        return createServiceFeePayment(serviceFeeId);
+    }
+
+    @Transactional
     public PaymentCreation payRoleDepositWithWallet(Long applicationId, Long payerId) {
+        financialWriteGuard.assertEnabled();
         RoleApplication application = roleApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("身份申请不存在"));
         if (!application.getUser().getId().equals(payerId)) {
@@ -103,6 +118,9 @@ public class PaymentService {
         }
         if ("PAID".equals(application.getDepositStatus())) {
             throw new BusinessException("身份保证金已支付");
+        }
+        if (application.isAgreementBased() || !application.isRecoverableUnpaid()) {
+            throw new BusinessException("该身份不再通过保证金开通");
         }
         if (application.getDepositAmount() == null || application.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("该身份无需支付保证金");
@@ -139,10 +157,15 @@ public class PaymentService {
 
     @Transactional
     public PaymentCreation createRoleDepositPayment(Long applicationId) {
+        financialWriteGuard.assertEnabled();
         RoleApplication application = roleApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException("身份申请不存在"));
         if ("PAID".equals(application.getDepositStatus())) {
             throw new BusinessException("身份保证金已支付");
+        }
+        if (application.isAgreementBased() || !application.isRecoverableUnpaid()
+                || application.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("该身份不再通过保证金开通");
         }
         PaymentOrder order = paymentOrderRepository.findByBusinessTypeAndBusinessIdAndStatus("ROLE_DEPOSIT", application.getId(), "PENDING")
                 .orElseGet(() -> paymentOrderRepository.save(new PaymentOrder(
@@ -161,7 +184,7 @@ public class PaymentService {
                     application.getUser().getId(),
                     application.getRoleType(),
                     application.getDepositAmount(),
-                    "CampusHub 身份保证金 " + application.getRoleType(),
+                    "蜗壳 CampusHub 身份保证金 " + application.getRoleType(),
                     paymentCenterProperties.getCallbackUrl(),
                     paymentCenterProperties.getExpireMinutes()));
             order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
@@ -201,10 +224,12 @@ public class PaymentService {
 
     @Transactional
     public PaymentStatus markMockServiceFeeSuccess(Long serviceFeeId) {
-        PaymentCreation creation = createServiceFeePayment(serviceFeeId);
-        if (paymentProvider instanceof MockPaymentProvider mockPaymentProvider) {
-            mockPaymentProvider.markSuccess(creation.orderNo());
+        financialWriteGuard.assertEnabled();
+        if (!(paymentProvider instanceof MockPaymentProvider mockPaymentProvider)) {
+            throw new BusinessException("本地模拟支付仅在 mock provider 下可用");
         }
+        PaymentCreation creation = createServiceFeePayment(serviceFeeId);
+        mockPaymentProvider.markSuccess(creation.orderNo());
         PaymentOrder order = paymentOrderRepository.findByOrderNo(creation.orderNo())
                 .orElseThrow(() -> new BusinessException("支付订单不存在"));
         if (!"PAID".equals(order.getStatus())) {
@@ -329,6 +354,10 @@ public class PaymentService {
         if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
             return;
         }
+        if (application.isAgreementBased()) {
+            application.recordHistoricalDepositStatus("PAID");
+            return;
+        }
         if (!"PAID".equals(application.getDepositStatus())) {
             application.markDepositPaid();
             roleApplicationRepository.save(application);
@@ -342,6 +371,10 @@ public class PaymentService {
         if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
             return;
         }
+        if (application.isAgreementBased()) {
+            application.recordHistoricalDepositStatus("FAILED");
+            return;
+        }
         application.markDepositFailed(failureReason);
         roleApplicationRepository.save(application);
     }
@@ -350,6 +383,10 @@ public class PaymentService {
         RoleApplication application = roleApplicationRepository.findById(order.getBusinessId())
                 .orElseThrow(() -> new BusinessException("身份申请不存在"));
         if (!order.getOrderNo().equals(application.getDepositPaymentOrderNo())) {
+            return;
+        }
+        if (application.isAgreementBased()) {
+            application.recordHistoricalDepositStatus("EXPIRED");
             return;
         }
         application.markDepositExpired();

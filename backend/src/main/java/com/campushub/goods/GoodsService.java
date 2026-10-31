@@ -1,6 +1,7 @@
 package com.campushub.goods;
 
 import com.campushub.common.BusinessException;
+import com.campushub.auth.UserRoleService;
 import com.campushub.file.FileBindingRepository;
 import com.campushub.file.FileBindingSummary;
 import com.campushub.identity.RoleApplicationRepository;
@@ -9,6 +10,7 @@ import com.campushub.moderation.GovernanceService;
 import com.campushub.interaction.CommentSummary;
 import com.campushub.interaction.FavoriteRepository;
 import com.campushub.notification.NotificationService;
+import com.campushub.platform.FinancialWriteGuard;
 import com.campushub.payment.ServiceFeeRecord;
 import com.campushub.payment.ServiceFeeRecordRepository;
 import com.campushub.review.ReviewRepository;
@@ -33,6 +35,7 @@ public class GoodsService {
     private final GoodsIntentRepository goodsIntentRepository;
     private final UserRepository userRepository;
     private final RoleApplicationRepository roleApplicationRepository;
+    private final UserRoleService userRoleService;
     private final FileBindingRepository fileBindingRepository;
     private final CommentRepository commentRepository;
     private final FavoriteRepository favoriteRepository;
@@ -44,6 +47,7 @@ public class GoodsService {
     private final WalletService walletService;
     private final FeePolicyService feePolicyService;
     private final WalletFrozenRecordRepository walletFrozenRecordRepository;
+    private final FinancialWriteGuard financialWriteGuard;
 
     @Value("${campushub.secondhand.service-fee.enabled:false}")
     private boolean secondhandServiceFeeEnabled;
@@ -56,6 +60,7 @@ public class GoodsService {
             GoodsIntentRepository goodsIntentRepository,
             UserRepository userRepository,
             RoleApplicationRepository roleApplicationRepository,
+            UserRoleService userRoleService,
             FileBindingRepository fileBindingRepository,
             CommentRepository commentRepository,
             FavoriteRepository favoriteRepository,
@@ -66,11 +71,13 @@ public class GoodsService {
             GovernanceService governanceService,
             WalletService walletService,
             FeePolicyService feePolicyService,
-            WalletFrozenRecordRepository walletFrozenRecordRepository) {
+            WalletFrozenRecordRepository walletFrozenRecordRepository,
+            FinancialWriteGuard financialWriteGuard) {
         this.goodsRepository = goodsRepository;
         this.goodsIntentRepository = goodsIntentRepository;
         this.userRepository = userRepository;
         this.roleApplicationRepository = roleApplicationRepository;
+        this.userRoleService = userRoleService;
         this.fileBindingRepository = fileBindingRepository;
         this.commentRepository = commentRepository;
         this.favoriteRepository = favoriteRepository;
@@ -82,6 +89,7 @@ public class GoodsService {
         this.walletService = walletService;
         this.feePolicyService = feePolicyService;
         this.walletFrozenRecordRepository = walletFrozenRecordRepository;
+        this.financialWriteGuard = financialWriteGuard;
     }
 
     @Transactional(readOnly = true)
@@ -137,7 +145,8 @@ public class GoodsService {
             throw new BusinessException("已提交过购买意向");
         });
         GoodsIntent intent = new GoodsIntent(goods, buyer, request.message(), buildContactSnapshot(goods.getSeller()));
-        if (secondhandServiceFeeEnabled && secondhandIntentFeeAmount.compareTo(BigDecimal.ZERO) > 0) {
+        if (financialWriteGuard.isEnabled() && secondhandServiceFeeEnabled && secondhandIntentFeeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            financialWriteGuard.assertEnabled();
             intent.attachServiceFee(serviceFeeRecordRepository.save(new ServiceFeeRecord(
                     "SH" + Instant.now().toEpochMilli(), buyer, "GOODS_INTENT", goodsId, secondhandIntentFeeAmount)));
         }
@@ -170,6 +179,7 @@ public class GoodsService {
 
     @Transactional
     public GoodsOrderSummary createOnlineEscrowOrder(Long goodsId, Long buyerId) {
+        financialWriteGuard.assertEnabled();
         Goods goods = goodsRepository.findById(goodsId).orElseThrow(() -> new BusinessException("商品不存在"));
         User buyer = userRepository.findById(buyerId).orElseThrow(() -> new BusinessException("买家不存在"));
         if (!"PUBLISHED".equals(goods.getStatus())) {
@@ -187,6 +197,7 @@ public class GoodsService {
 
     @Transactional
     public GoodsOrderSummary freezeGoodsEscrow(Long orderId, Long buyerId) {
+        financialWriteGuard.assertEnabled();
         GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
         ensureEscrowBuyer(order, buyerId);
         if (!"PENDING_FREEZE".equals(order.getEscrowStatus())) {
@@ -201,6 +212,7 @@ public class GoodsService {
 
     @Transactional
     public GoodsOrderSummary confirmGoodsEscrow(Long orderId, Long buyerId) {
+        financialWriteGuard.assertEnabled();
         GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
         ensureEscrowBuyer(order, buyerId);
         if (!"FROZEN".equals(order.getEscrowStatus())) {
@@ -216,6 +228,7 @@ public class GoodsService {
 
     @Transactional
     public GoodsOrderSummary cancelGoodsEscrow(Long orderId, Long buyerId, String reason) {
+        financialWriteGuard.assertEnabled();
         GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
         ensureEscrowBuyer(order, buyerId);
         if (!"FROZEN".equals(order.getEscrowStatus()) && !"PENDING_FREEZE".equals(order.getEscrowStatus())) {
@@ -231,6 +244,7 @@ public class GoodsService {
 
     @Transactional
     public GoodsOrderSummary disputeGoodsEscrow(Long orderId, Long userId, String reason) {
+        financialWriteGuard.assertEnabled();
         GoodsOrder order = goodsOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("交易订单不存在"));
         if (!order.getBuyer().getId().equals(userId) && !order.getSeller().getId().equals(userId)) {
             throw new BusinessException("只有交易双方可以发起争议");
@@ -243,6 +257,9 @@ public class GoodsService {
     }
 
     private void ensureGoodsPublisher(Long userId) {
+        if (userRoleService.hasRole(userId, "ROLE_GOODS_PUBLISHER")) {
+            return;
+        }
         roleApplicationRepository.findByUserIdAndRoleType(userId, "GOODS_PUBLISHER")
                 .filter(application -> "PAID".equals(application.getDepositStatus()))
                 .filter(application -> "APPROVED".equals(application.getReviewStatus()))
@@ -269,6 +286,7 @@ public class GoodsService {
             contactSnapshot = buildContactSnapshot(goods.getSeller());
         } else if (viewerId != null) {
             contactSnapshot = goodsIntentRepository.findByGoodsIdAndBuyerId(goods.getId(), viewerId)
+                    .filter(intent -> intent.getServiceFee() == null || "PAID".equals(intent.getServiceFee().getStatus()))
                     .map(GoodsIntent::getContactSnapshot)
                     .orElse(null);
             contactVisible = contactSnapshot != null;

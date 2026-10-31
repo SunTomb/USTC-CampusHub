@@ -82,6 +82,17 @@ public class WalletService {
         saveFlow(to, "IN", "ESCROW_TRANSFER_IN", amount, businessType, businessId, idempotencyKey + ":IN", fromUserId, createdBy, operatorId, remark);
     }
 
+    @Transactional
+    public WalletAccount consumeFrozen(Long userId, BigDecimal amount, String flowType, String businessType,
+            Long businessId, String idempotencyKey, String createdBy, Long operatorId, String remark) {
+        WalletAccount account = findAccountForUpdate(userId);
+        if (walletFlowRepository.findByIdempotencyKey(idempotencyKey).isPresent()) return account;
+        account.debitFrozen(amount);
+        walletAccountRepository.save(account);
+        saveFlow(account, "OUT", flowType, amount, businessType, businessId, idempotencyKey, null, createdBy, operatorId, remark);
+        return account;
+    }
+
     private WalletAccount findAccount(Long userId) {
         return walletAccountRepository.findByUserId(userId)
                 .orElseThrow(() -> new com.campushub.common.BusinessException("钱包账户不存在"));

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '@/stores/auth'
+import { usePlatformStore } from '@/stores/platform'
 import { canBypassRequiredRole, hasAnyRole, type IdentityKey } from '@/utils/identity'
 
 declare module 'vue-router' {
@@ -85,6 +86,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  await usePlatformStore().load()
   const auth = useAuthStore()
   if (auth.token && !auth.currentUser && !auth.sessionLoaded) {
     await auth.loadCurrentUser()

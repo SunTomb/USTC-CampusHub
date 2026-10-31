@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 @Transactional
 class PaymentOrderServiceIntegrationTest {
 
@@ -21,7 +22,7 @@ class PaymentOrderServiceIntegrationTest {
 
     @Test
     void serviceFeeRecordStoresPaymentCenterMappingFields() {
-        User payer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User payer = userRepository.findById(1L).orElseThrow();
         ServiceFeeRecord fee = new ServiceFeeRecord("SF-PHASE8-001", payer, "GOODS_INTENT", 1L, new BigDecimal("1.00"));
 
         fee.attachPaymentOrder("CHP-PHASE8-001", "PAYMENT_CENTER", "ATS-PHASE8-001", "https://pay.example/phase8", java.time.LocalDateTime.now().plusMinutes(30));
@@ -36,7 +37,7 @@ class PaymentOrderServiceIntegrationTest {
 
     @Test
     void paymentOrderAndCallbackEventPersistForIdempotency() {
-        User payer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User payer = userRepository.findById(1L).orElseThrow();
         PaymentOrder order = new PaymentOrder(
                 "CHP-PHASE8-002",
                 "SERVICE_FEE",

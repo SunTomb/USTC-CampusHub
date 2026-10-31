@@ -13,7 +13,7 @@
       <div>
         <span>当前校园信用分</span>
         <strong class="mono-num">{{ center.creditScore }}</strong>
-        <p>{{ center.nickname }} · 满分 100 分，良好的信用有助于获得更多校友信任</p>
+        <p>{{ center.nickname }} · 信用记录用于社区治理，不构成学校认证或交易担保</p>
       </div>
       <el-tag :type="center.activeRestrictions.length ? 'danger' : 'success'" size="large">
         {{ center.activeRestrictions.length ? '部分权限受限' : '信用状态良好' }}
@@ -21,7 +21,7 @@
     </el-card>
 
     <el-alert
-      title="校集通过实名邮箱、诚信保证金与信用评价共同维护校园互信。线下当面交接或微信/QQ 沟通时，请妥善保留沟通与交接凭证。"
+      title="蜗壳通过校园邮箱、协议确认与信用评价共同维护校园互信。线下当面交接或微信/QQ 沟通时，请妥善保留沟通与交接凭证。"
       type="info"
       show-icon
       :closable="false"
@@ -66,7 +66,7 @@
         <EmptyState
           v-if="center.violations.length === 0"
           title="无违规记录"
-          description="感谢你共同维护温暖守信的科大校园社区。"
+          description="感谢你共同维护温暖守信的校园社区。"
           compact
         />
         <div v-else class="mobile-table-wrapper">

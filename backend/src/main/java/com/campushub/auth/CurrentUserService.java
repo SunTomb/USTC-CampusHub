@@ -95,6 +95,16 @@ public class CurrentUserService {
                 .orElse(false);
     }
 
+    public boolean isTradeReader() {
+        return currentPrincipal().map(principal -> hasAnyAuthority(principal,
+                "ROLE_ADMIN", "ROLE_MASTER_ADMIN", "ROLE_TRADE_ADMIN")).orElse(false);
+    }
+
+    public boolean isShowcaseReader() {
+        return currentPrincipal().map(principal -> hasAnyAuthority(principal,
+                "ROLE_ADMIN", "ROLE_MASTER_ADMIN", "ROLE_SHOWCASE_ADMIN")).orElse(false);
+    }
+
     private Optional<CurrentUserPrincipal> currentPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof CurrentUserPrincipal principal)) {

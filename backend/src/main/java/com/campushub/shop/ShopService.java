@@ -1,6 +1,7 @@
 package com.campushub.shop;
 
 import com.campushub.common.BusinessException;
+import com.campushub.auth.UserRoleService;
 import com.campushub.identity.RoleApplicationRepository;
 import com.campushub.moderation.GovernanceService;
 import com.campushub.notification.NotificationService;
@@ -18,6 +19,7 @@ public class ShopService {
     private final ServiceOrderRepository serviceOrderRepository;
     private final UserRepository userRepository;
     private final RoleApplicationRepository roleApplicationRepository;
+    private final UserRoleService userRoleService;
     private final NotificationService notificationService;
     private final GovernanceService governanceService;
 
@@ -27,6 +29,7 @@ public class ShopService {
             ServiceOrderRepository serviceOrderRepository,
             UserRepository userRepository,
             RoleApplicationRepository roleApplicationRepository,
+            UserRoleService userRoleService,
             NotificationService notificationService,
             GovernanceService governanceService) {
         this.shopRepository = shopRepository;
@@ -34,6 +37,7 @@ public class ShopService {
         this.serviceOrderRepository = serviceOrderRepository;
         this.userRepository = userRepository;
         this.roleApplicationRepository = roleApplicationRepository;
+        this.userRoleService = userRoleService;
         this.notificationService = notificationService;
         this.governanceService = governanceService;
     }
@@ -267,6 +271,9 @@ public class ShopService {
     }
 
     private void ensureShopMerchant(Long userId) {
+        if (userRoleService.hasRole(userId, "ROLE_SHOP_MERCHANT")) {
+            return;
+        }
         roleApplicationRepository.findByUserIdAndRoleType(userId, "SHOP_MERCHANT")
                 .filter(application -> "PAID".equals(application.getDepositStatus()))
                 .filter(application -> "APPROVED".equals(application.getReviewStatus()))

@@ -20,6 +20,14 @@ class RunnerTaskFlowIntegrationTest {
     @Autowired
     private RunnerTaskService runnerTaskService;
 
+    @Autowired
+    private com.campushub.auth.UserRoleService roles;
+
+    @org.junit.jupiter.api.BeforeEach
+    void enableRunnerForWorkflowTests() {
+        roles.assignRole(2L, "ROLE_RUNNER");
+    }
+
     @Test
     void grabTaskImmediatelyAcceptsRunnerForGrabMode() {
         RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(

@@ -46,6 +46,8 @@ campushub:
       qq-contact: ${CAMPUSHUB_BETA_ADMIN_QQ:}
   file-storage:
     root: ${CAMPUSHUB_FILE_ROOT:./data/uploads}
+  financial:
+    enabled: ${CAMPUSHUB_FINANCIAL_FEATURES_ENABLED:false}
   payment:
     provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
     center:
@@ -63,7 +65,7 @@ campushub:
     recharge:
       wechat:
         manual-qr-url: ${CAMPUSHUB_WECHAT_MANUAL_QR_URL:}
-        manual-note: ${CAMPUSHUB_WECHAT_MANUAL_NOTE:扫码支付后请备注你的校园邮箱或 CampusHub 用户名，管理员审核后入账。}
+        manual-note: ${CAMPUSHUB_WECHAT_MANUAL_NOTE:扫码支付后请备注你的校园邮箱或蜗壳 CampusHub 用户名，管理员审核后入账。}
   mail:
     enabled: ${CAMPUSHUB_MAIL_ENABLED:false}
     provider: ${CAMPUSHUB_MAIL_PROVIDER:mock}
@@ -73,7 +75,7 @@ campushub:
       username: ${CAMPUSHUB_MAIL_SMTP_USERNAME:}
       password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD:}
       from: ${CAMPUSHUB_MAIL_FROM:no-reply@localhost}
-      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:USTC CampusHub}
+      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:蜗壳 CampusHub}
     code:
       ttl-minutes: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:10}
       resend-seconds: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:60}

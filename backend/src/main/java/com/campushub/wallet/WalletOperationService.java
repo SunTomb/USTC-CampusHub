@@ -7,6 +7,7 @@ import com.campushub.payment.PaymentOrder;
 import com.campushub.payment.PaymentOrderRepository;
 import com.campushub.payment.PaymentProvider;
 import com.campushub.payment.PaymentRequest;
+import com.campushub.platform.FinancialWriteGuard;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class WalletOperationService {
     private final WalletFlowRepository walletFlowRepository;
     private final WalletFrozenRecordRepository walletFrozenRecordRepository;
     private final WalletRechargeProperties walletRechargeProperties;
+    private final FinancialWriteGuard financialWriteGuard;
 
     public WalletOperationService(
             WalletRechargeOrderRepository rechargeOrderRepository,
@@ -41,7 +43,8 @@ public class WalletOperationService {
             WalletService walletService,
             WalletFlowRepository walletFlowRepository,
             WalletFrozenRecordRepository walletFrozenRecordRepository,
-            WalletRechargeProperties walletRechargeProperties) {
+            WalletRechargeProperties walletRechargeProperties,
+            FinancialWriteGuard financialWriteGuard) {
         this.rechargeOrderRepository = rechargeOrderRepository;
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.userRepository = userRepository;
@@ -53,10 +56,12 @@ public class WalletOperationService {
         this.walletFlowRepository = walletFlowRepository;
         this.walletFrozenRecordRepository = walletFrozenRecordRepository;
         this.walletRechargeProperties = walletRechargeProperties;
+        this.financialWriteGuard = financialWriteGuard;
     }
 
     @Transactional
     public WalletRechargeSummary createRecharge(Long userId, WalletRechargeRequest request) {
+        financialWriteGuard.assertEnabled();
         User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在"));
         if ("ALIPAY".equals(request.channel())) {
             return createAlipayRecharge(user, request.amount());
@@ -81,6 +86,7 @@ public class WalletOperationService {
 
     @Transactional
     public WalletRechargeSummary approveWechatRecharge(Long rechargeId, Long adminId, String note) {
+        financialWriteGuard.assertEnabled();
         WalletRechargeOrder order = rechargeOrderRepository.findById(rechargeId).orElseThrow(() -> new BusinessException("充值订单不存在"));
         User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
         if (!"PENDING_REVIEW".equals(order.getStatus())) {
@@ -93,6 +99,7 @@ public class WalletOperationService {
 
     @Transactional
     public WalletRechargeSummary rejectWechatRecharge(Long rechargeId, Long adminId, String note) {
+        financialWriteGuard.assertEnabled();
         WalletRechargeOrder order = rechargeOrderRepository.findById(rechargeId).orElseThrow(() -> new BusinessException("充值订单不存在"));
         User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
         if (!"PENDING_REVIEW".equals(order.getStatus())) {
@@ -119,6 +126,7 @@ public class WalletOperationService {
 
     @Transactional
     public WalletWithdrawalSummary createWithdrawal(Long userId, CreateWithdrawalRequest request) {
+        financialWriteGuard.assertEnabled();
         User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在"));
         WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.save(new WalletWithdrawalRequest(nextNo("WW"), user, request.amount(), request.channel(), request.accountSnapshot()));
         walletService.freeze(userId, request.amount(), "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-freeze:" + withdrawal.getId(), "USER", userId, "提现申请冻结余额");
@@ -127,6 +135,7 @@ public class WalletOperationService {
 
     @Transactional
     public WalletWithdrawalSummary approveWithdrawal(Long withdrawalId, Long adminId, String note) {
+        financialWriteGuard.assertEnabled();
         WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
         User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
         if (!"PENDING_REVIEW".equals(withdrawal.getStatus())) {
@@ -138,6 +147,7 @@ public class WalletOperationService {
 
     @Transactional
     public WalletWithdrawalSummary rejectWithdrawal(Long withdrawalId, Long adminId, String note) {
+        financialWriteGuard.assertEnabled();
         WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
         User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
         if (!"PENDING_REVIEW".equals(withdrawal.getStatus())) {
@@ -150,12 +160,13 @@ public class WalletOperationService {
 
     @Transactional
     public WalletWithdrawalSummary completeWithdrawal(Long withdrawalId, Long adminId, String note) {
+        financialWriteGuard.assertEnabled();
         WalletWithdrawalRequest withdrawal = withdrawalRequestRepository.findById(withdrawalId).orElseThrow(() -> new BusinessException("提现申请不存在"));
         User admin = userRepository.findById(adminId).orElseThrow(() -> new BusinessException("管理员不存在"));
         if (!"APPROVED".equals(withdrawal.getStatus())) {
             throw new BusinessException("提现申请状态不可完成");
         }
-        walletService.debit(withdrawal.getUser().getId(), withdrawal.getAmount(), "WITHDRAW", "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-complete:" + withdrawal.getId(), "ADMIN", adminId, "提现人工打款完成");
+        walletService.consumeFrozen(withdrawal.getUser().getId(), withdrawal.getAmount(), "WITHDRAW", "WALLET_WITHDRAWAL", withdrawal.getId(), "withdraw-complete:" + withdrawal.getId(), "ADMIN", adminId, "提现人工打款完成");
         withdrawal.complete(admin, note);
         return WalletWithdrawalSummary.from(withdrawal);
     }
@@ -201,7 +212,7 @@ public class WalletOperationService {
         BigDecimal payAmount = amount.add(fee);
         WalletRechargeOrder recharge = rechargeOrderRepository.save(new WalletRechargeOrder(nextNo("WR"), user, "ALIPAY", amount, fee, payAmount, "PENDING_PAYMENT"));
         PaymentOrder order = paymentOrderRepository.save(new PaymentOrder(nextNo("CHP-WR"), "WALLET_RECHARGE", recharge.getId(), user, payAmount, paymentProvider.providerName(), LocalDateTime.now().plusMinutes(paymentCenterProperties.getExpireMinutes())));
-        PaymentCreation creation = paymentProvider.createWebPayment(new PaymentRequest(order.getOrderNo(), "WALLET_RECHARGE", recharge.getId(), user.getId(), recharge.getRechargeNo(), payAmount, "CampusHub 钱包充值 " + recharge.getRechargeNo(), paymentCenterProperties.getCallbackUrl(), paymentCenterProperties.getExpireMinutes()));
+        PaymentCreation creation = paymentProvider.createWebPayment(new PaymentRequest(order.getOrderNo(), "WALLET_RECHARGE", recharge.getId(), user.getId(), recharge.getRechargeNo(), payAmount, "蜗壳 CampusHub 钱包充值 " + recharge.getRechargeNo(), paymentCenterProperties.getCallbackUrl(), paymentCenterProperties.getExpireMinutes()));
         order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
         recharge.attachPaymentOrder(order.getOrderNo());
         return enrichRechargeSummary(recharge);
@@ -209,6 +220,7 @@ public class WalletOperationService {
 
     private WalletRechargeSummary enrichRechargeSummary(WalletRechargeOrder order) {
         WalletRechargeSummary summary = WalletRechargeSummary.from(order);
+        if (!financialWriteGuard.isEnabled()) return summary;
         if (order.getPaymentOrderNo() != null) {
             PaymentOrder paymentOrder = paymentOrderRepository.findByOrderNo(order.getPaymentOrderNo()).orElse(null);
             if (paymentOrder != null) {

@@ -9,6 +9,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConcurrentUpdate(org.springframework.orm.ObjectOptimisticLockingFailureException exception) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                .body(ApiResponse.fail("记录已更新，请刷新后重试"));
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ApiResponse<Void> handleBusinessException(BusinessException exception) {
         return ApiResponse.fail(exception.getMessage());

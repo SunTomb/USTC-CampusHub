@@ -38,7 +38,8 @@
               <strong>{{ item.userNickname }} · 技能店主理人申请</strong>
               <el-tag :type="statusTone(item.reviewStatus)" size="small">{{ formatStatus(item.reviewStatus) }}</el-tag>
             </div>
-            <p>保证金状态：{{ formatStatus(item.depositStatus) }}</p>
+            <p v-if="item.agreementStatus === 'CONSENTED'">已同意协议 {{ item.agreementVersion }} · {{ item.agreementConsentedAt }}</p>
+            <p v-else>历史申请：{{ formatStatus(item.reviewStatus) }}</p>
             <p v-if="item.applyNote">申请说明：{{ item.applyNote }}</p>
             <div class="payment-actions inline-card-actions">
               <el-button size="small" type="primary" @click="approveMerchant(item.id)">准予开店</el-button>

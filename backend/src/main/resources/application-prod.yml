@@ -36,6 +36,8 @@ campushub:
     expiration-minutes: ${CAMPUSHUB_JWT_EXPIRATION_MINUTES:43200}
   file-storage:
     root: ${CAMPUSHUB_FILE_ROOT:/var/lib/campushub/uploads}
+  financial:
+    enabled: ${CAMPUSHUB_FINANCIAL_FEATURES_ENABLED:false}
   payment:
     provider: ${CAMPUSHUB_PAYMENT_PROVIDER:mock}
     mock-enabled: ${CAMPUSHUB_PAYMENT_MOCK_ENABLED:false}
@@ -59,7 +61,7 @@ campushub:
       username: ${CAMPUSHUB_MAIL_SMTP_USERNAME}
       password: ${CAMPUSHUB_MAIL_SMTP_PASSWORD}
       from: ${CAMPUSHUB_MAIL_FROM}
-      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:USTC CampusHub}
+      from-name: ${CAMPUSHUB_MAIL_FROM_NAME:蜗壳 CampusHub}
     code:
       ttl-minutes: ${CAMPUSHUB_MAIL_CODE_TTL_MINUTES:10}
       resend-seconds: ${CAMPUSHUB_MAIL_CODE_RESEND_SECONDS:60}

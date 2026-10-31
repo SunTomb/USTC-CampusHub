@@ -44,7 +44,7 @@ public class ShopController {
 
     @GetMapping("/{id}")
     public ApiResponse<ShopDetailSummary> getShop(@PathVariable Long id, @RequestParam(required = false) Long viewerId) {
-        Long effectiveViewerId = currentUserService.optionalUserId().orElse(viewerId);
+        Long effectiveViewerId = currentUserService.optionalUserId().orElse(null);
         return ApiResponse.ok(shopService.getShop(id, effectiveViewerId));
     }
 

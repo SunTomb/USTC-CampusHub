@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">我的书院 · 个人名片</p>
         <h2>个人信息与安全设置</h2>
-        <p>修改你的 CampusHub 登录用户名、校园展示昵称与登录密码；微信扫码充值时备注该用户名或校园邮箱即可快速入账。</p>
+        <p>修改你的蜗壳 CampusHub 登录用户名、校园展示昵称与登录密码。</p>
       </div>
       <IdentityBadge v-if="auth.currentUser" :identities="auth.identityProfile.identities" compact />
     </div>
@@ -16,7 +16,7 @@
           <el-form-item label="已验证校园邮箱">
             <el-input :model-value="auth.currentUser?.email || ''" disabled />
           </el-form-item>
-          <el-form-item label="CampusHub 用户名">
+          <el-form-item label="蜗壳用户名">
             <el-input v-model="profileForm.username" placeholder="3-64 位字母、数字或下划线" />
           </el-form-item>
           <el-form-item label="校园展示昵称">

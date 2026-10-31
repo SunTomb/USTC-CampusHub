@@ -52,7 +52,7 @@ public class ProjectAdController {
 
     @GetMapping("/{id}")
     public ApiResponse<ProjectAdDetailSummary> getProjectAd(@PathVariable Long id, @RequestParam(required = false) Long viewerId) {
-        Long effectiveViewerId = currentUserService.optionalUserId().orElse(viewerId);
+        Long effectiveViewerId = currentUserService.optionalUserId().orElse(null);
         return ApiResponse.ok(projectAdService.getDetail(id, effectiveViewerId));
     }
 

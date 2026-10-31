@@ -33,8 +33,8 @@ public class RegisterMailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(formatFrom());
         message.setTo(email);
-        message.setSubject("校集 CampusHub 注册验证码");
-        message.setText("你正在注册校集 CampusHub。验证码有效期 "
+        message.setSubject("蜗壳 CampusHub 注册验证码");
+        message.setText("你正在注册蜗壳 CampusHub。验证码有效期 "
                 + mailProperties.code().ttlMinutes()
                 + " 分钟。若非本人操作，请忽略本邮件。\n\n验证码："
                 + code);

@@ -1,6 +1,18 @@
-# CampusHub Local Implementation
+# 蜗壳 CampusHub Local Implementation
 
-“校集 CampusHub”是校园二手交易与学生微服务平台的本地实现原型，用于数据库系统课程设计后续开发演示。
+“蜗壳 CampusHub”是校园二手交易与学生微服务平台的本地实现原型，用于数据库系统课程设计后续开发演示。蜗壳是独立学生项目，不代表任何学校或机构的官方立场。
+
+## 当前规则（源码工作区，部署状态另行核验）
+
+- 用户可见品牌统一为 **蜗壳 CampusHub**；邮箱域名、部署域名、数据库与接口标识保持不变。
+- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED` 默认 `false`。钱包入口隐藏，充值、提现、服务费、保证金支付和二手线上担保写操作拒绝；管理员只读历史记录。
+- 原财务界面保存在 `frontend/src/views/legacy/`，不删除数据库历史、不自动退款或清零。
+- 顺路跑腿员和闲置发布者明确同意当前角色协议后免费开通；技能店主理人同意后由站务核验。已有角色不补签，也不伪造同意记录。
+- V15 保存协议全文、版本和同意记录；V1–V14 不改动。当前协议可从 `/policy` 查阅。
+- 既存外部支付订单的验签/幂等回调保留，用于记录已发生的付款；这不表示新增支付开放。历史余额、冻结和保证金需另行核对处理。
+- 法律文字起草依据与运营前核对见 `docs/operations/woke-agreement-basis.md`。正式标题不代表已经取得法律合规认证。
+
+以下 Phase 章节为历史实施记录，涉及支付、保证金的旧描述不代表当前开放状态。
 
 ## 模块范围
 
@@ -255,14 +267,14 @@ npm run dev
 
 演示数据由 Flyway `V2__seed_demo_data.sql` 初始化。默认密码以开发环境哈希形式存储，仅用于本地演示。
 
-## 本地支付说明
+## 资金功能说明
 
-当前实现提供 `PaymentProvider` 抽象与 `MockPaymentProvider`：
+当前默认关闭资金写操作：
 
-- `POST /api/payment/service-fees/{feeId}/mock-pay` 创建本地模拟支付；
-- `POST /api/payment/service-fees/{feeId}/mock-success` 查询 mock provider 并把待支付服务费幂等标记为 `PAID`；
-- 支付成功后会写入 `wallet_flows`，用于演示服务费支付闭环；
-- `AlipayPaymentProvider` 只保留生产骨架，不读取、不复制、不保存支付宝密钥。
+- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false` 时，充值、提现、服务费支付、身份保证金支付和二手线上担保不会创建新的资金业务；
+- 历史订单、流水和支付中心回调记录仍保留，管理员页面只读查看；
+- 本地测试可以在测试 profile 中显式开启该开关，以覆盖历史支付服务；
+- CampusHub 不读取、不复制、不保存支付宝密钥，真实渠道仍由 API-Transfer-Station 负责。
 
 ## 生产部署准备
 
@@ -298,7 +310,7 @@ CAMPUSHUB_MAIL_SMTP_HOST=smtp-relay.brevo.com
 CAMPUSHUB_MAIL_SMTP_USERNAME=Brevo SMTP 用户名
 CAMPUSHUB_MAIL_SMTP_PASSWORD=Brevo SMTP 密码
 CAMPUSHUB_MAIL_FROM=suntomb@suntomb.qzz.io
-CAMPUSHUB_MAIL_FROM_NAME=USTC CampusHub
+CAMPUSHUB_MAIL_FROM_NAME=蜗壳 CampusHub
 ```
 
 ### 反代建议
@@ -373,3 +385,16 @@ Phase 14 基于真实使用反馈修复登录、身份申请和后台管理体�
 - 前端移除可见的旧“内容审核”导航入口，管理后台改为 master、交易、展示、运营、治理、支付、钱包等分工入口。
 
 Phase 14 仍保持支付边界：真实支付宝处理在 API-Transfer-Station，CampusHub 不读取、不复制、不保存支付宝密钥正文。
+
+## 当前资金边界与协议开通
+
+当前产品暂时关闭新的资金写操作，等待课程讨论校园集市涉及的资金管理边界：
+
+- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false` 时，新的充值、提现、平台服务费、身份保证金和二手线上担保操作会被拒绝；历史数据保留，管理员界面只读；关闭前既存支付单的合法回调仍可幂等记账；
+- 普通用户钱包入口和线上担保操作暂不开放，管理员仅可查看历史资金记录；
+- 顺路跑腿员、闲置发布者和技能店主理人不再通过保证金开通：前两者阅读并同意当前协议后自动开通，店主理人同意协议后进入站务核验；
+- 已有角色和历史保证金记录不撤销、不重置，也不要求历史用户重新同意；
+- 协议接受记录使用 V15 版本化迁移保存，包含协议版本、角色和同意时间，不采集 IP 或设备指纹；
+- 产品可见名称为“蜗壳 CampusHub”，实际校园邮箱域名和现有部署域名保持不变；蜗壳是独立学生项目，不代表任何学校或机构的官方立场。
+
+资金功能后续是否开放、历史资金如何进一步处理，以教师讨论和后续协议版本为准。历史 Phase 文档中的支付、保证金和线上托管描述不应直接解释为当前新业务已开放。

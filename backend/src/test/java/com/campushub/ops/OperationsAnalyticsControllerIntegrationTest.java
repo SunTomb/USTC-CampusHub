@@ -27,10 +27,14 @@ class OperationsAnalyticsControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private com.campushub.auth.JwtTokenService tokens;
+
     @Test
     void returnsOverviewAnalytics() throws Exception {
         mockMvc.perform(get("/api/admin/ops/analytics/overview")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -41,6 +45,7 @@ class OperationsAnalyticsControllerIntegrationTest {
     @Test
     void rejectsInvalidDateRange() throws Exception {
         mockMvc.perform(get("/api/admin/ops/analytics/overview")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
                         .param("startDate", "2026-05-22")
                         .param("endDate", "2026-05-01"))
                 .andExpect(status().isOk())
@@ -51,14 +56,16 @@ class OperationsAnalyticsControllerIntegrationTest {
     @Test
     void returnsAnalyticsSmokeResponses() throws Exception {
         mockMvc.perform(get("/api/admin/ops/analytics/funnels")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.funnels").isArray());
 
         mockMvc.perform(get("/api/admin/ops/analytics/zones")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -66,7 +73,8 @@ class OperationsAnalyticsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.projectAdZones").isArray());
 
         mockMvc.perform(get("/api/admin/ops/analytics/fees")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -77,7 +85,8 @@ class OperationsAnalyticsControllerIntegrationTest {
     @Test
     void returnsCsvExportWithDownloadHeaders() throws Exception {
         mockMvc.perform(get("/api/admin/ops/exports/goods.csv")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("text/csv")))
@@ -85,11 +94,12 @@ class OperationsAnalyticsControllerIntegrationTest {
                 .andExpect(content().string(containsString("联系方式开放")));
 
         mockMvc.perform(get("/api/admin/ops/exports/fees.csv")
-                        .param("startDate", "2020-01-01")
+                        .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
+                        .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-22"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("text/csv")))
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
-                .andExpect(content().string(containsString("分类")));
+                .andExpect(content().string(containsString("费用类型")));
     }
 }

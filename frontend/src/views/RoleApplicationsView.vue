@@ -2,17 +2,17 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">我的书院 · 身份印章与保证金</p>
+        <p class="eyebrow">我的书院 · 身份协议与权限</p>
         <h2>身份解锁中心</h2>
-        <p>跑腿接单员与闲置发布者缴纳保证金后实时自动点亮；技能店主理人与领域管理员经站务审核后开通。</p>
+        <p>顺路跑腿员、闲置发布者和技能店主理人先阅读对应协议；前两类同意后自动开通，店主理人由站务核验。</p>
       </div>
     </div>
 
     <div class="premium-panel role-status-panel">
       <p class="eyebrow">当前已点亮身份</p>
-      <h3>我的瀚海通行印章</h3>
+      <h3>蜗壳 CampusHub 身份</h3>
       <IdentityBadge :identities="identityProfile.identities" />
-      <p>支持使用支付宝收银台或钱包可用余额缴纳身份保证金；无不良记录时保证金始终归属于你。</p>
+      <p>历史身份继续有效，不会因为资金功能暂未开放而被自动撤销。</p>
     </div>
 
     <div class="role-grid">
@@ -21,67 +21,85 @@
           <div class="panel-topline">
             <strong>{{ role.title }}</strong>
             <el-tag :type="role.review ? 'warning' : 'success'" effect="plain">
-              {{ role.review ? '需站务核验' : '缴后即开' }}
+              {{ role.agreementRequired ? (role.review ? '协议后站务核验' : '同意协议后开通') : '总站务审核' }}
             </el-tag>
           </div>
         </template>
         <p>{{ role.description }}</p>
-        <div class="deposit-amount mono-num">{{ role.depositAmount > 0 ? `¥${role.depositAmount}` : '免保证金' }}</div>
+        <div class="deposit-amount mono-num">免保证金</div>
         <el-input v-model="notes[role.roleType]" type="textarea" :rows="3" placeholder="填写简短的申请说明或擅长领域（选填）" />
-        <el-button type="primary" :loading="loadingRole === role.roleType" :disabled="role.unlocked" @click="submit(role.roleType)">
-          {{ role.unlocked ? '已点亮该身份' : '申请点亮身份' }}
+        <el-button
+          type="primary"
+          :loading="loadingRole === role.roleType || agreementLoading"
+          :disabled="loadingRole !== null || agreementLoading || role.unlocked || role.application?.reviewStatus === 'PENDING_REVIEW'"
+          @click="beginApplication(role.roleType)"
+        >
+          {{ role.unlocked ? '已开通' : role.application?.reviewStatus === 'PENDING_REVIEW' ? '等待站务核验' : role.agreementRequired ? '阅读协议并申请' : '提交管理员申请' }}
         </el-button>
         <div v-if="role.application" class="payment-meta">
-          <span>保证金状态：{{ depositStatusText[role.application.depositStatus] ?? formatStatus(role.application.depositStatus) }}</span>
-          <span>核验进度：{{ formatStatus(role.application.reviewStatus) }}</span>
-          <span v-if="role.application.depositPaymentOrderNo">收银台单号：<span class="mono-num">{{ role.application.depositPaymentOrderNo }}</span></span>
-          <div class="payment-actions" v-if="role.application.depositStatus !== 'PAID' && role.application.depositAmount > 0">
-            <el-button
-              size="small"
-              type="primary"
-              plain
-              :loading="payingApplicationId === role.application.id"
-              @click="payDeposit(role.application.id)"
-            >
-              支付宝支付
-            </el-button>
-            <el-button
-              size="small"
-              type="success"
-              plain
-              :loading="walletPayingApplicationId === role.application.id"
-              @click="payDepositByWallet(role.application.id)"
-            >
-              钱包余额支付
-            </el-button>
-          </div>
+          <span>申请状态：{{ formatStatus(role.application.reviewStatus) }}</span>
+          <span v-if="role.agreementRequired">协议状态：{{ agreementStatusText(role.application.agreementStatus) }}</span>
+          <span v-if="role.application.agreementVersion">协议版本：{{ role.application.agreementVersion }}</span>
+          <span v-if="role.application.depositAmount > 0">
+            历史保证金记录：¥{{ role.application.depositAmount }}
+          </span>
         </div>
       </el-card>
     </div>
+
+    <el-dialog v-model="agreementDialogVisible" append-to-body :title="agreement?.title || '身份协议'" width="680px" :close-on-click-modal="loadingRole === null" :close-on-press-escape="loadingRole === null" :show-close="loadingRole === null">
+      <div v-if="agreement" class="protocol-dialog-body">
+        <div class="panel-topline">
+          <strong>协议版本 {{ agreement.version }}</strong>
+          <span>生效时间：{{ agreement.effectiveAt?.slice(0, 10) || '当前版本' }}</span>
+        </div>
+        <el-alert title="请注意受托物品、交付责任、个人信息核查与争议处理条款。协议同意不是任意公开联系方式的授权。" type="warning" show-icon :closable="false" />
+        <div class="protocol-text" tabindex="0">{{ agreement.content }}</div>
+        <el-alert
+          title="蜗壳 CampusHub 是独立学生项目，不代表任何学校或机构官方立场。"
+          type="info"
+          show-icon
+          :closable="false"
+        />
+        <el-checkbox v-model="agreementAccepted" class="protocol-checkbox">
+          我已阅读并同意《{{ agreement.title }}》（{{ agreement.version }}），并已注意重要条款。
+        </el-checkbox>
+      </div>
+      <template #footer>
+        <el-button :disabled="loadingRole !== null" @click="agreementDialogVisible = false">暂不申请</el-button>
+        <el-button type="primary" :loading="loadingRole !== null" :disabled="!agreementAccepted" @click="confirmAgreement">
+          同意协议并提交申请
+        </el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { applyRole, createRoleDepositPayment, listRoleApplications, payRoleDepositWithWallet, type RoleApplicationSummary } from '@/api/campushub'
+import {
+  applyRole,
+  getCurrentRoleAgreement,
+  getCurrentUser,
+  listRoleApplications,
+  type PlatformProtocolSummary,
+  type RoleApplicationSummary,
+} from '@/api/campushub'
 import IdentityBadge from '@/components/common/IdentityBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { formatStatus } from '@/utils/display'
+import { roleActivationMode, roleRequiresAgreement } from '@/config/roleAgreements'
 
 const auth = useAuthStore()
 const identityProfile = computed(() => auth.identityProfile)
 const loadingRole = ref<string | null>(null)
-const payingApplicationId = ref<number | null>(null)
-const walletPayingApplicationId = ref<number | null>(null)
+const agreementLoading = ref(false)
+const agreementDialogVisible = ref(false)
+const agreementAccepted = ref(false)
+const agreementRoleType = ref<string | null>(null)
+const agreement = ref<PlatformProtocolSummary | null>(null)
 const applications = reactive<Record<string, RoleApplicationSummary>>({})
-const depositStatusText: Record<string, string> = {
-  PENDING: '待缴纳',
-  PAID: '已缴纳',
-  FAILED: '支付未完成',
-  EXPIRED: '支付单已过期',
-  NOT_REQUIRED: '免保证金',
-}
 const notes = reactive<Record<string, string>>({
   RUNNER: '',
   GOODS_PUBLISHER: '',
@@ -94,35 +112,30 @@ const roles = [
   {
     roleType: 'RUNNER',
     title: '顺路跑腿员',
-    depositAmount: 5,
-    description: '可抢单或报名承接跨校区代取快递、急送资料、食堂带饭等日常跑腿委托。',
+    description: '阅读协议后可抢单或报名承接跨校区代取快递、急送资料、食堂带饭等日常跑腿委托。',
     review: false,
   },
   {
     roleType: 'GOODS_PUBLISHER',
     title: '闲置发布者',
-    depositAmount: 10,
-    description: '可在二手市集上架教材、数码、单车与宿舍好物，保障校内闲置交易真实可溯。',
+    description: '阅读协议后可在二手市集上架教材、数码、单车与宿舍好物，明确交接责任。',
     review: false,
   },
   {
     roleType: 'SHOP_MERCHANT',
     title: '技能店主理人',
-    depositAmount: 20,
-    description: '适合人像约拍、电脑清灰、科研绘图、贴膜维修等长期个人小店，经站务核验后开通。',
+    description: '阅读协议后提交站务核验，适合人像约拍、电脑清灰、科研绘图、贴膜维修等长期个人小店。',
     review: true,
   },
   {
     roleType: 'TRADE_ADMIN',
     title: '交易共治管理员',
-    depositAmount: 0,
     description: '协助巡查跑腿大厅与二手市集秩序、调解同窗交接纠纷，由总站务审批开通。',
     review: true,
   },
   {
     roleType: 'SHOWCASE_ADMIN',
     title: '展示共治管理员',
-    depositAmount: 0,
     description: '协助核验项目广场招募信息、学生技能店铺与服务反馈，由总站务审批开通。',
     review: true,
   },
@@ -141,6 +154,8 @@ const roleCards = computed(() =>
     ...role,
     application: applicationFor(role.roleType),
     unlocked: hasIdentity(role.roleType),
+    agreementRequired: roleRequiresAgreement(role.roleType),
+    activationMode: roleActivationMode(role.roleType),
   })),
 )
 
@@ -154,22 +169,22 @@ function hasIdentity(roleType: string) {
   return aliases.some((role) => userRoles.includes(role))
 }
 
+function agreementStatusText(status?: string | null) {
+  if (!status || status === 'LEGACY') return '历史记录（未补写协议同意）'
+  if (status === 'CONSENTED') return '已同意所列版本'
+  return formatStatus(status)
+}
+
 async function loadApplications() {
   const requestedUserId = auth.currentUser?.id
   if (!requestedUserId) {
-    Object.keys(applications).forEach((roleType) => {
-      delete applications[roleType]
-    })
+    Object.keys(applications).forEach((roleType) => delete applications[roleType])
     return
   }
   try {
     const existing = await listRoleApplications(requestedUserId)
-    if (auth.currentUser?.id !== requestedUserId) {
-      return
-    }
-    Object.keys(applications).forEach((roleType) => {
-      delete applications[roleType]
-    })
+    if (auth.currentUser?.id !== requestedUserId) return
+    Object.keys(applications).forEach((roleType) => delete applications[roleType])
     existing.forEach((application) => {
       applications[application.roleType] = application
     })
@@ -180,7 +195,37 @@ async function loadApplications() {
   }
 }
 
-async function submit(roleType: string) {
+async function beginApplication(roleType: string) {
+  if (loadingRole.value !== null || agreementLoading.value || hasIdentity(roleType)) return
+  if (!auth.currentUser?.id) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  if (!roleRequiresAgreement(roleType)) {
+    await submit(roleType)
+    return
+  }
+  agreementLoading.value = true
+  try {
+    agreement.value = await getCurrentRoleAgreement(roleType)
+    agreementRoleType.value = roleType
+    agreementAccepted.value = false
+    agreementDialogVisible.value = true
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '协议加载失败，请稍后重试')
+  } finally {
+    agreementLoading.value = false
+  }
+}
+
+async function confirmAgreement() {
+  if (!agreementRoleType.value || !agreement.value || !agreementAccepted.value) return
+  const success = await submit(agreementRoleType.value, agreement.value.version)
+  if (success) agreementDialogVisible.value = false
+}
+
+async function submit(roleType: string, agreementVersion?: string) {
+  if (loadingRole.value !== null) return false
   const userId = auth.currentUser?.id
   if (!userId) {
     ElMessage.warning('请先登录')
@@ -188,43 +233,32 @@ async function submit(roleType: string) {
   }
   loadingRole.value = roleType
   try {
-    const result = await applyRole(userId, { roleType, applyNote: notes[roleType] })
+    const result = await applyRole(userId, {
+      roleType,
+      applyNote: notes[roleType],
+      agreementVersion,
+      agreementAccepted: Boolean(agreementVersion),
+    })
+    if (auth.currentUser?.id !== userId) return true
     applications[roleType] = result
-    ElMessage.success(result.depositStatus === 'PENDING' ? '申请已记录，请继续完成保证金缴纳' : '申请已提交')
+    if (result.reviewStatus === 'APPROVED') {
+      const role = roleAliases[roleType]?.[0]
+      if (role) auth.currentUser = { ...auth.currentUser, roles: [...new Set([...auth.currentUser.roles, role])] }
+      try {
+        const current = await getCurrentUser({ skipAuthExpireHandling: true })
+        if (auth.currentUser?.id === userId) auth.currentUser = current
+      } catch {
+        ElMessage.warning('身份已开通，个人资料暂时刷新失败，可稍后刷新')
+      }
+    }
+    ElMessage.success(result.reviewStatus === 'APPROVED' ? '身份已开通' : '申请已提交站务核验')
+    return true
   } catch (error) {
+    agreementAccepted.value = false
     ElMessage.error(error instanceof Error ? error.message : '申请失败，请稍后重试')
+    return false
   } finally {
     loadingRole.value = null
-  }
-}
-
-async function payDeposit(applicationId: number) {
-  payingApplicationId.value = applicationId
-  try {
-    const result = await createRoleDepositPayment(applicationId)
-    ElMessage.success(result.message || '保证金支付单已创建')
-    await loadApplications()
-    if (result.payUrl && !result.payUrl.startsWith('mock://')) {
-      window.open(result.payUrl, '_blank', 'noopener,noreferrer')
-    }
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '保证金支付失败，请稍后重试')
-  } finally {
-    payingApplicationId.value = null
-  }
-}
-
-async function payDepositByWallet(applicationId: number) {
-  walletPayingApplicationId.value = applicationId
-  try {
-    const result = await payRoleDepositWithWallet(applicationId)
-    ElMessage.success(result.message || '余额缴纳成功，身份已更新')
-    await auth.loadCurrentUser()
-    await loadApplications()
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '余额不足或缴纳失败，请先充值或改用支付宝')
-  } finally {
-    walletPayingApplicationId.value = null
   }
 }
 
@@ -236,3 +270,10 @@ watch(
   { immediate: true },
 )
 </script>
+
+<style scoped>
+.protocol-dialog-body { display: grid; gap: 16px; }
+.protocol-text { max-height: 45vh; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; padding: 12px; border: 1px solid var(--border-subtle); }
+.protocol-checkbox { height: auto; align-items: flex-start; }
+.protocol-checkbox :deep(.el-checkbox__label) { white-space: normal; line-height: 1.6; }
+</style>

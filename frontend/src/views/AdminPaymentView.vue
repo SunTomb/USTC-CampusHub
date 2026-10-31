@@ -40,7 +40,7 @@ onMounted(loadPayments)
       <div>
         <p class="eyebrow">站务中枢 · 收银台账务对账</p>
         <h2>支付监控中心</h2>
-        <p>核查支付宝收银台充值单、身份保证金与平台服务费订单的入账状态及回调日志。</p>
+        <p>只读查看历史支付订单与回调日志；新的充值、身份保证金和服务费支付目前暂未开放。</p>
       </div>
       <div class="payment-actions">
         <el-select v-model="status" clearable placeholder="全部订单状态" style="width: 180px" @change="loadPayments">
@@ -53,9 +53,11 @@ onMounted(loadPayments)
       </div>
     </div>
 
+    <el-alert title="资金相关新业务暂未开放，本页面仅用于查看历史订单和回调记录。" type="info" show-icon :closable="false" />
+
     <el-tabs class="tabs-surface premium-panel">
       <el-tab-pane label="收银台订单流水">
-        <EmptyState v-if="!orders.length && !loading" title="暂无收银台订单" description="用户发起充值、缴纳保证金或支付服务费后会在此生成对账单。" />
+        <EmptyState v-if="!orders.length && !loading" title="暂无收银台订单" description="仅展示已有支付订单；当前不创建新的收银台订单。" />
         <el-table v-else v-loading="loading" :data="orders" class="mobile-safe-table" stripe>
           <el-table-column prop="orderNo" label="收银台订单号" min-width="180">
             <template #default="{ row }"><span class="mono-num">{{ row.orderNo }}</span></template>

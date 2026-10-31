@@ -32,16 +32,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/register/send-code", "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payment/callbacks/payment-center").permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/platform/features",
+                                "/api/platform/protocols/{roleType}",
                                 "/api/goods",
                                 "/api/goods/{id:[0-9]+}",
                                 "/api/categories/**",
                                 "/api/tasks/**",
-                                "/api/task-applications/**",
                                 "/api/shops/**",
                                 "/api/service-items/**",
                                 "/api/project-ads/**",
                                 "/api/files/**")
                         .permitAll()
+                        .requestMatchers("/api/admin/payment/**", "/api/admin/wallet/**", "/api/admin/ops/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_MASTER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_MASTER_ADMIN", "ROLE_TRADE_ADMIN", "ROLE_SHOWCASE_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

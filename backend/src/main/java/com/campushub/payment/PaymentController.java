@@ -90,11 +90,17 @@ public class PaymentController {
 
     @PostMapping("/service-fees/{feeId}/mock-pay")
     public ApiResponse<PaymentCreation> createMockServiceFeePayment(@PathVariable Long feeId) {
-        return ApiResponse.ok(paymentService.createServiceFeePayment(feeId));
+        ServiceFeeRecord fee = serviceFeeRecordRepository.findById(feeId)
+                .orElseThrow(() -> new BusinessException("服务费记录不存在"));
+        currentUserService.requireSameUser(fee.getPayer().getId());
+        return ApiResponse.ok(paymentService.createMockServiceFeePayment(feeId));
     }
 
     @PostMapping("/service-fees/{feeId}/mock-success")
     public ApiResponse<PaymentStatus> markMockServiceFeeSuccess(@PathVariable Long feeId) {
+        ServiceFeeRecord fee = serviceFeeRecordRepository.findById(feeId)
+                .orElseThrow(() -> new BusinessException("服务费记录不存在"));
+        currentUserService.requireSameUser(fee.getPayer().getId());
         return ApiResponse.ok(paymentService.markMockServiceFeeSuccess(feeId));
     }
 }

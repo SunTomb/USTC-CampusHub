@@ -1,6 +1,7 @@
 package com.campushub.task;
 
 import com.campushub.common.BusinessException;
+import com.campushub.auth.UserRoleService;
 import com.campushub.moderation.GovernanceService;
 import com.campushub.notification.NotificationService;
 import com.campushub.user.User;
@@ -19,6 +20,7 @@ public class RunnerTaskService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final GovernanceService governanceService;
+    private final UserRoleService userRoleService;
 
     public RunnerTaskService(
             RewardTaskRepository rewardTaskRepository,
@@ -27,7 +29,8 @@ public class RunnerTaskService {
             TaskIssueRepository taskIssueRepository,
             UserRepository userRepository,
             NotificationService notificationService,
-            GovernanceService governanceService) {
+            GovernanceService governanceService,
+            UserRoleService userRoleService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskApplicationRepository = taskApplicationRepository;
         this.taskEventRepository = taskEventRepository;
@@ -35,6 +38,7 @@ public class RunnerTaskService {
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.governanceService = governanceService;
+        this.userRoleService = userRoleService;
     }
 
     @Transactional
@@ -69,8 +73,10 @@ public class RunnerTaskService {
 
     @Transactional
     public RewardTaskSummary grab(Long taskId, Long runnerId) {
+        ensureRunner(runnerId);
         RewardTask task = findTask(taskId);
         User runner = findUser(runnerId);
+        if (task.getPublisher().getId().equals(runnerId)) throw new BusinessException("不能接取自己的任务");
         governanceService.ensureCanProvideService(runnerId);
         ensureTaskMode(task, TaskAcceptanceMode.GRAB.name());
         ensureTaskPublished(task);
@@ -87,6 +93,7 @@ public class RunnerTaskService {
     public TaskApplicationSummary apply(Long taskId, Long applicantId, ApplyTaskRequest request) {
         RewardTask task = findTask(taskId);
         User applicant = findUser(applicantId);
+        ensureRunner(applicantId);
         governanceService.ensureCanProvideService(applicantId);
         ensureTaskMode(task, TaskAcceptanceMode.APPLICATION.name());
         ensureTaskPublished(task);
@@ -122,6 +129,7 @@ public class RunnerTaskService {
     @Transactional
     public RewardTaskSummary advance(Long taskId, Long actorId, String nextStatus, TaskActionRequest request) {
         RewardTask task = findTask(taskId);
+        ensureAssignedRunner(task, actorId);
         User actor = findUser(actorId);
         TaskWorkflowStatus status = validateEnum(TaskWorkflowStatus.class, nextStatus, "不支持的任务状态");
         task.moveTo(status.name());
@@ -133,6 +141,7 @@ public class RunnerTaskService {
     @Transactional
     public RewardTaskSummary completeWithCode(Long taskId, Long runnerId, TaskActionRequest request) {
         RewardTask task = findTask(taskId);
+        ensureAssignedRunner(task, runnerId);
         User runner = findUser(runnerId);
         task.moveTo(TaskWorkflowStatus.COMPLETED.name());
         if (task.getAcceptedApplication() != null) {
@@ -146,6 +155,7 @@ public class RunnerTaskService {
     @Transactional
     public RewardTaskSummary submitDeliveryPhoto(Long taskId, Long runnerId, TaskActionRequest request) {
         RewardTask task = findTask(taskId);
+        ensureAssignedRunner(task, runnerId);
         User runner = findUser(runnerId);
         task.moveTo(TaskWorkflowStatus.PENDING_CONFIRMATION.name());
         recordEvent(task, runner, "PHOTO_SUBMITTED", request == null ? null : request.note());
@@ -187,6 +197,20 @@ public class RunnerTaskService {
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("用户不存在"));
+    }
+
+    private void ensureAssignedRunner(RewardTask task, Long userId) {
+        ensureRunner(userId);
+        if (task.getAcceptedApplication() == null || !task.getAcceptedApplication().getApplicant().getId().equals(userId)) {
+            throw new BusinessException("只有本单接单者可以更新履约进度");
+        }
+        governanceService.ensureCanProvideService(userId);
+    }
+
+    private void ensureRunner(Long userId) {
+        if (!userRoleService.hasRole(userId, "ROLE_RUNNER")) {
+            throw new BusinessException("请先阅读并同意顺路跑腿服务协议");
+        }
     }
 
     private void ensureTaskMode(RewardTask task, String mode) {

@@ -34,6 +34,7 @@ public class WalletController {
 
     @GetMapping("/accounts")
     public ApiResponse<List<WalletAccountSummary>> listAccounts() {
+        currentUserService.requireAdminId();
         List<WalletAccountSummary> accounts = walletAccountRepository.findAll().stream()
                 .map(WalletAccountSummary::from)
                 .toList();

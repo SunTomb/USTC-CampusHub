@@ -8,7 +8,7 @@
       </div>
       <div class="heading-actions">
         <el-button @click="loadShops" :loading="loading">刷新列表</el-button>
-        <el-button type="primary" @click="goMerchant">入驻开店 / 主理人工作台</el-button>
+        <el-button type="primary" @click="goMerchant">{{ auth.canAccessIdentity('shopMerchant') ? '主理人工作台' : '阅读协议并申请开店' }}</el-button>
       </div>
     </div>
 
@@ -52,8 +52,8 @@
         v-if="!loading && filteredShops.length === 0"
         eyebrow="同窗小店"
         title="暂时没有找到匹配的学生店铺"
-        description="可以换个校区或关键词试试，或者申请成为技能店主理人，把你的特长变成校园口碑小店。"
-        action-text="前往主理人工作台"
+        description="换个校区或关键词试试，或者阅读技能店主理人协议后提交站务核验。"
+        action-text="申请主理人身份"
         @action="goMerchant"
       />
     </div>
@@ -112,7 +112,7 @@ function goMerchant() {
     router.push({ name: 'auth' })
     return
   }
-  router.push({ name: 'shop-merchant' })
+  router.push({ name: auth.canAccessIdentity('shopMerchant') ? 'shop-merchant' : 'roles' })
 }
 
 function zoneLabel(value: CampusZone) {

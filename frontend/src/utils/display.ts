@@ -112,8 +112,8 @@ const ROLE_TYPE_LABELS: Record<string, string> = {
   ROLE_MASTER_ADMIN: '总站务管理员',
   ADMIN: '平台管理员',
   ROLE_ADMIN: '平台管理员',
-  STUDENT: '科大同学',
-  ROLE_STUDENT: '科大同学',
+  STUDENT: '校园同学',
+  ROLE_STUDENT: '校园同学',
 }
 
 export function formatRoleType(roleType?: string | null): string {
