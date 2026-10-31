@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Current production boundary, 2026-10-31
+
+This section supersedes historical payment and identity handoffs below.
+
+- Visible product name: **蜗壳 CampusHub**, an independent student project. Keep the actual public domain and campus email domains; do not rewrite user-authored historical content merely to replace the brand.
+- Application commit `8bd1cd4` is deployed from `feat/phase15-editorial-bento-ui`, not master. Later documentation-only commits do not change the running application image. See `docs/operations/2026-10-31-woke-production-release.md` for evidence and limitations.
+- Financial features are soft-closed in production: `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false`. Ordinary wallet navigation is hidden, `/wallet` shows an unavailable state, admin financial views are read-only, and backend guards reject new financial/escrow operations. Preserve history, legacy code, and authenticated/idempotent historical callbacks. Do not turn payments back on without a separate decision.
+- New runner and goods-publisher identities require explicit versioned agreement acceptance and auto-approve without a deposit. Shop merchants accept their agreement and await station review, also without a deposit. Existing granted identities remain valid and do not need fabricated or retroactive consents.
+- V15 is now applied successfully on production. Never modify V1–V15; use V16+ for future schema changes.
+- Current production config also keeps beta account reset disabled and mail display name `蜗壳 CampusHub`. Never read or print secret values, reset accounts for smoke tests, or perform real financial/business writes merely for verification.
+- Read-only authenticated browser checks passed for identity, wallet-unavailable, admin wallet/payment, and operations. Full new-identity submission flows were tested in isolation, not repeated against production users. The public goods/1 cover remains missing; the task hall is currently empty. These records were not altered to improve screenshots.
+- Updated defense prompt and 8 public-production screenshots are local under `docs/midterm-defense/2026-10-30/`; the prior 9 isolated-preview screenshots remain distinctly labeled. Do not bulk-add course materials or screenshot folders to application commits.
+
 ## Project overview
 
 CampusHub is a USTC database course-design prototype for a campus second-hand trading and student micro-service platform. It combines goods trading, reward tasks, student skill shops, project ads, file/resource binding, moderation/reporting/violations, wallet flows, service fees, and a local payment abstraction.
