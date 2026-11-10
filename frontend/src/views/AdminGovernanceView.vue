@@ -90,7 +90,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="violationDialog" title="登记失信与违规处置" width="640px">
+    <el-dialog v-model="violationDialog" append-to-body title="登记失信与违规处置" width="640px">
       <el-form label-width="120px">
         <el-form-item label="责任用户 ID">
           <el-input-number v-model="violationForm.userId" :min="1" />

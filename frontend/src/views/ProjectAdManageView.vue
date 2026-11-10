@@ -46,7 +46,7 @@
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑项目展示' : '发起新项目 / 招募'" width="720px">
+    <el-dialog v-model="dialogVisible" append-to-body :title="editingId ? '编辑项目展示' : '发起新项目 / 招募'" width="720px">
       <el-form :model="form" label-position="top" class="project-form">
         <FormSection title="核心信息" description="清晰的标题、一句话摘要与技术/方向标签，能吸引志同道合的同学。">
           <el-form-item label="所属栏目">
@@ -78,7 +78,7 @@
               <el-option label="暂不公开（仅通过留言沟通）" value="HIDDEN" />
             </el-select>
           </el-form-item>
-          <el-form-item label="招募截止时间（选填）"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="wide" /></el-form-item>
+          <el-form-item label="招募截止时间（选填）"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="wide" popper-class="responsive-date-popper" /></el-form-item>
         </FormSection>
 
         <FormSection title="详细介绍与外部链接" description="详细说明背景目标、分工需求或附上 GitHub / 飞书文档链接。">

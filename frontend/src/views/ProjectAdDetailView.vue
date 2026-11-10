@@ -77,7 +77,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="reportVisible" title="反馈项目问题" width="420px">
+    <el-dialog v-model="reportVisible" append-to-body title="反馈项目问题" width="420px">
       <el-input v-model="reportForm.reason" placeholder="反馈原因" />
       <el-input v-model="reportForm.description" class="form-gap" type="textarea" :rows="3" placeholder="补充具体说明" />
       <template #footer>

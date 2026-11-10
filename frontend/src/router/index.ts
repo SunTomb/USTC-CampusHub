@@ -88,7 +88,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   await usePlatformStore().load()
   const auth = useAuthStore()
-  if (auth.token && !auth.currentUser && !auth.sessionLoaded) {
+  if (auth.token && !auth.currentUser && !auth.sessionLoaded && !(to.name === 'auth' && auth.sessionError)) {
     await auth.loadCurrentUser()
   }
 
@@ -96,7 +96,7 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAdmin) {
     if (!auth.isAuthenticated) {
-      ElMessage.warning('请先登录')
+      if (!auth.sessionError) ElMessage.warning('请先登录')
       return { name: 'auth', query: { redirect } }
     }
     if (!hasAnyRole(auth.currentUser?.roles, ['admin'])) {
@@ -106,7 +106,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    ElMessage.warning('请先登录')
+    if (!auth.sessionError) ElMessage.warning('请先登录')
     return { name: 'auth', query: { redirect } }
   }
 

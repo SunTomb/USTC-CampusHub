@@ -1989,9 +1989,21 @@ h3,
   background: linear-gradient(135deg, #fffdf9 0%, #f1efe9 100%);
 }
 
+.auth-page.session-recovery-page {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.session-recovery {
+  display: grid;
+  gap: 16px;
+}
+
 .profile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -2210,6 +2222,45 @@ h3,
   .mobile-tabbar-icon {
     font-size: 17px;
     line-height: 1;
+  }
+
+  .ops-heading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ops-heading-actions > .el-date-editor {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .responsive-date-popper .el-picker-panel {
+    width: min(322px, calc(100vw - 28px));
+    max-height: calc(100vh - 28px);
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .responsive-date-popper .el-picker-panel .el-picker-panel__body {
+    min-width: 0;
+  }
+
+  .responsive-date-popper .el-picker-panel .el-picker-panel__content {
+    width: auto;
+  }
+
+  .responsive-date-popper .el-picker-panel__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--el-bg-color-overlay);
   }
 
   .el-dialog {

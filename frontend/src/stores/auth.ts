@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { getCurrentUser, type CurrentUser } from '@/api/campushub'
-import { postApi } from '@/api/client'
+import { ApiError, postApi } from '@/api/client'
 import { buildIdentityProfile, hasAnyRole, type IdentityKey } from '@/utils/identity'
 
 interface LoginResponse {
@@ -14,6 +14,8 @@ interface AuthState {
   token: string | null
   currentUser: CurrentUser | null
   sessionLoaded: boolean
+  sessionError: string | null
+  restoreSequence: number
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -21,6 +23,8 @@ export const useAuthStore = defineStore('auth', {
     token: localStorage.getItem('campushub_token'),
     currentUser: null,
     sessionLoaded: false,
+    sessionError: null,
+    restoreSequence: 0,
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token && state.currentUser),
@@ -35,30 +39,47 @@ export const useAuthStore = defineStore('auth', {
       this.setSession(session.accessToken, session.user)
     },
     async loadCurrentUser() {
-      if (!this.token) {
+      const requestSequence = ++this.restoreSequence
+      const requestedToken = this.token
+      if (!requestedToken) {
         this.sessionLoaded = true
+        this.sessionError = null
         return
       }
       try {
-        this.currentUser = await getCurrentUser({ skipAuthExpireHandling: true })
-      } catch {
-        this.clearSession()
-      } finally {
+        const user = await getCurrentUser({ skipAuthExpireHandling: true })
+        if (this.restoreSequence !== requestSequence || this.token !== requestedToken) return
+        this.currentUser = user
         this.sessionLoaded = true
+        this.sessionError = null
+      } catch (error) {
+        if (this.restoreSequence !== requestSequence || this.token !== requestedToken) return
+        if (error instanceof ApiError && error.status === 401) {
+          this.clearSession()
+        } else {
+          this.currentUser = null
+          this.sessionLoaded = false
+          this.sessionError = '暂时无法验证登录状态，已保留登录凭证。请检查网络后重试。'
+        }
       }
     },
     hasRole(role: string) {
       return Boolean(this.currentUser?.roles.includes(role))
     },
     setSession(token: string, currentUser: CurrentUser) {
+      this.restoreSequence++
       this.token = token
       this.currentUser = currentUser
+      this.sessionLoaded = true
+      this.sessionError = null
       localStorage.setItem('campushub_token', token)
     },
     clearSession() {
+      this.restoreSequence++
       this.token = null
       this.currentUser = null
       this.sessionLoaded = true
+      this.sessionError = null
       localStorage.removeItem('campushub_token')
     },
   },

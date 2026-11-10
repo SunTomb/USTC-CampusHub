@@ -96,7 +96,7 @@
       />
     </div>
 
-    <el-drawer v-model="publisherOpen" title="张贴跑腿悬赏单" size="520px">
+    <el-drawer v-model="publisherOpen" append-to-body title="张贴跑腿悬赏单" size="min(520px, 100vw)">
       <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules" class="form-section-stack">
         <FormSection title="委托事项" description="简明扼要地说明需要代取或代办的物品，方便顺路同学快速判断。">
           <el-form-item label="任务标题" prop="title">
@@ -125,7 +125,7 @@
             </div>
           </el-form-item>
           <el-form-item label="期望送达截止时间" prop="deadline">
-            <el-date-picker v-model="deadlineDate" type="datetime" class="wide" />
+            <el-date-picker v-model="deadlineDate" type="datetime" class="wide" popper-class="responsive-date-popper" />
           </el-form-item>
         </FormSection>
 
@@ -151,7 +151,7 @@
       </el-form>
     </el-drawer>
 
-    <el-dialog v-model="applyOpen" title="报名承接跑腿" width="420px">
+    <el-dialog v-model="applyOpen" append-to-body title="报名承接跑腿" width="420px">
       <el-input v-model="applyMessage" type="textarea" :rows="4" placeholder="向委托人说明你目前所在校区、预计送达时间或顺路情况" />
       <template #footer>
         <el-button @click="applyOpen = false">取消</el-button>

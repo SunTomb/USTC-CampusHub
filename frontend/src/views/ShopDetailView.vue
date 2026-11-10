@@ -60,10 +60,10 @@
       </div>
     </template>
 
-    <el-dialog v-model="bookingOpen" title="发起服务预约" width="460px">
+    <el-dialog v-model="bookingOpen" append-to-body title="发起服务预约" width="460px">
       <el-form label-position="top" :model="bookingForm">
         <el-form-item label="期望预约时间">
-          <el-date-picker v-model="appointmentDate" type="datetime" class="wide" />
+          <el-date-picker v-model="appointmentDate" type="datetime" class="wide" popper-class="responsive-date-popper" />
         </el-form-item>
         <el-form-item label="心理预算 / 约定金额（元）">
           <el-input-number v-model="bookingForm.amount" :min="0" :precision="2" class="wide" />

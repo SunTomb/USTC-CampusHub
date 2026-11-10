@@ -7,6 +7,13 @@ export interface ApiResponse<T> {
   data?: T
 }
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 export interface ApiRequestOptions {
   skipAuthExpireHandling?: boolean
 }
@@ -42,13 +49,13 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (error.config?.skipAuthExpireHandling) {
-        return Promise.reject(new Error(error.response.data?.message || '请先登录'))
+        return Promise.reject(new ApiError(error.response.data?.message || '请先登录', 401))
       }
       useAuthStore().clearSession()
-      return Promise.reject(new Error('登录已过期，请重新登录'))
+      return Promise.reject(new ApiError('登录已过期，请重新登录', 401))
     }
     if (error.response?.status === 403) {
-      return Promise.reject(new Error('当前账号无权限执行此操作'))
+      return Promise.reject(new ApiError('当前账号无权限执行此操作', 403))
     }
     return Promise.reject(error)
   },

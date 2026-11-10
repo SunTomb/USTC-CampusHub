@@ -10,6 +10,8 @@
         <el-date-picker
           v-model="dateRange"
           type="daterange"
+          :single-panel="compactDatePicker"
+          popper-class="responsive-date-popper"
           range-separator="至"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
@@ -232,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   approveProjectAd,
@@ -279,6 +281,11 @@ const projectAds = ref<ProjectAdSummary[]>([])
 const projectStatus = ref('PENDING_REVIEW')
 const analyticsLoading = ref(false)
 const dateRange = ref<[string, string] | null>(null)
+const datePickerMedia = window.matchMedia('(max-width: 900px)')
+const compactDatePicker = ref(datePickerMedia.matches)
+function updateDatePickerLayout() {
+  compactDatePicker.value = datePickerMedia.matches
+}
 const overview = ref<OperationsAnalyticsOverview | null>(null)
 const funnels = ref<OperationsFunnelSummary | null>(null)
 const zones = ref<OperationsZoneSummary | null>(null)
@@ -414,7 +421,9 @@ async function block(row: ProjectAdSummary) {
 }
 
 onMounted(() => {
+  datePickerMedia.addEventListener('change', updateDatePickerLayout)
   void load()
   void loadAnalytics()
 })
+onUnmounted(() => datePickerMedia.removeEventListener('change', updateDatePickerLayout))
 </script>

@@ -83,8 +83,8 @@
             {{ auth.currentUser.nickname }}
           </RouterLink>
           <span v-else class="session-guest-label">未登录访客</span>
-          <el-button v-if="auth.token" size="small" plain @click="logout">退出</el-button>
-          <el-button v-else size="small" type="primary" @click="router.push('/auth')">登录 / 加入</el-button>
+          <el-button v-if="auth.isAuthenticated" size="small" plain @click="logout">退出</el-button>
+          <el-button v-else size="small" type="primary" @click="router.push('/auth')">{{ auth.sessionError ? '重试登录' : '登录 / 加入' }}</el-button>
         </div>
       </el-header>
 
@@ -108,7 +108,7 @@
       </button>
     </nav>
 
-    <el-drawer v-model="mobileMenuOpen" title="蜗壳 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
+    <el-drawer v-model="mobileMenuOpen" append-to-body title="蜗壳 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
         <div class="mobile-directory-brand">
           <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img" />

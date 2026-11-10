@@ -93,7 +93,7 @@
       </el-card>
     </div>
 
-    <el-dialog v-model="intentDialog" title="发送购买意向" width="420px">
+    <el-dialog v-model="intentDialog" append-to-body title="发送购买意向" width="420px">
       <el-input v-model="intentMessage" type="textarea" :rows="3" placeholder="告诉卖家你想在哪个校区交接、什么时间方便..." />
       <template #footer>
         <el-button @click="intentDialog = false">取消</el-button>
@@ -101,7 +101,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="reportDialog" title="反馈商品问题" width="420px">
+    <el-dialog v-model="reportDialog" append-to-body title="反馈商品问题" width="420px">
       <el-input v-model="reportReason" placeholder="问题简述（如：虚假价格、违禁物品）" />
       <el-input v-model="reportDescription" type="textarea" :rows="3" placeholder="详细情况说明" class="dialog-field" />
       <template #footer>

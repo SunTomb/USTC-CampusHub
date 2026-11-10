@@ -1,6 +1,6 @@
 <template>
-  <section class="auth-page">
-    <div class="auth-copy">
+  <section class="auth-page" :class="{ 'session-recovery-page': auth.token && auth.sessionError }">
+    <div v-if="!auth.token || !auth.sessionError" class="auth-copy">
       <p class="eyebrow">蜗壳 CampusHub · 校园邮箱准入</p>
       <h2>凭校园邮箱，走进同窗互助的校园集市</h2>
       <p>支持使用蜗壳用户名或校园邮箱直接登录；首次加入需验证 edu.cn 校园邮箱（如 @mail.ustc.edu.cn / @ustc.edu.cn），并填写至少一种常用联络方式。</p>
@@ -21,7 +21,13 @@
     </div>
 
     <el-card class="auth-panel premium-panel" shadow="never">
-      <el-tabs v-model="activeTab" stretch>
+      <div v-if="auth.token && auth.sessionError" class="session-recovery" role="status">
+        <h2>恢复登录</h2>
+        <el-alert :title="auth.sessionError" type="warning" show-icon :closable="false" />
+        <el-button type="primary" class="wide" :loading="restoringSession" @click="retrySession">重试验证登录</el-button>
+        <el-button text :disabled="restoringSession" @click="auth.clearSession()">使用其他账号登录</el-button>
+      </div>
+      <el-tabs v-else v-model="activeTab" stretch>
         <el-tab-pane label="账号登录" name="login">
           <el-form label-position="top" @submit.prevent>
             <el-form-item label="用户名 / 校园邮箱">
@@ -79,6 +85,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const activeTab = ref('login')
 const loading = ref(false)
+const restoringSession = ref(false)
 const codeLoading = ref(false)
 const codeHint = ref('')
 
@@ -100,6 +107,23 @@ function normalizedRedirect() {
   const redirect = route.query.redirect
   if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) return redirect
   return '/'
+}
+
+async function retrySession() {
+  if (restoringSession.value) return
+  restoringSession.value = true
+  const recoveryPath = route.fullPath
+  try {
+    await auth.loadCurrentUser()
+    if (route.fullPath !== recoveryPath) return
+    if (auth.isAuthenticated) {
+      await router.replace(normalizedRedirect())
+    } else if (!auth.token) {
+      ElMessage.info('登录已失效，请重新登录')
+    }
+  } finally {
+    restoringSession.value = false
+  }
 }
 
 async function handleLogin() {
