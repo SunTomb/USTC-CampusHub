@@ -2,24 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Local brand update, 2026-11-10 (not deployed)
-
-- The user has renamed the product to **蜗壳同路 CampusHub** (short name 蜗壳同路) and supplied new artwork under `output/mini-program/woke-tonglu-2026-11-10/`.
-- Branch `feat/woke-tonglu-branding` updates system-owned display text, new icon URLs, mail defaults and a new V16 agreement-brand migration. The deployed versions listed below are unchanged until a separately authorized release.
-- Web navigation uses the supplied 144px PNG; 48px favicon and 180px Apple touch icon are downsampled from the supplied 512px image. Preserve the source artwork and old assets; do not bulk-add the output folder.
-- V16 creates v1.1 agreements with only the brand name changed, supersedes v1.0 for new applications, and preserves historical text, consent records, application links and existing roles. V1–V15 remain untouched. V16 is not yet applied on production.
-- A future release needs backend validation, V16 migration and explicit update of the non-secret production mail display-name override; changing source defaults alone does not override an existing server value. Do not read secrets or reopen financial features.
-
-## Current production boundary, 2026-11-10
+## Current production boundary, 2026-11-11
 
 This section supersedes historical payment and identity handoffs below.
 
-- Visible product name: **蜗壳 CampusHub**, an independent student project. Keep the actual public domain and campus email domains; do not rewrite user-authored historical content merely to replace the brand.
-- Web commit `ed3558e` is deployed from `fix/mobile-browser-compat`, not master. The backend remains on the unchanged `8bd1cd4` image; only Web was rebuilt/recreated for the mobile fixes. Later documentation-only commits do not change running images. See `docs/operations/2026-11-10-mobile-production-release.md` for current evidence and the 2026-10-31 release record for the financial/identity change.
+- Visible product name: **蜗壳同路 CampusHub** (short name 蜗壳同路), an independent student project. Keep the actual public domain and campus email domains; do not rewrite user-authored historical content merely to replace the brand. Web navigation uses the supplied 144px PNG, favicon 48px, and Apple touch icon 180px; preserve original artwork.
+- Backend and Web commit `971adab` is deployed from `feat/woke-tonglu-branding`, not master, on the existing production host. See `docs/operations/2026-11-10-woke-tonglu-branding.md` for the 2026-11-11 release note. Later documentation-only commits do not change running images. The Aliyun migration handoff is separate work; no new-host deployment or DNS switch was performed for branding.
 - Financial features are soft-closed in production: `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false`. Ordinary wallet navigation is hidden, `/wallet` shows an unavailable state, admin financial views are read-only, and backend guards reject new financial/escrow operations. Preserve history, legacy code, and authenticated/idempotent historical callbacks. Do not turn payments back on without a separate decision.
 - New runner and goods-publisher identities require explicit versioned agreement acceptance and auto-approve without a deposit. Shop merchants accept their agreement and await station review, also without a deposit. Existing granted identities remain valid and do not need fabricated or retroactive consents.
-- V15 is now applied successfully on production. Never modify V1–V15; use V16+ for future schema changes.
-- Current production config also keeps beta account reset disabled and mail display name `蜗壳 CampusHub`. Never read or print secret values, reset accounts for smoke tests, or perform real financial/business writes merely for verification.
+- V16 is applied successfully on production. Four v1.1 agreements are ACTIVE; the four v1.0 snapshots are retained as SUPERSEDED. Existing consent/application links and roles are preserved. Never modify V1–V16; use V17+ for future migrations.
+- Current production config also keeps beta account reset disabled and mail display name `蜗壳同路 CampusHub`. Never read or print secret values, reset accounts for smoke tests, or perform real financial/business writes merely for verification.
 - Read-only authenticated browser checks passed for identity, wallet-unavailable, admin wallet/payment, and operations. Full new-identity submission flows were tested in isolation, not repeated against production users. The public goods/1 cover remains missing; the task hall is currently empty. These records were not altered to improve screenshots.
 - Mobile fixes cover task drawer sizing, active overlays above the bottom navigation, compact date panels, narrow profile grids, and retryable session restoration with stale-response protection. Verification: 48 frontend tests, production build, 19 production API/route checks, 21 public mobile-page measurements, and 8 isolated-API browser regressions using byte-identical deployed assets. No real authenticated production workflow or iOS/WeChat-device acceptance is claimed for this release. Reusable regression instructions: `docs/operations/mobile-ui-regression.md`.
 - Updated defense prompt and 8 public-production screenshots are local under `docs/midterm-defense/2026-10-30/`; the prior 9 isolated-preview screenshots remain distinctly labeled. Do not bulk-add course materials or screenshot folders to application commits.
