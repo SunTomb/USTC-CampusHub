@@ -53,7 +53,7 @@ class LegacyCallbackWhileClosedIntegrationTest {
         var order = orders.saveAndFlush(new PaymentOrder("P-" + key, "ROLE_DEPOSIT", legacy.getId(), user,
                 new BigDecimal("5.00"), "PAYMENT_CENTER", LocalDateTime.now().plusMinutes(30)));
         legacy.attachDepositPaymentOrder(order.getOrderNo());
-        var accepted = identities.apply(2L, new ApplyRoleRequest("RUNNER", "", "v1.0", true));
+        var accepted = identities.apply(2L, new ApplyRoleRequest("RUNNER", "", "v1.1", true));
         payments.handlePaymentCenterCallback(new PaymentCenterCallbackRequest("event-" + key, order.getOrderNo(), null,
                 "ROLE_DEPOSIT", legacy.getId(), new BigDecimal("5.00"), "FAILED", null, "历史支付失败"),
                 new PaymentCallbackHeaders("test-token", null, null, "{}"), "test-token", "");

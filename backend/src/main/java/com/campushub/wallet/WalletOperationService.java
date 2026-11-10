@@ -212,7 +212,7 @@ public class WalletOperationService {
         BigDecimal payAmount = amount.add(fee);
         WalletRechargeOrder recharge = rechargeOrderRepository.save(new WalletRechargeOrder(nextNo("WR"), user, "ALIPAY", amount, fee, payAmount, "PENDING_PAYMENT"));
         PaymentOrder order = paymentOrderRepository.save(new PaymentOrder(nextNo("CHP-WR"), "WALLET_RECHARGE", recharge.getId(), user, payAmount, paymentProvider.providerName(), LocalDateTime.now().plusMinutes(paymentCenterProperties.getExpireMinutes())));
-        PaymentCreation creation = paymentProvider.createWebPayment(new PaymentRequest(order.getOrderNo(), "WALLET_RECHARGE", recharge.getId(), user.getId(), recharge.getRechargeNo(), payAmount, "蜗壳 CampusHub 钱包充值 " + recharge.getRechargeNo(), paymentCenterProperties.getCallbackUrl(), paymentCenterProperties.getExpireMinutes()));
+        PaymentCreation creation = paymentProvider.createWebPayment(new PaymentRequest(order.getOrderNo(), "WALLET_RECHARGE", recharge.getId(), user.getId(), recharge.getRechargeNo(), payAmount, "蜗壳同路 CampusHub 钱包充值 " + recharge.getRechargeNo(), paymentCenterProperties.getCallbackUrl(), paymentCenterProperties.getExpireMinutes()));
         order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
         recharge.attachPaymentOrder(order.getOrderNo());
         return enrichRechargeSummary(recharge);

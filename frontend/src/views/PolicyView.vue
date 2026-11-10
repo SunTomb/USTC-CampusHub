@@ -2,7 +2,7 @@
   <section class="page-stack policy-page">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">蜗壳 CampusHub · 服务协议与隐私说明</p>
+        <p class="eyebrow">蜗壳同路 CampusHub · 服务协议与隐私说明</p>
         <h2>协议与交易规则</h2>
         <p>独立学生项目，不代表任何学校或机构。当前不提供充值、提现、收款或线上担保。</p>
       </div>

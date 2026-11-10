@@ -5,10 +5,10 @@
     <el-aside width="264px" class="sidebar desktop-sidebar">
       <div class="brand brand-premium">
         <div class="brand-mark-wrap" @click="router.push('/')" style="cursor: pointer">
-          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img" />
+          <img src="/woke-tonglu-logo-144.png" alt="蜗壳同路 CampusHub" class="brand-logo-img" />
         </div>
         <div class="brand-text" @click="router.push('/')" style="cursor: pointer">
-          <strong>蜗壳 CampusHub</strong>
+          <strong>蜗壳同路 CampusHub</strong>
           <span>独立学生项目 · 校园生活共同体</span>
         </div>
         <el-button class="sidebar-toggle" size="small" text title="收起侧栏" @click="sidebarCollapsed = true">
@@ -18,7 +18,7 @@
 
       <div class="sidebar-identity">
         <div class="sidebar-identity-head">
-          <span class="sidebar-seal">蜗壳通行证</span>
+          <span class="sidebar-seal">蜗壳同路通行证</span>
           <span class="sidebar-status-dot"></span>
         </div>
         <strong>{{ identityProfile.displayName }}</strong>
@@ -40,7 +40,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <span>蜗壳 · 东区 / 西区 / 中区 / 高新</span>
+        <span>蜗壳同路 · 东区 / 西区 / 中区 / 高新</span>
       </div>
     </el-aside>
 
@@ -58,9 +58,9 @@
 
       <el-header class="header premium-header">
         <div class="mobile-header-brand" @click="router.push('/')">
-          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img mobile-brand-logo-img" />
+          <img src="/woke-tonglu-logo-144.png" alt="蜗壳同路 CampusHub" class="brand-logo-img mobile-brand-logo-img" />
           <div>
-            <strong>蜗壳 CampusHub</strong>
+            <strong>蜗壳同路 CampusHub</strong>
             <small>{{ currentPageContext.tag }}</small>
           </div>
         </div>
@@ -108,12 +108,12 @@
       </button>
     </nav>
 
-    <el-drawer v-model="mobileMenuOpen" append-to-body title="蜗壳 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
+    <el-drawer v-model="mobileMenuOpen" append-to-body title="蜗壳同路 CampusHub" direction="ltr" size="86%" class="mobile-menu-drawer">
       <div class="mobile-directory">
         <div class="mobile-directory-brand">
-          <img src="/campushub-logo.png" alt="蜗壳 CampusHub" class="brand-logo-img" />
+          <img src="/woke-tonglu-logo-144.png" alt="蜗壳同路 CampusHub" class="brand-logo-img" />
           <div>
-            <strong>蜗壳 CampusHub</strong>
+            <strong>蜗壳同路 CampusHub</strong>
             <small>闲置流转 · 顺路跑腿 · 同窗小店 · 组队展示</small>
           </div>
         </div>
@@ -248,7 +248,7 @@ const currentPageContext = computed(() => {
     return { tag: '项目广场 · 展示', subtitle: '发现校园同窗的科研组队、竞赛招募与创意作品' }
   }
   return {
-    tag: '蜗壳 CampusHub',
+    tag: '蜗壳同路 CampusHub',
     subtitle: '连接东区、西区、中区与高新园区的校园生活服务平台',
   }
 })

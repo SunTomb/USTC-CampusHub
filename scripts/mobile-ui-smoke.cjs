@@ -71,6 +71,56 @@ async function openBooking(page) {
 }
 
 const cases = {
+  async 'brand-assets'({ page }) {
+    await page.goto(baseURL + '/');
+    assert((await page.title()).includes('蜗壳同路 CampusHub'));
+    for (const guest of [false, true]) {
+      if (guest) {
+        await page.getByRole('button', { name: '退出', exact: true }).tap();
+        await page.waitForFunction(() => localStorage.getItem('campushub_token') === null);
+        await page.goto(baseURL + '/');
+      }
+      for (const width of [320, 360, 390, 430]) {
+        await page.setViewportSize({ width, height: 844 });
+        await settle(page);
+        const header = await page.locator('.premium-header').evaluate(e => {
+          const visible = [...e.querySelectorAll('strong,button,img')].filter(x => x.checkVisibility({ checkVisibilityCSS: true }) && x.getBoundingClientRect().width > 0);
+          return visible.map(x => { const r=x.getBoundingClientRect(); return { left:r.left, right:r.right, width:r.width }; });
+        });
+        assert(header.every(r => r.left >= -1 && r.right <= width + 1), 'new brand overflows the ' + (guest ? 'guest' : 'member') + ' header at ' + width);
+        assert.equal(await page.locator('.mobile-header-brand strong').textContent(), '蜗壳同路 CampusHub');
+        const brandOverlapsControls = await page.locator('.premium-header').evaluate(e => {
+          const label = e.querySelector('.mobile-header-brand strong');
+          const text = document.createRange();
+          text.selectNodeContents(label);
+          const controls = [...e.querySelectorAll('button')].filter(button => button.checkVisibility({ checkVisibilityCSS: true })).map(button => button.getBoundingClientRect());
+          return [...text.getClientRects()].some(r => controls.some(c => r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top));
+        });
+        assert(!brandOverlapsControls, 'new brand text is covered by header controls at ' + width + 'px (' + (guest ? 'guest' : 'member') + ')');
+        const logo = page.locator('.mobile-header-brand img');
+        await logo.evaluate(image => image.decode());
+        assert.equal(await logo.getAttribute('src'), '/woke-tonglu-logo-144.png');
+        assert.equal(await logo.evaluate(image => image.naturalWidth), 144);
+        if (width === 320 || width === 390) await capture(page, 'woke-tonglu-' + (guest ? 'guest' : 'member') + '-' + width + '.png');
+      }
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await settle(page);
+    assert.equal(await page.locator('.brand-text strong').textContent(), '蜗壳同路 CampusHub');
+    await capture(page, 'woke-tonglu-desktop.png');
+    for (const [selector, size, filename] of [
+      ['link[rel="icon"]', 48, '/woke-tonglu-favicon-48.png'],
+      ['link[rel="apple-touch-icon"]', 180, '/woke-tonglu-apple-touch-180.png'],
+    ]) {
+      assert.equal(await page.locator(selector).getAttribute('href'), filename);
+      const response = await page.request.get(baseURL + filename);
+      assert.equal(response.status(), 200);
+      const image = await response.body();
+      assert.equal(image.subarray(1, 4).toString(), 'PNG');
+      assert.equal(image.readUInt32BE(16), size);
+      assert.equal(image.readUInt32BE(20), size);
+    }
+  },
   async 'mobile-directory'({ page }) {
     await page.goto(baseURL + '/tasks');
     await page.locator('.mobile-tabbar button').tap();

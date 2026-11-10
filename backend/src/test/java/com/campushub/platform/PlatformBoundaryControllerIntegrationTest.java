@@ -33,7 +33,9 @@ class PlatformBoundaryControllerIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.financialEnabled").value(false))
                 .andExpect(content().string(not(containsString("secret"))));
         mvc.perform(get("/api/platform/protocols/RUNNER"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.version").value("v1.0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.version").value("v1.1"))
+                .andExpect(jsonPath("$.data.content").value(containsString("蜗壳同路 CampusHub")))
+                .andExpect(jsonPath("$.data.content").value(not(containsString("蜗壳 CampusHub"))))
                 .andExpect(jsonPath("$.data.acceptedAt").isEmpty());
     }
 
@@ -66,7 +68,7 @@ class PlatformBoundaryControllerIntegrationTest {
         mvc.perform(post("/api/identity/users/1/roles")
                 .header("Authorization", "Bearer " + tokens.issueToken(4L, "admin"))
                 .contentType("application/json")
-                .content("{\"roleType\":\"RUNNER\",\"agreementVersion\":\"v1.0\",\"agreementAccepted\":true}"))
+                .content("{\"roleType\":\"RUNNER\",\"agreementVersion\":\"v1.1\",\"agreementAccepted\":true}"))
                 .andExpect(status().isForbidden());
     }
 }

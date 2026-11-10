@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Local brand update, 2026-11-10 (not deployed)
+
+- The user has renamed the product to **蜗壳同路 CampusHub** (short name 蜗壳同路) and supplied new artwork under `output/mini-program/woke-tonglu-2026-11-10/`.
+- Branch `feat/woke-tonglu-branding` updates system-owned display text, new icon URLs, mail defaults and a new V16 agreement-brand migration. The deployed versions listed below are unchanged until a separately authorized release.
+- Web navigation uses the supplied 144px PNG; 48px favicon and 180px Apple touch icon are downsampled from the supplied 512px image. Preserve the source artwork and old assets; do not bulk-add the output folder.
+- V16 creates v1.1 agreements with only the brand name changed, supersedes v1.0 for new applications, and preserves historical text, consent records, application links and existing roles. V1–V15 remain untouched. V16 is not yet applied on production.
+- A future release needs backend validation, V16 migration and explicit update of the non-secret production mail display-name override; changing source defaults alone does not override an existing server value. Do not read secrets or reopen financial features.
+
 ## Current production boundary, 2026-11-10
 
 This section supersedes historical payment and identity handoffs below.

@@ -217,7 +217,7 @@
           type="info"
           show-icon
           :closable="false"
-          :title="wechatRecharge.wechatNote || '扫码支付时请务必在付款备注中填写你的校园邮箱或 蜗壳 CampusHub 用户名，站务同学核对后将尽快为你入账。'"
+          :title="wechatRecharge.wechatNote || '扫码支付时请务必在付款备注中填写你的校园邮箱或 蜗壳同路 CampusHub 用户名，站务同学核对后将尽快为你入账。'"
         />
       </div>
       <template #footer>

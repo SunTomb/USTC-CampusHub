@@ -87,7 +87,7 @@ public class PaymentService {
                     fee.getPayer().getId(),
                     fee.getFeeNo(),
                     fee.getAmount(),
-                    "蜗壳 CampusHub 服务费 " + fee.getFeeNo(),
+                    "蜗壳同路 CampusHub 服务费 " + fee.getFeeNo(),
                     paymentCenterProperties.getCallbackUrl(),
                     paymentCenterProperties.getExpireMinutes()));
             order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());
@@ -184,7 +184,7 @@ public class PaymentService {
                     application.getUser().getId(),
                     application.getRoleType(),
                     application.getDepositAmount(),
-                    "蜗壳 CampusHub 身份保证金 " + application.getRoleType(),
+                    "蜗壳同路 CampusHub 身份保证金 " + application.getRoleType(),
                     paymentCenterProperties.getCallbackUrl(),
                     paymentCenterProperties.getExpireMinutes()));
             order.attachProviderOrder(creation.providerOrderNo(), creation.payUrl());

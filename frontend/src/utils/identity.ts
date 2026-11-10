@@ -58,7 +58,7 @@ const CAPABILITIES: Record<IdentityKey, string> = {
   admin: '治理、运营与历史账本后台',
   tradeAdmin: '悬赏跑腿、二手交易与售后纠纷后台',
   showcaseAdmin: '项目广告、学生店铺与服务售后后台',
-  masterAdmin: '蜗壳全部后台权限',
+  masterAdmin: '蜗壳同路全部后台权限',
 }
 
 const ROLE_ALIASES: Record<Exclude<IdentityKey, 'guest'>, string[]> = {

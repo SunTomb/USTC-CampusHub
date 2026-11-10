@@ -95,7 +95,7 @@ export const navItems: NavItem[] = [
     path: '/auth',
     label: '登录注册',
     mobileLabel: '登录',
-    description: '使用校园邮箱验证加入蜗壳社区',
+    description: '使用校园邮箱验证加入蜗壳同路社区',
     group: 'public',
     audiences: ['guest'],
     icon: 'UserFilled',

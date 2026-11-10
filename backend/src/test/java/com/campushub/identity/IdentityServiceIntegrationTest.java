@@ -41,7 +41,7 @@ class IdentityServiceIntegrationTest {
     void runnerAndPublisherAcceptCurrentAgreementWithoutMovingMoney() {
         for (String role : new String[]{"RUNNER", "GOODS_PUBLISHER"}) {
             Long user = newUser();
-            var result = identities.apply(user, new ApplyRoleRequest(role, "", "v1.0", true));
+            var result = identities.apply(user, new ApplyRoleRequest(role, "", "v1.1", true));
             assertThat(result.depositAmount()).isZero();
             assertThat(result.depositStatus()).isEqualTo("NOT_REQUIRED");
             assertThat(result.reviewStatus()).isEqualTo("APPROVED");
@@ -57,7 +57,7 @@ class IdentityServiceIntegrationTest {
         long before = consents.count();
         assertThatThrownBy(() -> identities.apply(user, new ApplyRoleRequest("RUNNER", "")))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("同意");
-        assertThatThrownBy(() -> identities.apply(user, new ApplyRoleRequest("RUNNER", "", "old", true)))
+        assertThatThrownBy(() -> identities.apply(user, new ApplyRoleRequest("RUNNER", "", "v1.0", true)))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("版本");
         assertThat(consents.count()).isEqualTo(before);
         assertThat(applications.findByUserIdAndRoleType(user, "RUNNER")).isEmpty();
@@ -66,7 +66,7 @@ class IdentityServiceIntegrationTest {
     @Test
     void repeatedApplicationDoesNotFabricateAnotherAcceptance() {
         Long user = newUser();
-        var first = identities.apply(user, new ApplyRoleRequest("RUNNER", "", "v1.0", true));
+        var first = identities.apply(user, new ApplyRoleRequest("RUNNER", "", "v1.1", true));
         long count = consents.count();
         var repeated = identities.apply(user, new ApplyRoleRequest("RUNNER", "retry"));
         assertThat(repeated.id()).isEqualTo(first.id());
@@ -91,7 +91,7 @@ class IdentityServiceIntegrationTest {
         var legacy = new RoleApplication(users.findById(user).orElseThrow(), PlatformRoleType.GOODS_PUBLISHER, "旧申请");
         legacy.attachDepositPaymentOrder("historical-order");
         legacy = applications.saveAndFlush(legacy);
-        var converted = identities.apply(user, new ApplyRoleRequest("GOODS_PUBLISHER", "新申请", "v1.0", true));
+        var converted = identities.apply(user, new ApplyRoleRequest("GOODS_PUBLISHER", "新申请", "v1.1", true));
         assertThat(converted.id()).isEqualTo(legacy.getId());
         assertThat(converted.depositAmount()).isEqualByComparingTo("10.00");
         assertThat(converted.depositPaymentOrderNo()).isEqualTo("historical-order");
@@ -104,7 +104,7 @@ class IdentityServiceIntegrationTest {
         Long user = newUser();
         Long reviewer = newUser();
         roles.assignRole(reviewer, "ROLE_SHOWCASE_ADMIN");
-        var merchant = identities.apply(user, new ApplyRoleRequest("SHOP_MERCHANT", "", "v1.0", true));
+        var merchant = identities.apply(user, new ApplyRoleRequest("SHOP_MERCHANT", "", "v1.1", true));
         assertThat(merchant.reviewStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(roles.findRoleCodes(user)).doesNotContain("ROLE_SHOP_MERCHANT");
         identities.approve(merchant.id(), reviewer);

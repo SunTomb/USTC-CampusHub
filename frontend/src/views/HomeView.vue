@@ -4,7 +4,7 @@
       <div class="home-hero spotlight-surface" @mousemove="handleSpotlight">
         <div class="hero-content">
           <div class="hero-eyebrow-bar">
-            <span class="seal-pill">蜗壳 CampusHub</span>
+            <span class="seal-pill">蜗壳同路 CampusHub</span>
             <span class="hero-zone-ticker">中校区 · 西校区 · 东校区 · 高新园区 · 先研院</span>
           </div>
           <h2>{{ heroTitle }}</h2>
