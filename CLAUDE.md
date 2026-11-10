@@ -2,17 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current production boundary, 2026-10-31
+## Current production boundary, 2026-11-10
 
 This section supersedes historical payment and identity handoffs below.
 
 - Visible product name: **蜗壳 CampusHub**, an independent student project. Keep the actual public domain and campus email domains; do not rewrite user-authored historical content merely to replace the brand.
-- Application commit `8bd1cd4` is deployed from `feat/phase15-editorial-bento-ui`, not master. Later documentation-only commits do not change the running application image. See `docs/operations/2026-10-31-woke-production-release.md` for evidence and limitations.
+- Web commit `ed3558e` is deployed from `fix/mobile-browser-compat`, not master. The backend remains on the unchanged `8bd1cd4` image; only Web was rebuilt/recreated for the mobile fixes. Later documentation-only commits do not change running images. See `docs/operations/2026-11-10-mobile-production-release.md` for current evidence and the 2026-10-31 release record for the financial/identity change.
 - Financial features are soft-closed in production: `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false`. Ordinary wallet navigation is hidden, `/wallet` shows an unavailable state, admin financial views are read-only, and backend guards reject new financial/escrow operations. Preserve history, legacy code, and authenticated/idempotent historical callbacks. Do not turn payments back on without a separate decision.
 - New runner and goods-publisher identities require explicit versioned agreement acceptance and auto-approve without a deposit. Shop merchants accept their agreement and await station review, also without a deposit. Existing granted identities remain valid and do not need fabricated or retroactive consents.
 - V15 is now applied successfully on production. Never modify V1–V15; use V16+ for future schema changes.
 - Current production config also keeps beta account reset disabled and mail display name `蜗壳 CampusHub`. Never read or print secret values, reset accounts for smoke tests, or perform real financial/business writes merely for verification.
 - Read-only authenticated browser checks passed for identity, wallet-unavailable, admin wallet/payment, and operations. Full new-identity submission flows were tested in isolation, not repeated against production users. The public goods/1 cover remains missing; the task hall is currently empty. These records were not altered to improve screenshots.
+- Mobile fixes cover task drawer sizing, active overlays above the bottom navigation, compact date panels, narrow profile grids, and retryable session restoration with stale-response protection. Verification: 48 frontend tests, production build, 19 production API/route checks, 21 public mobile-page measurements, and 8 isolated-API browser regressions using byte-identical deployed assets. No real authenticated production workflow or iOS/WeChat-device acceptance is claimed for this release. Reusable regression instructions: `docs/operations/mobile-ui-regression.md`.
 - Updated defense prompt and 8 public-production screenshots are local under `docs/midterm-defense/2026-10-30/`; the prior 9 isolated-preview screenshots remain distinctly labeled. Do not bulk-add course materials or screenshot folders to application commits.
 
 ## Project overview
