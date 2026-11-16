@@ -1,0 +1,279 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const ui = require('../src/lib/ui');
+
+function pageHarness(file, api, user = { id: 1, username: 'fixture', roles: ['ROLE_STUDENT', 'ROLE_RUNNER'] }) {
+  let definition;
+  const listeners = new Set();
+  const auth = { user, token: user ? 'fixture-session' : null, error: '', get authenticated() { return !!(this.user && this.token); }, restore: async () => auth.user, subscribe: callback => { listeners.add(callback); return () => listeners.delete(callback); }, login: (token, value) => { auth.token = token; auth.user = value; listeners.forEach(callback => callback(auth)); }, logout: () => { auth.user = null; auth.token = null; listeners.forEach(callback => callback(auth)); } };
+  const calls = [];
+  const storage = new Map();
+  global.getApp = () => ({ auth, api, config: { baseUrl: 'http://127.0.0.1:1234/api' } });
+  global.wx = {
+    showToast: value => calls.push(['toast', value.title]),
+    showModal: value => value.success({ confirm: true }),
+    navigateTo: value => calls.push(['navigate', value.url]),
+    redirectTo: value => calls.push(['redirect', value.url]),
+    switchTab: value => calls.push(['tab', value.url]),
+    getStorageSync: key => storage.get(key),
+    setStorageSync: (key, value) => storage.set(key, value),
+    removeStorageSync: key => storage.delete(key),
+    vibrateShort() {}, stopPullDownRefresh() {}, setTabBarBadge() {}, removeTabBarBadge() {},
+  };
+  global.Page = value => { definition = value; };
+  const full = path.join(__dirname, '../src/pages', file + '.js');
+  delete require.cache[require.resolve(full)]; require(full);
+  const page = { ...definition, data: structuredClone(definition.data), setData(value) { for (const [key, item] of Object.entries(value)) { const parts = key.split('.'); let target = this.data; while (parts.length > 1) target = target[parts.shift()]; target[parts[0]] = item; } } };
+  page.onLoad({ id: '10' });
+  return { page, auth, calls, storage };
+}
+
+test('task workspace shows private contacts/events and clears generated code on hide', async () => {
+  const task = { id: 10, publisherId: 1, publisherNickname: '发布者', title: '送书', description: '说明', rewardAmount: 8, deadline: '2099-01-01T12:00:00', acceptanceMode: 'GRAB', verificationMode: 'COMPLETION_CODE', originZone: 'CENTRAL', destinationZone: 'WEST', workflowStatus: 'ACCEPTED', acceptedApplicationId: 22 };
+  const h = pageHarness('tasks/detail', {
+    task: async () => task,
+    taskApplicants: async () => [],
+    taskWorkspace: async () => ({ task, publisherContact: { userId: 1, nickname: '发布者', wechatContact: 'pub_wx', qqContact: '10001' }, runnerContact: { userId: 2, nickname: '接单者', wechatContact: 'runner_wx', qqContact: null }, events: [{ id: 1, actorId: 1, actorNickname: '发布者', eventType: 'ACCEPTED', note: '已接单', createdAt: '2099-01-01T10:00:00' }] }),
+    generateCompletionCode: async () => ({ completionCode: '123456', expiresAt: '2099-01-01T10:30:00' }),
+  });
+  await h.page.reload();
+  assert.equal(h.page.data.workspace.publisherContact.wechatContact, 'pub_wx');
+  assert.equal(h.page.data.workspace.events[0].eventTypeLabel, '已接单');
+  assert.equal(h.page.data.canGenerateCode, true);
+  await h.page.generateCode();
+  assert.equal(h.page.data.completionCode, '123456');
+  h.page.onHide();
+  assert.equal(h.page.data.completionCode, null);
+  assert.equal(h.page.data.workspace, null);
+});
+
+test('accepted runner can redeem a completion code only in the pending-confirmation workspace', async () => {
+  const task = { id: 10, publisherId: 3, publisherNickname: '发布者', title: '送书', description: '说明', rewardAmount: 8, deadline: '2099-01-01T12:00:00', acceptanceMode: 'GRAB', verificationMode: 'COMPLETION_CODE', originZone: 'CENTRAL', destinationZone: 'WEST', workflowStatus: 'PENDING_CONFIRMATION', acceptedApplicationId: 22 };
+  let redeemed;
+  const h = pageHarness('tasks/detail', {
+    task: async () => task,
+    myTaskApplications: async () => [{ id: 22, applicantId: 1, status: 'ACCEPTED' }],
+    taskWorkspace: async () => ({ task, publisherContact: { userId: 3, nickname: '发布者', wechatContact: 'pub_wx', qqContact: null }, runnerContact: { userId: 1, nickname: '接单者', wechatContact: 'runner_wx', qqContact: null }, events: [] }),
+    completeWithCode: async (_, code) => { redeemed = code; return { ...task, workflowStatus: 'COMPLETED' }; },
+  });
+  await h.page.reload();
+  assert.equal(h.page.data.canRedeemCode, true);
+  h.page.setData({ enteredCompletionCode: '654321' });
+  await h.page.redeemCode();
+  assert.equal(redeemed, '654321');
+});
+
+test('public task response remains visible when the same-token session restore completes', async () => {
+  let resolve;
+  const h = pageHarness('tasks/index', { tasks: () => new Promise(done => { resolve = done; }) }, null);
+  h.auth.token = 'restoring-token'; h.page._observedToken = 'restoring-token';
+  const pending = h.page.reload();
+  h.auth.login('restoring-token', { id: 1, roles: ['ROLE_STUDENT'] });
+  resolve([{ id: 10, deadline: '2099-01-01T12:00:00', acceptanceMode: 'GRAB', originZone: 'CENTRAL', destinationZone: 'WEST' }]);
+  await pending;
+  assert.equal(h.page.data.tasks.length, 1);
+  assert.equal(h.page.data.loading, false);
+});
+
+test('duplicate task submission is blocked and no deposit field is sent', async () => {
+  let resolve, count = 0, payload;
+  const h = pageHarness('tasks/publish', { publishTask: data => { count++; payload = data; return new Promise(done => { resolve = done; }); } });
+  h.page.setData({ form: { title: '取教材', description: '两本教材，公开地点交接', originDetail: '图书馆', destinationDetail: '食堂门口', rewardAmount: '6.50', acceptanceMode: 'GRAB' }, date: '2099-01-01', time: '12:30' });
+  const a = h.page.submit(); await new Promise(resolve => setImmediate(resolve));
+  const b = h.page.submit(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(count, 1);
+  assert.equal(payload.depositAmount, undefined);
+  assert.equal(payload.deadline, '2099-01-01T12:30:00');
+  resolve({ id: 10 }); await Promise.all([a,b]);
+  assert.equal(h.calls.filter(x => x[0] === 'redirect').length, 1);
+});
+
+test('task publish sends the selected completion-code verification mode', async () => {
+  let payload;
+  const h = pageHarness('tasks/publish', { publishTask: async data => { payload = data; return { id: 10 }; } });
+  h.page.setData({ form: { title: '取教材', description: '公开地点交接', originDetail: '图书馆', destinationDetail: '食堂门口', rewardAmount: '6.50', acceptanceMode: 'GRAB', verificationMode: 'COMPLETION_CODE' }, date: '2099-01-01', time: '12:30' });
+  await h.page.submit();
+  assert.equal(payload.verificationMode, 'COMPLETION_CODE');
+});
+
+test('self task cannot be grabbed and new runner role opens an explicit agreement first', async () => {
+  const h = pageHarness('tasks/index', {});
+  h.page.setData({ tasks: [{ id: 10, publisherId: 1, expired: false }] });
+  await h.page.choose({ currentTarget: { dataset: { id: 10 } } });
+  assert.equal(h.page.data.selected, null);
+  assert.equal(h.calls[0][0], 'navigate');
+  h.auth.user = { id: 2, roles: ['ROLE_STUDENT'] };
+  await h.page.choose({ currentTarget: { dataset: { id: 10 } } });
+  assert.equal(h.page.data.unlock, true);
+  assert.equal(h.page.data.selected, null);
+});
+
+test('switching accounts during application lookup cannot submit as the new user', async () => {
+  let resolve, applied = 0;
+  const h = pageHarness('tasks/index', { myTaskApplications: () => new Promise(done => { resolve = done; }), applyTask: async () => { applied++; } });
+  h.page.setData({ selected: { id: 10, publisherId: 3, acceptanceMode: 'APPLICATION' }, message: '我可以顺路带回' });
+  const pending = h.page.take();
+  await new Promise(done => setImmediate(done));
+  h.auth.logout();
+  h.auth.login('other-session', { id: 2, roles: ['ROLE_STUDENT', 'ROLE_RUNNER'] });
+  resolve([]); await pending;
+  assert.equal(applied, 0);
+});
+
+test('profile contact save uses the dedicated contacts endpoint and preserves roles', async () => {
+  let payload;
+  const h = pageHarness('pass/index', { saveContacts: async data => { payload = data; return { id: 1, username: 'fixture', nickname: '测试用户', roles: ['ROLE_STUDENT'], wechatContact: data.wechatContact, qqContact: data.qqContact }; } });
+  h.page.setData({ profileForm: { username: 'fixture', nickname: '测试用户', wechatContact: ' wx_fixture ', qqContact: ' 123 ' } });
+  await h.page.saveContacts();
+  assert.deepEqual(payload, { wechatContact: 'wx_fixture', qqContact: '123' });
+});
+
+test('a confirmation accepted after account switch cannot authorize a write', async () => {
+  const h = pageHarness('tasks/index', {}); let accept;
+  global.wx.showModal = options => { accept = options.success; };
+  const pending = ui.confirm('确认', '执行本人操作');
+  h.auth.login('different', { id: 2, roles: ['ROLE_STUDENT'] });
+  accept({ confirm: true });
+  assert.equal(await pending, false);
+});
+
+test('only notification ids from the current recipient list can be marked read', async () => {
+  const ids = [];
+  const h = pageHarness('pass/index', { readNotification: async id => ids.push(id) });
+  h.page.setData({ unread: 2, notices: [{ id: 8, recipientId: 1, unread: true }, { id: 9, recipientId: 2, unread: true }] });
+  await h.page.readNotice({ currentTarget: { dataset: { id: 9 } } });
+  await h.page.readNotice({ currentTarget: { dataset: { id: 100 } } });
+  await h.page.readNotice({ currentTarget: { dataset: { id: 8 } } });
+  assert.deepEqual(ids, [8]);
+});
+
+test('logout scrubs personal data and invalidates late requests', async () => {
+  let done;
+  const h = pageHarness('pass/index', {});
+  const pending = ui.load(h.page, () => new Promise(resolve => { done = resolve; }), profile => ({ profile }));
+  h.auth.logout();
+  done({ id: 1, email: 'private@example.edu.cn' });
+  await pending;
+  assert.equal(h.page.data.profile, null);
+  assert.equal(h.page.data.loading, false);
+});
+
+test('loss of verification with the same token invalidates private pending data', async () => {
+  let done;
+  const h = pageHarness('pass/index', {});
+  const pending = ui.load(h.page, () => new Promise(resolve => { done = resolve; }), profile => ({ profile }));
+  h.auth.login('fixture-session', null);
+  done({ id: 1, email: 'private@example.edu.cn' });
+  await pending;
+  assert.equal(h.page.data.profile, null);
+});
+
+test('saving a local publicity draft never triggers review or a server write', async () => {
+  let creates = 0;
+  const h = pageHarness('showcase/publish', { createProject: async () => { creates++; return { id: 20, status: 'PENDING_REVIEW' }; } });
+  h.page._editorToken = h.auth.token; h.page._editorUser = 1; h.page._initialized = true; h.page._visible = true;
+  h.page.setData({ authorized: true, ready: true, editable: true, canSubmit: true, dirty: true, form: { title: '竞赛招募', adType: 'TEAM_UP', description: '寻找队友', contactInfo: '微信:fixture', contactVisibility: 'LOGIN_ONLY', campusZone: 'CENTRAL', summary: '', tags: '', linkUrl: '', expiryEnabled: false } });
+  await h.page.save({ currentTarget: { dataset: { mode: 'save' } } });
+  assert.equal(creates, 0);
+  assert(h.storage.size > 0);
+});
+
+test('new publicity creation already in review does not send a redundant submit', async () => {
+  let creates = 0, submits = 0;
+  const h = pageHarness('showcase/publish', { createProject: async () => { creates++; return { id: 20, status: 'PENDING_REVIEW' }; }, submitProject: async () => { submits++; return { id: 20, status: 'PENDING_REVIEW' }; } });
+  h.page._editorToken = h.auth.token; h.page._editorUser = 1; h.page._initialized = true; h.page._visible = true;
+  h.page.setData({ authorized: true, ready: true, editable: true, canSubmit: true, dirty: true, form: { title: '竞赛招募', adType: 'TEAM_UP', description: '寻找队友', contactInfo: '微信:fixture', contactVisibility: 'LOGIN_ONLY', campusZone: 'CENTRAL', summary: '', tags: '', linkUrl: '', expiryEnabled: false } });
+  await h.page.save({ currentTarget: { dataset: { mode: 'submit' } } });
+  assert.equal(creates, 1);
+  assert.equal(submits, 0);
+  assert.equal(h.page.data.draftId, '20');
+  assert.equal(h.page.data.canSubmit, false);
+});
+
+test('publicity create uncertainty is remembered instead of automatically duplicating', async () => {
+  let creates = 0;
+  const h = pageHarness('showcase/publish', { createProject: async () => { creates++; const e = new Error('网络中断'); e.network = true; throw e; } });
+  h.page._editorToken = h.auth.token; h.page._editorUser = 1; h.page._initialized = true; h.page._visible = true;
+  h.page.setData({ authorized: true, ready: true, editable: true, canSubmit: true, dirty: true, form: { title: '竞赛招募', adType: 'TEAM_UP', description: '寻找队友', contactInfo: '微信:fixture', contactVisibility: 'LOGIN_ONLY', campusZone: 'CENTRAL', summary: '', tags: '', linkUrl: '', expiryEnabled: false } });
+  await h.page.save({ currentTarget: { dataset: { mode: 'submit' } } });
+  assert.equal(h.page.data.creationUncertain, true);
+  await h.page.save({ currentTarget: { dataset: { mode: 'submit' } } });
+  assert.equal(creates, 1);
+});
+
+test('publicity private contact and comments are scrubbed when a viewer signs out', async () => {
+  const h = pageHarness('showcase/detail', {
+    project: async () => ({ id: 10, publisherId: 2, status: 'APPROVED', title: '招募', adType: 'TEAM_UP', contactVisible: true, contactVisibility: 'LOGIN_ONLY', contactInfo: '微信:private_fixture', attachments: [] }),
+    comments: async () => [],
+  });
+  h.page._visible = true;
+  await h.page.reload();
+  assert.equal(h.page.data.contacts.length, 1);
+  h.page._visible = false;
+  h.auth.logout();
+  assert.deepEqual(h.page.data.contacts, []);
+  assert.equal(h.page.data.project, null);
+});
+
+test('non-merchants cannot mistake customer orders for the provider queue', async () => {
+  const h = pageHarness('pass/index', { customerOrders: async () => [{ id: 4, customerId: 1, providerId: 2, status: 'REQUESTED' }] });
+  h.page.setData({ section: 'orders', roleCards: [{ value: 'SHOP_MERCHANT', active: false, pending: false }] });
+  await h.page.toggleOrders({ currentTarget: { dataset: { provider: 'yes' } } });
+  assert.equal(h.page.data.providerMode, false);
+  assert.equal(h.page.data.unlock, true);
+});
+
+test('booking has no payment call and returned contact data is hidden after logout', async () => {
+  let books = 0;
+  const h = pageHarness('shops/detail', {
+    book: async () => { books++; return { id: 1 }; },
+    shop: async () => ({ id: 10, contactVisible: true, contactSnapshot: '微信:fixture_merchant', serviceItems: [] }),
+  });
+  h.page.setData({ services: [{ id: 1, title: '电脑清灰' }], serviceIndex: 0, date: '2099-01-01', time: '10:00', note: '演练', booking: true });
+  await h.page.submitBooking();
+  assert.equal(books, 1);
+  assert.equal(h.page.data.booking, false);
+  assert.equal(h.page.data.contacts.length, 1);
+  h.auth.logout();
+  assert.deepEqual(h.page.data.contacts, []);
+});
+
+test('completed runner can still read participant workspace and history', async () => {
+  const task = { id: 10, publisherId: 2, workflowStatus: 'COMPLETED', acceptedApplicationId: 22 };
+  const h = pageHarness('tasks/detail', { task: async () => task,
+    myTaskApplications: async () => [{ id: 22, applicantId: 1, status: 'COMPLETED' }],
+    taskWorkspace: async () => ({ task, events: [] }) });
+  await h.page.reload();
+  assert.ok(h.page.data.workspace);
+  assert.equal(h.page.data.canIssue, false);
+});
+
+test('hidden task page ignores late private workspace responses', async () => {
+  let resolve;
+  const task = { id: 10, publisherId: 1, workflowStatus: 'ACCEPTED' };
+  const h = pageHarness('tasks/detail', { task: async () => task, taskApplicants: async () => [],
+    taskWorkspace: () => new Promise(done => { resolve = done; }) });
+  const loading = h.page.reload();
+  while (!resolve) await new Promise(done => setImmediate(done));
+  h.page.onHide(); resolve({ task, events: [] }); await loading;
+  assert.equal(h.page.data.workspace, null);
+  assert.equal(h.page.data.canIssue, false);
+});
+
+test('hidden task page ignores late completion-code responses', async () => {
+  let resolve;
+  const h = pageHarness('tasks/detail', { generateCompletionCode: () => new Promise(done => { resolve = done; }) });
+  h.page.setData({ canGenerateCode: true });
+  const generating = h.page.generateCode();
+  while (!resolve) await new Promise(done => setImmediate(done));
+  h.page.onHide(); resolve({ completionCode: '123456', expiresAt: '2099-01-01T12:00:00' }); await generating;
+  assert.equal(h.page.data.completionCode, null);
+});
+
+test('publisher confirmation and issue actions match server states', async () => {
+  const task = { id: 10, publisherId: 1, workflowStatus: 'DELIVERED' };
+  const h = pageHarness('tasks/detail', { task: async () => task, taskApplicants: async () => [], taskWorkspace: async () => ({ task, events: [] }) });
+  await h.page.reload(); assert.equal(h.page.data.canConfirm, false);
+  task.workflowStatus = 'ISSUE_HANDLING'; await h.page.reload(); assert.equal(h.page.data.canIssue, false);
+});

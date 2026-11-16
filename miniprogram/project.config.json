@@ -1,0 +1,20 @@
+{
+  "description": "蜗壳同路原生小程序",
+  "miniprogramRoot": "src/",
+  "compileType": "miniprogram",
+  "appid": "wx94d18423aab8b5df",
+  "projectname": "woke-tonglu",
+  "libVersion": "3.6.5",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "postcss": true,
+    "urlCheck": true,
+    "compileHotReLoad": true
+  },
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  }
+}

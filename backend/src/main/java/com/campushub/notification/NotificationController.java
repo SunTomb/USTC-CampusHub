@@ -28,6 +28,6 @@ public class NotificationController {
 
     @PostMapping("/notifications/{id}/read")
     public ApiResponse<StationNotificationSummary> markRead(@PathVariable Long id) {
-        return ApiResponse.ok(notificationService.markRead(id));
+        return ApiResponse.ok(notificationService.markRead(id, currentUserService.requireUserId()));
     }
 }

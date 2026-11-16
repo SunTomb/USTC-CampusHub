@@ -1,0 +1,17 @@
+<launch-intro id="launch-intro" />
+<view class="page task-page">
+  <view class="page-top"><view><text class="eyebrow">蜗壳同路</text><view class="title">找一程顺路</view></view><button class="small ghost" bindtap="publish">＋ 发跑腿</button></view>
+  <zone-bar value="{{zone}}" bind:change="changeZone" />
+  <view class="segmented"><view class="segment {{mode === '' ? 'active' : ''}}" data-mode="" bindtap="changeMode">全部</view><view class="segment {{mode === 'GRAB' ? 'active' : ''}}" data-mode="GRAB" bindtap="changeMode">即时抢单</view><view class="segment {{mode === 'APPLICATION' ? 'active' : ''}}" data-mode="APPLICATION" bindtap="changeMode">报名筛选</view></view>
+  <state-view loading="{{loading}}" error="{{error && !selected ? error : ''}}" empty="{{!tasks.length}}" title="当前校区暂无待接跑腿" description="换个校区看看，或发布自己的小需求。" bind:retry="reload" />
+  <view class="ticket" wx:for="{{tasks}}" wx:key="id" hover-class="pressed">
+    <view class="ticket-main" data-id="{{item.id}}" bindtap="detail"><view class="route"><text>{{item.originLabel}}</text><text class="route-arrow">→</text><text>{{item.destinationLabel}}</text></view><view class="ticket-title single">{{item.title}}</view><view class="ticket-meta single">{{item.deadlineLabel}} 前 · {{item.publisherNickname}}</view><text class="mode">{{item.modeLabel}}</text></view>
+    <view class="ticket-stub"><text class="ticket-price mono-num">¥{{item.rewardLabel}}</text><button class="take-button" data-id="{{item.id}}" bindtap="choose">{{user.id === item.publisherId ? '查看任务' : item.acceptanceMode === 'APPLICATION' ? '去报名' : '立即抢单'}}</button></view>
+  </view>
+  <view class="muted list-foot" wx:if="{{tasks.length}}">报酬由双方直接协商结算</view>
+</view>
+<bottom-sheet id="task-confirm" visible="{{!!selected}}" title="{{selected.acceptanceMode === 'APPLICATION' ? '报名这程跑腿' : '确认接下这程'}}" busy="{{busy}}" bind:close="closeSheet">
+  <view class="heading">{{selected.title}}</view><view class="chips"><text class="pill teal">{{selected.originLabel}} → {{selected.destinationLabel}}</text><text class="pill">{{selected.modeLabel}}</text></view><view class="content sheet-description">{{selected.description}}</view><view class="notice">先确认路线、时间和物品要求。报酬 ¥{{selected.rewardLabel}} 由双方直接结算，平台不代收。</view><view wx:if="{{selected.acceptanceMode === 'APPLICATION'}}" class="field sheet-description"><text class="field-label">给发布者捎句话（选填）</text><textarea value="{{message}}" data-field="message" bindinput="field" maxlength="500" placeholder="你从哪里出发，大约何时能送达" /></view><view wx:if="{{error}}" class="error">{{error}}</view>
+  <view slot="footer"><button class="primary" bindtap="take" loading="{{busy}}" disabled="{{busy}}">{{selected.acceptanceMode === 'APPLICATION' ? '发送报名' : '确认接单'}}</button></view>
+</bottom-sheet>
+<role-unlock id="runner-role" visible="{{unlock}}" role="RUNNER" bind:close="closeUnlock" />

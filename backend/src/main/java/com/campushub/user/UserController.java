@@ -39,6 +39,18 @@ public class UserController {
         return ApiResponse.ok(UserSummary.from(userRepository.save(user)));
     }
 
+    @PutMapping("/me/contacts")
+    public ApiResponse<UserSummary> updateContacts(@Valid @RequestBody UpdateContactsRequest request) {
+        User user = currentUserService.requireUser();
+        String wechatContact = trimToNull(request.wechatContact());
+        String qqContact = trimToNull(request.qqContact());
+        if (wechatContact == null && qqContact == null) {
+            throw new BusinessException("请至少填写微信或 QQ 联系方式");
+        }
+        user.updateContact(wechatContact, qqContact);
+        return ApiResponse.ok(UserSummary.from(userRepository.save(user)));
+    }
+
     @PutMapping("/me/password")
     public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         User user = currentUserService.requireUser();
@@ -48,6 +60,14 @@ public class UserController {
         user.resetPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         return ApiResponse.ok(null);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String normalizeUsername(String rawUsername) {

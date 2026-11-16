@@ -1,0 +1,46 @@
+<launch-intro id="launch-intro" />
+<view class="page with-dock publish-page">
+  <view class="page-top"><view><view class="title">{{draftId ? '编辑宣传' : '写一份校园宣传'}}</view><view class="muted">文字先行，好想法不必等一张海报</view></view></view>
+  <view wx:if="{{!authorized}}" class="surface stack"><view class="heading">登录后继续编辑</view><view class="caption">本机草稿仅在当前账号验证登录后读取，不会与其他账号共享。</view><button class="primary" bindtap="enter">登录或重试验证</button></view>
+  <state-view loading="{{loading}}" error="{{!authorized || !ready ? error : ''}}" bind:retry="reload" />
+  <view wx:if="{{authorized && ready}}">
+    <view class="between draft-heading"><text class="pill gold">{{statusLabel}}</text><text class="caption">{{draftId ? '编号 ' + draftId : '尚未发送到服务器'}}</text></view>
+    <view wx:if="{{restoreHint}}" class="form-help restore-hint">{{restoreHint}}</view>
+    <view wx:if="{{storageWarning}}" class="notice">{{storageWarning}}</view>
+    <view wx:if="{{savedMessage}}" class="notice save-result">{{savedMessage}}</view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:if="{{!editable}}" class="notice readonly-note">当前状态不开放编辑。你仍可查看已保存内容，或另写一份宣传。</view>
+    <view wx:if="{{creationUncertain}}" class="surface uncertain-panel stack">
+      <view class="heading">先核对，避免重复发布</view><view class="caption">网络中断时，服务器可能已经创建。请先打开通行证中的“我的宣传”。</view>
+      <button class="plain" data-url="/pages/pass/index" bindtap="go">核对我的宣传</button>
+      <button class="ghost" disabled="{{busy}}" bindtap="resolveCreate">已核对且没有创建，继续编辑</button>
+    </view>
+    <view class="form-section">
+      <view class="section-title">宣传内容</view>
+      <view class="field"><label class="field-label">标题 · 必填</label><input class="input" data-field="title" value="{{form.title}}" bindinput="input" maxlength="120" placeholder="如：寻找一起参加竞赛的同学" disabled="{{busy || !editable}}" /></view>
+      <view class="field"><label class="field-label">宣传类型 · 必选</label><picker mode="selector" range="{{types}}" range-key="label" value="{{typeIndex}}" bindchange="changeType" disabled="{{busy || !editable}}"><view class="picker">{{typeLabel}}</view></picker></view>
+      <view class="field"><label class="field-label">一句话摘要 · 选填</label><textarea class="summary-input" data-field="summary" value="{{form.summary}}" bindinput="input" maxlength="500" placeholder="想做什么、想找到谁？" disabled="{{busy || !editable}}" /></view>
+      <view class="field"><label class="field-label">正文 · 必填</label><textarea class="description-input" data-field="description" value="{{form.description}}" bindinput="input" maxlength="20000" placeholder="介绍计划、参与要求、时间安排或你的作品。按普通文字展示，不支持 HTML 排版。" disabled="{{busy || !editable}}" cursor-spacing="100" /><view class="form-help">{{form.description.length}} / 20000 · 请勿填写不宜公开的个人信息</view></view>
+      <view class="field"><label class="field-label">标签 · 选填</label><input class="input" data-field="tags" value="{{form.tags}}" bindinput="input" maxlength="500" placeholder="如：竞赛，招前端，作品集" disabled="{{busy || !editable}}" /><view class="form-help">用中文或英文逗号分隔，展板最多显示前三个标签。</view></view>
+      <view class="field"><label class="field-label">所在校区 · 选填</label><zone-bar wx:if="{{editable && !busy}}" value="{{form.campusZone}}" bind:change="changeZone" /><view wx:else class="picker">{{zoneLabel}}</view><view class="form-help">选择全部表示面向全校。</view></view>
+    </view>
+    <view class="form-section">
+      <view class="section-title">联系与展示</view>
+      <view class="field"><label class="field-label">联系方式 · 必填</label><input class="input" data-field="contactInfo" value="{{form.contactInfo}}" bindinput="input" maxlength="255" placeholder="如：微信：your_wechat 或 QQ：123456" disabled="{{busy || !editable}}" /><view class="form-help">仅按下方可见范围展示，请填写你有权使用的联系方式。</view></view>
+      <view class="field"><label class="field-label">联系方式可见范围 · 必选</label><picker mode="selector" range="{{visibilityOptions}}" range-key="label" value="{{visibilityIndex}}" bindchange="changeVisibility" disabled="{{busy || !editable}}"><view class="picker">{{visibilityLabel}}</view></picker></view>
+      <view class="field"><label class="field-label">外部链接 · 选填</label><input class="input" data-field="linkUrl" value="{{form.linkUrl}}" bindinput="input" maxlength="255" placeholder="https://…（可留空）" disabled="{{busy || !editable}}" /><view class="form-help">仅接受 https 链接，详情页只提供复制，不在小程序内打开。</view></view>
+      <view class="field"><view class="between"><label class="field-label">设置展示截止时间 · 选填</label><switch checked="{{form.expiryEnabled}}" bindchange="changeExpiry" color="#16325B" disabled="{{busy || !editable}}" /></view>
+        <view wx:if="{{form.expiryEnabled}}" class="date-grid"><picker mode="date" value="{{form.expiryDate}}" bindchange="changeDate" disabled="{{busy || !editable}}"><view class="picker mono-num">{{form.expiryDate}}</view></picker><picker mode="time" value="{{form.expiryTime}}" bindchange="changeTime" disabled="{{busy || !editable}}"><view class="picker mono-num">{{form.expiryTime}}</view></picker></view>
+        <view class="form-help">使用本地日期和时间，不做时区换算；不设置则持续展示至关闭。</view>
+      </view>
+    </view>
+    <view class="notice">本机草稿不会发送审核。点击提交后，内容会发送到服务器并进入站务核验，通过后公开展示。请勿发布虚假招募或敏感个人资料。</view>
+    <view class="disabled-note">当前版本只支持文字发布，不提供图片、视频或文件上传。</view>
+    <button wx:if="{{draftId && !dirty}}" class="plain new-draft" disabled="{{busy}}" bindtap="startNew">另写一份宣传</button>
+    <view class="local-note caption">{{dirty ? '当前文字有尚未提交的修改。' : '服务器状态以最新读取结果为准。'}} 本机草稿仅供当前账号恢复，不会跨设备同步。</view>
+  </view>
+</view>
+<view wx:if="{{authorized && ready}}" class="dock">
+  <button class="plain" data-mode="save" bindtap="save" disabled="{{busy || loading || !editable || creationUncertain}}" loading="{{busy && !submitting}}">存为本机草稿</button>
+  <button class="primary" data-mode="submit" bindtap="save" disabled="{{busy || loading || !canSubmit || creationUncertain}}" loading="{{busy && submitting}}">{{savedMessage && canSubmit && !dirty && draftId ? '重试提交核验' : '提交站务核验'}}</button>
+</view>

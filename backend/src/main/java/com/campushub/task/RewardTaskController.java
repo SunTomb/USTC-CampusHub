@@ -30,12 +30,36 @@ public class RewardTaskController {
         this.currentUserService = currentUserService;
     }
 
+    private Long requireActor(Long requestedId) {
+        Long currentId = currentUserService.requireUserId();
+        if (requestedId != null && !currentId.equals(requestedId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "只能由本人执行任务操作");
+        }
+        return currentId;
+    }
+
     @GetMapping
     public ApiResponse<List<RewardTaskSummary>> listTasks() {
         List<RewardTaskSummary> tasks = rewardTaskRepository.findByStatusOrderByDeadlineAsc("PUBLISHED").stream()
                 .map(RewardTaskSummary::from)
                 .toList();
         return ApiResponse.ok(tasks);
+    }
+
+    @GetMapping("/mine")
+    public ApiResponse<List<RewardTaskSummary>> myTasks() {
+        return ApiResponse.ok(runnerTaskService.listByPublisher(currentUserService.requireUserId()));
+    }
+
+    @GetMapping("/{taskId}/workspace")
+    public ApiResponse<TaskWorkspaceSummary> workspace(@PathVariable Long taskId) {
+        return ApiResponse.ok(runnerTaskService.workspace(taskId, currentUserService.requireUserId()));
+    }
+
+    @PostMapping("/{taskId}/completion-code")
+    public ApiResponse<CompletionCodeResponse> issueCompletionCode(@PathVariable Long taskId) {
+        return ApiResponse.ok(runnerTaskService.issueCompletionCode(taskId, currentUserService.requireUserId()));
     }
 
     @GetMapping("/{id}")
@@ -49,13 +73,13 @@ public class RewardTaskController {
     public ApiResponse<RewardTaskSummary> publish(
             @RequestParam(required = false) Long publisherId,
             @Valid @RequestBody CreateRunnerTaskRequest request) {
-        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        Long effectivePublisherId = requireActor(publisherId);
         return ApiResponse.ok(runnerTaskService.publish(effectivePublisherId, request));
     }
 
     @PostMapping("/{taskId}/grab")
     public ApiResponse<RewardTaskSummary> grab(@PathVariable Long taskId, @RequestParam(required = false) Long runnerId) {
-        Long effectiveRunnerId = runnerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(runnerId);
+        Long effectiveRunnerId = requireActor(runnerId);
         return ApiResponse.ok(runnerTaskService.grab(taskId, effectiveRunnerId));
     }
 
@@ -64,7 +88,7 @@ public class RewardTaskController {
             @PathVariable Long taskId,
             @RequestParam(required = false) Long applicantId,
             @RequestBody ApplyTaskRequest request) {
-        Long effectiveApplicantId = applicantId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(applicantId);
+        Long effectiveApplicantId = requireActor(applicantId);
         return ApiResponse.ok(runnerTaskService.apply(taskId, effectiveApplicantId, request));
     }
 
@@ -73,7 +97,7 @@ public class RewardTaskController {
             @PathVariable Long taskId,
             @PathVariable Long applicationId,
             @RequestParam(required = false) Long publisherId) {
-        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        Long effectivePublisherId = requireActor(publisherId);
         return ApiResponse.ok(runnerTaskService.acceptApplication(taskId, applicationId, effectivePublisherId));
     }
 
@@ -83,7 +107,7 @@ public class RewardTaskController {
             @PathVariable String nextStatus,
             @RequestParam(required = false) Long actorId,
             @RequestBody(required = false) TaskActionRequest request) {
-        Long effectiveActorId = actorId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(actorId);
+        Long effectiveActorId = requireActor(actorId);
         return ApiResponse.ok(runnerTaskService.advance(taskId, effectiveActorId, nextStatus, request));
     }
 
@@ -92,7 +116,7 @@ public class RewardTaskController {
             @PathVariable Long taskId,
             @RequestParam(required = false) Long runnerId,
             @RequestBody(required = false) TaskActionRequest request) {
-        Long effectiveRunnerId = runnerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(runnerId);
+        Long effectiveRunnerId = requireActor(runnerId);
         return ApiResponse.ok(runnerTaskService.completeWithCode(taskId, effectiveRunnerId, request));
     }
 
@@ -101,7 +125,7 @@ public class RewardTaskController {
             @PathVariable Long taskId,
             @RequestParam(required = false) Long publisherId,
             @RequestBody(required = false) TaskActionRequest request) {
-        Long effectivePublisherId = publisherId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(publisherId);
+        Long effectivePublisherId = requireActor(publisherId);
         return ApiResponse.ok(runnerTaskService.confirmCompletion(taskId, effectivePublisherId, request));
     }
 
@@ -110,7 +134,7 @@ public class RewardTaskController {
             @PathVariable Long taskId,
             @RequestParam(required = false) Long reporterId,
             @Valid @RequestBody ReportTaskIssueRequest request) {
-        Long effectiveReporterId = reporterId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(reporterId);
+        Long effectiveReporterId = requireActor(reporterId);
         return ApiResponse.ok(runnerTaskService.reportIssue(taskId, effectiveReporterId, request));
     }
 }

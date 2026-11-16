@@ -1,0 +1,1 @@
+Component({ options: { styleIsolation: 'apply-shared' }, properties: { loading: Boolean, error: String, empty: Boolean, title: { type: String, value: '这里暂时没有内容' }, description: { type: String, value: '稍后再来看看，或试试其他筛选条件。' } }, methods: { retry() { this.triggerEvent('retry'); } } });

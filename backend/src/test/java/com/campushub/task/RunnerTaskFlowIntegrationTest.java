@@ -86,12 +86,37 @@ class RunnerTaskFlowIntegrationTest {
                 LocalDateTime.now().plusHours(2),
                 "COMPLETION_CODE"));
         runnerTaskService.grab(published.id(), 2L);
+        CompletionCodeResponse issued = runnerTaskService.issueCompletionCode(published.id(), 1L);
+        runnerTaskService.advance(published.id(), 2L, "HEADING_TO_PICKUP", null);
+        runnerTaskService.advance(published.id(), 2L, "PICKED_UP", null);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
+        runnerTaskService.advance(published.id(), 2L, "PENDING_CONFIRMATION", null);
 
-        RewardTaskSummary completed = runnerTaskService.completeWithCode(published.id(), 2L, new TaskActionRequest("已送达", "123456"));
+        RewardTaskSummary completed = runnerTaskService.completeWithCode(
+                published.id(), 2L, new TaskActionRequest("已送达", issued.completionCode()));
 
         assertThat(completed.workflowStatus()).isEqualTo("COMPLETED");
     }
 
+    @Test
+    void publisherCanReadOwnTaskHistoryAcrossStatuses() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
+                "跨设备查看任务",
+                "用于验证发布历史接口",
+                new BigDecimal("4.00"),
+                BigDecimal.ZERO,
+                "GRAB",
+                "CENTRAL",
+                "WEST",
+                "中区驿站",
+                "西区宿舍",
+                LocalDateTime.now().plusHours(2),
+                "PHOTO_AND_CONFIRMATION"));
+
+        assertThat(runnerTaskService.listByPublisher(1L))
+                .extracting(RewardTaskSummary::id)
+                .contains(published.id());
+    }
     @Test
     void reportingIssueMovesTaskToIssueHandling() {
         RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(

@@ -1,0 +1,1 @@
+.zone-strip{white-space:nowrap;margin:6rpx 0 20rpx}.zone-inner{display:inline-flex;gap:12rpx;padding:4rpx 0}.zone{display:inline-flex;align-items:center;justify-content:center;min-height:76rpx;padding:14rpx 24rpx;border-radius:999rpx;background:#efece4;color:#526075;font-size:25rpx}.zone.chosen{color:#fff;background:#16325b;font-weight:600}

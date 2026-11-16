@@ -70,6 +70,12 @@ public class RewardTask {
     @Column(name = "completion_code_hash")
     private String completionCodeHash;
 
+    @Column(name = "completion_code_attempts", nullable = false)
+    private Integer completionCodeAttempts = 0;
+
+    @Column(name = "completion_code_issued_at")
+    private LocalDateTime completionCodeIssuedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "accepted_application_id")
     private TaskApplication acceptedApplication;
@@ -164,6 +170,14 @@ public class RewardTask {
         return completionCodeHash;
     }
 
+    public Integer getCompletionCodeAttempts() {
+        return completionCodeAttempts == null ? 0 : completionCodeAttempts;
+    }
+
+    public LocalDateTime getCompletionCodeIssuedAt() {
+        return completionCodeIssuedAt;
+    }
+
     public TaskApplication getAcceptedApplication() {
         return acceptedApplication;
     }
@@ -192,5 +206,22 @@ public class RewardTask {
     public void moveTo(String workflowStatus) {
         this.workflowStatus = workflowStatus;
         this.status = workflowStatus;
+    }
+
+    public void issueCompletionCode(String completionCodeHash, LocalDateTime issuedAt) {
+        this.completionCodeHash = completionCodeHash;
+        this.completionCodeIssuedAt = issuedAt;
+        this.completionCodeAttempts = 0;
+    }
+
+    public int registerCompletionCodeAttempt() {
+        this.completionCodeAttempts = getCompletionCodeAttempts() + 1;
+        return this.completionCodeAttempts;
+    }
+
+    public void clearCompletionCode() {
+        this.completionCodeHash = null;
+        this.completionCodeIssuedAt = null;
+        this.completionCodeAttempts = 0;
     }
 }
