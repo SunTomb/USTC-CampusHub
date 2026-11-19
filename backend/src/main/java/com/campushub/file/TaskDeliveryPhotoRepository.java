@@ -23,6 +23,8 @@ public interface TaskDeliveryPhotoRepository extends JpaRepository<TaskDeliveryP
         return countByTaskIdAndStatus(taskId, "UPLOADED");
     }
 
+    @Query("select p.storageKey from TaskDeliveryPhoto p")
+    List<String> findAllStorageKeys();
     @Query("select coalesce(sum(p.sizeBytes), 0) from TaskDeliveryPhoto p where p.task.id = :taskId and p.status = 'UPLOADED'")
     Long sumSizeBytesByTaskId(Long taskId);
 }

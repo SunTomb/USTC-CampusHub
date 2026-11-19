@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,7 +64,7 @@ public class TaskEvidenceStorage {
                 }
             }
             String contentType = detectContentType(signature, signatureLength, file.getContentType());
-            validateImagePayload(temporary, contentType, size);
+            validateImagePayload(temporary);
             String storageKey = "task-evidence/" + taskId + "/" + UUID.randomUUID();
             Path destination = root.resolve(storageKey).normalize();
             ensureContained(destination);
@@ -97,6 +98,28 @@ public class TaskEvidenceStorage {
             Files.deleteIfExists(resolveContained(storageKey));
         } catch (IOException exception) {
             throw new IllegalStateException("清理任务图片失败", exception);
+        }
+    }
+
+    public void reconcile(Set<String> referencedKeys) {
+        Path evidenceRoot = root.resolve("task-evidence").normalize();
+        ensureContained(evidenceRoot);
+        if (!Files.exists(evidenceRoot)) {
+            return;
+        }
+        try (var paths = Files.walk(evidenceRoot)) {
+            paths.filter(Files::isRegularFile).forEach(path -> {
+                String key = root.relativize(path).toString().replace(java.io.File.separatorChar, '/');
+                if (!referencedKeys.contains(key)) {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException exception) {
+                        throw new IllegalStateException("清理孤立任务图片失败", exception);
+                    }
+                }
+            });
+        } catch (IOException exception) {
+            throw new IllegalStateException("扫描任务图片失败", exception);
         }
     }
 
@@ -140,63 +163,17 @@ public class TaskEvidenceStorage {
             requireDeclaredType(normalized, "image/jpeg");
             return "image/jpeg";
         }
-        if (length >= 12 && signature[0] == 'R' && signature[1] == 'I' && signature[2] == 'F'
-                && signature[3] == 'F' && signature[8] == 'W' && signature[9] == 'E'
-                && signature[10] == 'B' && signature[11] == 'P') {
-            requireDeclaredType(normalized, "image/webp");
-            return "image/webp";
-        }
-        throw new IllegalArgumentException("仅支持 JPEG、PNG 或 WebP 图片格式");
+        throw new IllegalArgumentException("仅支持 JPEG 或 PNG 图片格式");
     }
 
-    private void validateImagePayload(Path temporary, String contentType, long size) {
+    private void validateImagePayload(Path temporary) {
         try {
-            if ("image/webp".equals(contentType)) {
-                validateWebp(Files.readAllBytes(temporary), size);
-                return;
-            }
             if (ImageIO.read(temporary.toFile()) == null) {
                 throw new IllegalArgumentException("图片内容无法解码");
             }
         } catch (IOException exception) {
             throw new IllegalArgumentException("图片内容无法解码", exception);
         }
-    }
-
-    private void validateWebp(byte[] bytes, long size) {
-        if (bytes.length != size || bytes.length < 20
-                || bytes[0] != 'R' || bytes[1] != 'I' || bytes[2] != 'F' || bytes[3] != 'F'
-                || bytes[8] != 'W' || bytes[9] != 'E' || bytes[10] != 'B' || bytes[11] != 'P') {
-            throw new IllegalArgumentException("图片内容无法解码");
-        }
-        long riffSize = littleEndianInt(bytes, 4);
-        if (riffSize != bytes.length - 8) {
-            throw new IllegalArgumentException("图片内容无法解码");
-        }
-        int offset = 12;
-        boolean imageChunk = false;
-        while (offset + 8 <= bytes.length) {
-            int chunkSize = (int) littleEndianInt(bytes, offset + 4);
-            if (chunkSize < 0 || offset + 8L + chunkSize > bytes.length) {
-                throw new IllegalArgumentException("图片内容无法解码");
-            }
-            String chunkType = new String(bytes, offset, 4, java.nio.charset.StandardCharsets.US_ASCII);
-            if (("VP8 ".equals(chunkType) || "VP8L".equals(chunkType) || "VP8X".equals(chunkType))
-                    && chunkSize > 0) {
-                imageChunk = true;
-            }
-            offset += 8 + chunkSize + (chunkSize & 1);
-        }
-        if (offset != bytes.length || !imageChunk) {
-            throw new IllegalArgumentException("图片内容无法解码");
-        }
-    }
-
-    private long littleEndianInt(byte[] bytes, int offset) {
-        return (bytes[offset] & 0xffL)
-                | ((bytes[offset + 1] & 0xffL) << 8)
-                | ((bytes[offset + 2] & 0xffL) << 16)
-                | ((bytes[offset + 3] & 0xffL) << 24);
     }
 
     private void requireDeclaredType(String suppliedType, String expected) {

@@ -89,6 +89,11 @@ public class RewardTaskController {
         return ApiResponse.ok(runnerTaskService.publish(effectivePublisherId, request));
     }
 
+    @PostMapping("/{taskId}/completion-code")
+    public ApiResponse<CompletionCodeResponse> issueCompletionCode(@PathVariable Long taskId) {
+        return ApiResponse.ok(runnerTaskService.issueCompletionCode(taskId, currentUserService.requireUserId()));
+    }
+
     @PostMapping("/{taskId}/grab")
     public ApiResponse<RewardTaskSummary> grab(@PathVariable Long taskId, @RequestParam(required = false) Long runnerId) {
         Long effectiveRunnerId = requireActor(runnerId);

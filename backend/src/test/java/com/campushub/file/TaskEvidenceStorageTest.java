@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -49,6 +50,11 @@ class TaskEvidenceStorageTest {
                         new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}), 17L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("图片内容无法解码");
+        assertThatThrownBy(() -> storage.store(
+                new MockMultipartFile("file", "webp.webp", "image/webp",
+                        new byte[] {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'}), 17L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("仅支持 JPEG 或 PNG");
         assertThat(storage.countStoredFiles()).isZero();
     }
 
@@ -73,6 +79,17 @@ class TaskEvidenceStorageTest {
         assertThatThrownBy(() -> storage.delete("task-evidence/../outside"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("非法文件路径");
+    }
+
+    @Test
+    void reconciliationRemovesFilesWithoutCommittedMetadata() throws Exception {
+        TaskEvidenceStorage storage = new TaskEvidenceStorage(root.toString());
+        StoredTaskEvidence stored = storage.store(
+                new MockMultipartFile("file", "orphan.png", "image/png", validPng()), 17L);
+
+        storage.reconcile(Set.of());
+
+        assertThat(Files.exists(root.resolve(stored.storageKey()))).isFalse();
     }
 
     private static byte[] validPng() {
