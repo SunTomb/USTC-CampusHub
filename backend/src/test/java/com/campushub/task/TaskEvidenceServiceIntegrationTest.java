@@ -352,8 +352,8 @@ class TaskEvidenceServiceIntegrationTest {
 
     private static byte[] largePng() {
         try {
-            int width = 1024;
-            int height = 1024;
+            int width = 1200;
+            int height = 1200;
             BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             var random = new java.util.Random(42);
             for (int y = 0; y < height; y++) {
