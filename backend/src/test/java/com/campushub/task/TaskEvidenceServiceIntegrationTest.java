@@ -44,6 +44,9 @@ class TaskEvidenceServiceIntegrationTest {
     private TaskDeliveryPhotoRepository taskDeliveryPhotoRepository;
 
     @Autowired
+    private RewardTaskRepository rewardTaskRepository;
+
+    @Autowired
     private TaskEventRepository taskEventRepository;
 
     @Autowired
@@ -58,6 +61,7 @@ class TaskEvidenceServiceIntegrationTest {
     void publicSummaryRedactsPrivatePickupDataAndWorkspaceExposesEvidenceOnlyToParticipants() throws Exception {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
 
         TaskDeliveryPhotoSummary photo = taskEvidenceService.upload(
                 published.id(),
@@ -81,6 +85,7 @@ class TaskEvidenceServiceIntegrationTest {
     void uploadIsIdempotentAndPhotoSubmissionRequiresEvidence() {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
 
         assertThatThrownBy(() -> runnerTaskService.submitDeliveryPhoto(
                 published.id(), 2L, new TaskActionRequest("empty", null)))
@@ -109,6 +114,7 @@ class TaskEvidenceServiceIntegrationTest {
     void photoTaskCannotBeCompletedThroughGenericAdvance() {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
 
         assertThatThrownBy(() -> runnerTaskService.advance(
                 published.id(), 2L, "COMPLETED", null))
@@ -125,6 +131,28 @@ class TaskEvidenceServiceIntegrationTest {
 
         RewardTaskSummary completed = runnerTaskService.confirmCompletion(published.id(), 1L, null);
         assertThat(completed.workflowStatus()).isEqualTo("COMPLETED");
+        assertThatThrownBy(() -> runnerTaskService.submitDeliveryPhoto(
+                published.id(), 2L, new TaskActionRequest("reopen", null)))
+                .hasMessageContaining("配送阶段");
+        assertThatThrownBy(() -> runnerTaskService.advance(
+                published.id(), 2L, "DELIVERING", null))
+                .hasMessageContaining("不可重新推进");
+    }
+
+    @Test
+    void cancelledPhotoTaskCannotSubmitOrAdvanceAgain() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
+        runnerTaskService.grab(published.id(), 2L);
+        RewardTask task = rewardTaskRepository.findById(published.id()).orElseThrow();
+        task.moveTo(TaskWorkflowStatus.CANCELLED.name());
+        rewardTaskRepository.saveAndFlush(task);
+
+        assertThatThrownBy(() -> runnerTaskService.submitDeliveryPhoto(
+                published.id(), 2L, new TaskActionRequest("reopen", null)))
+                .hasMessageContaining("配送阶段");
+        assertThatThrownBy(() -> runnerTaskService.advance(
+                published.id(), 2L, "DELIVERING", null))
+                .hasMessageContaining("不可重新推进");
     }
 
     @Test
@@ -134,6 +162,7 @@ class TaskEvidenceServiceIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
             runnerTaskService.grab(published.id(), 2L);
+            runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
             taskEvidenceService.upload(published.id(), 2L,
                     new MockMultipartFile("file", "rollback.png", "image/png", png()),
                     "rollback-key", null);
@@ -147,6 +176,7 @@ class TaskEvidenceServiceIntegrationTest {
     void downloadReturnsExactBytesToParticipantsButNotStrangers() {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
         byte[] bytes = png();
         TaskDeliveryPhotoSummary photo = taskEvidenceService.upload(
                 published.id(), 2L,
@@ -165,6 +195,7 @@ class TaskEvidenceServiceIntegrationTest {
     void enforcesThreePhotoLimitAndRejectsUploadAfterCompletion() {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
         for (int i = 0; i < 3; i++) {
             taskEvidenceService.upload(published.id(), 2L,
                     new MockMultipartFile("file", "proof-" + i + ".png", "image/png", png()),
@@ -184,6 +215,7 @@ class TaskEvidenceServiceIntegrationTest {
     void rejectsInvalidTypeAndDoesNotLeaveStorageMetadata() {
         RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
         runnerTaskService.grab(published.id(), 2L);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
 
         assertThatThrownBy(() -> taskEvidenceService.upload(
                 published.id(), 2L,
