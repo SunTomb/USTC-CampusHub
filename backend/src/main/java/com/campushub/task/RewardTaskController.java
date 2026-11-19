@@ -3,8 +3,17 @@ package com.campushub.task;
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
+import com.campushub.file.TaskDeliveryPhotoSummary;
+import com.campushub.file.TaskEvidenceDownload;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,14 +29,17 @@ public class RewardTaskController {
     private final RewardTaskRepository rewardTaskRepository;
     private final RunnerTaskService runnerTaskService;
     private final CurrentUserService currentUserService;
+    private final TaskEvidenceService taskEvidenceService;
 
     public RewardTaskController(
             RewardTaskRepository rewardTaskRepository,
             RunnerTaskService runnerTaskService,
-            CurrentUserService currentUserService) {
+            CurrentUserService currentUserService,
+            TaskEvidenceService taskEvidenceService) {
         this.rewardTaskRepository = rewardTaskRepository;
         this.runnerTaskService = runnerTaskService;
         this.currentUserService = currentUserService;
+        this.taskEvidenceService = taskEvidenceService;
     }
 
     private Long requireActor(Long requestedId) {
@@ -136,5 +148,42 @@ public class RewardTaskController {
             @Valid @RequestBody ReportTaskIssueRequest request) {
         Long effectiveReporterId = requireActor(reporterId);
         return ApiResponse.ok(runnerTaskService.reportIssue(taskId, effectiveReporterId, request));
+    }
+
+    @GetMapping("/{taskId}/workspace")
+    public ApiResponse<TaskWorkspaceSummary> workspace(@PathVariable Long taskId) {
+        return ApiResponse.ok(runnerTaskService.workspace(taskId, currentUserService.requireUserId()));
+    }
+
+    @PostMapping(path = "/{taskId}/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<TaskDeliveryPhotoSummary> uploadEvidence(
+            @PathVariable Long taskId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam String clientRequestId,
+            @RequestParam(required = false) String note) {
+        return ApiResponse.ok(taskEvidenceService.upload(
+                taskId, currentUserService.requireUserId(), file, clientRequestId, note));
+    }
+
+    @PostMapping("/{taskId}/evidence/submit")
+    public ApiResponse<RewardTaskSummary> submitEvidence(
+            @PathVariable Long taskId,
+            @RequestBody(required = false) TaskActionRequest request) {
+        return ApiResponse.ok(runnerTaskService.submitDeliveryPhoto(
+                taskId, currentUserService.requireUserId(), request));
+    }
+
+    @GetMapping("/{taskId}/evidence/{photoId}")
+    public ResponseEntity<ByteArrayResource> downloadEvidence(
+            @PathVariable Long taskId,
+            @PathVariable Long photoId) {
+        TaskEvidenceDownload download = taskEvidenceService.download(
+                taskId, photoId, currentUserService.requireUserId());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .contentType(MediaType.parseMediaType(download.contentType()))
+                .contentLength(download.sizeBytes())
+                .body(new ByteArrayResource(download.bytes()));
     }
 }

@@ -37,6 +37,18 @@ public class RewardTask {
     @Column(name = "deposit_amount", nullable = false)
     private BigDecimal depositAmount;
 
+    @Column(precision = 10, scale = 3)
+    private BigDecimal weight;
+
+    @Column(name = "public_notes", columnDefinition = "TEXT")
+    private String publicNotes;
+
+    @Column(name = "pickup_code", length = 128)
+    private String pickupCode;
+
+    @Column(name = "private_pickup_notes", columnDefinition = "TEXT")
+    private String privatePickupNotes;
+
     @Column(name = "task_location", nullable = false)
     private String taskLocation;
 
@@ -87,11 +99,21 @@ public class RewardTask {
     }
 
     public RewardTask(User publisher, String title, String description, BigDecimal rewardAmount, BigDecimal depositAmount, String taskLocation, LocalDateTime deadline, String status) {
+        this(publisher, title, description, rewardAmount, depositAmount, null, null, null, null, taskLocation, deadline, status);
+    }
+
+    public RewardTask(User publisher, String title, String description, BigDecimal rewardAmount,
+            BigDecimal depositAmount, BigDecimal weight, String publicNotes, String pickupCode,
+            String privatePickupNotes, String taskLocation, LocalDateTime deadline, String status) {
         this.publisher = publisher;
         this.title = title;
         this.description = description;
         this.rewardAmount = rewardAmount;
         this.depositAmount = depositAmount;
+        this.weight = weight;
+        this.publicNotes = publicNotes;
+        this.pickupCode = pickupCode;
+        this.privatePickupNotes = privatePickupNotes;
         this.taskLocation = taskLocation;
         this.deadline = deadline;
         this.status = status;
@@ -124,6 +146,22 @@ public class RewardTask {
 
     public BigDecimal getDepositAmount() {
         return depositAmount;
+    }
+
+    public BigDecimal getWeight() {
+        return weight;
+    }
+
+    public String getPublicNotes() {
+        return publicNotes;
+    }
+
+    public String getPickupCode() {
+        return pickupCode;
+    }
+
+    public String getPrivatePickupNotes() {
+        return privatePickupNotes;
     }
 
     public String getTaskLocation() {
