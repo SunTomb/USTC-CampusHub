@@ -56,9 +56,13 @@ public class TaskEvidenceService {
             if (!ACTIVE.equals(existing.get().getStatus())) throw new BusinessException("图片已删除，请使用新的请求编号");
             return TaskDeliveryPhotoSummary.from(existing.get());
         }
-        // Independent quotas: 3 files x 5 MiB = at most 15 MiB per kind.
+        // Independent quotas: 3 files per evidence type, plus 15 MiB across both types.
         if (photos.countByTaskIdAndEvidenceTypeAndStatus(taskId, type, ACTIVE) >= 3) {
             throw new BusinessException("每类图片最多上传 3 张");
+        }
+        long existingBytes = photos.sumSizeBytesByTaskId(taskId) == null ? 0L : photos.sumSizeBytesByTaskId(taskId);
+        if (file == null || file.getSize() < 0 || existingBytes + file.getSize() > 15L * 1024 * 1024) {
+            throw new BusinessException("任务图片总大小不能超过 15 MiB");
         }
         StoredTaskEvidence stored;
         try { stored = storage.store(file, taskId); }

@@ -12,4 +12,6 @@ public interface TaskDeliveryPhotoRepository extends JpaRepository<TaskDeliveryP
     long countByTaskIdAndEvidenceTypeAndStatus(Long taskId, String evidenceType, String status);
     boolean existsByStorageKeyAndStatus(String storageKey, String status);
     long countByTaskId(Long taskId);
+    @org.springframework.data.jpa.repository.Query("select coalesce(sum(p.sizeBytes), 0) from TaskDeliveryPhoto p where p.task.id = :taskId and p.status = 'UPLOADED'")
+    Long sumSizeBytesByTaskId(Long taskId);
 }

@@ -98,7 +98,19 @@ class TaskEvidenceServiceIntegrationTest {
                 .param("clientRequestId", "spoof").param("publisherId", "1").header("Authorization", bearer(2))).andExpect(status().isForbidden());
     }
 
-    @DynamicPropertySource
+    @Test
+    void combinedTaskPhotoQuotaAppliesAcrossBothEvidenceTypes() {
+        Long id = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION")).id();
+        var large = new MockMultipartFile("file", "large.png", "image/png", png());
+        for (int i = 0; i < 3; i++) taskEvidenceService.uploadRequest(id, 1L, large, "quota-" + i);
+        runnerTaskService.grab(id, 2L);
+        advanceToDelivering(id);
+        taskEvidenceService.upload(id, 2L, large, "delivery-quota", null);
+        assertThatThrownBy(() -> taskEvidenceService.uploadRequest(id, 1L, large, "over-quota"))
+                .hasMessageContaining("15 MiB");
+    }
+
+
     static void fileProperties(DynamicPropertyRegistry registry) {
         registry.add("campushub.file-storage.root", () -> FILE_ROOT.toString());
     }
