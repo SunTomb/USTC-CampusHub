@@ -101,15 +101,8 @@ class TaskEvidenceServiceIntegrationTest {
     @Test
     void combinedTaskPhotoQuotaAppliesAcrossBothEvidenceTypes() {
         Long id = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION")).id();
-        byte[] fourMiB = new byte[4 * 1024 * 1024];
-        fourMiB[0] = (byte) 0x89;
-        fourMiB[1] = 0x50;
-        fourMiB[2] = 0x4e;
-        fourMiB[3] = 0x47;
-        fourMiB[4] = 0x0d;
-        fourMiB[5] = 0x0a;
-        fourMiB[6] = 0x1a;
-        fourMiB[7] = 0x0a;
+        byte[] fourMiB = largePng();
+        assertThat(fourMiB.length).isGreaterThan(3_750_000).isLessThanOrEqualTo(5 * 1024 * 1024);
         var large = new MockMultipartFile("file", "large.png", "image/png", fourMiB);
         taskEvidenceService.uploadRequest(id, 1L, large, "quota-1");
         taskEvidenceService.uploadRequest(id, 1L, large, "quota-2");
@@ -355,6 +348,25 @@ class TaskEvidenceServiceIntegrationTest {
                 1500,
                 "公开备注",
                 "PICK-42");
+    }
+
+    private static byte[] largePng() {
+        try {
+            int width = 1024;
+            int height = 1024;
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            var random = new java.util.Random(42);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    image.setRGB(x, y, random.nextInt(0x1000000));
+                }
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream(4 * 1024 * 1024);
+            ImageIO.write(image, "png", output);
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     private static byte[] png() {
