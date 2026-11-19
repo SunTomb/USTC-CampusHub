@@ -1,16 +1,10 @@
 package com.campushub.task;
 
 import com.campushub.common.BusinessException;
-import com.campushub.file.StoredTaskEvidence;
-import com.campushub.file.TaskDeliveryPhoto;
-import com.campushub.file.TaskDeliveryPhotoRepository;
-import com.campushub.file.TaskDeliveryPhotoSummary;
-import com.campushub.file.TaskEvidenceDownload;
-import com.campushub.file.TaskEvidenceStorage;
-import com.campushub.user.User;
-import com.campushub.user.UserRepository;
+import com.campushub.file.*;
+import com.campushub.auth.UserRoleService;
+import com.campushub.moderation.GovernanceService;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,180 +15,124 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class TaskEvidenceService {
-
-    private static final long MAX_TASK_BYTES = 15L * 1024 * 1024;
-    private static final int MAX_PHOTOS = 3;
-    private static final List<String> UPLOADABLE_STAGES = List.of(
-            "ACCEPTED", "HEADING_TO_PICKUP", "PICKED_UP", "DELIVERING", "DELIVERED");
-
-    private final RewardTaskRepository rewardTaskRepository;
-    private final TaskDeliveryPhotoRepository photoRepository;
-    private final TaskEventRepository taskEventRepository;
-    private final UserRepository userRepository;
+    private static final String REQUEST = "REQUEST_IMAGE", DELIVERY = "DELIVERY_PHOTO", ACTIVE = "UPLOADED";
+    private final RewardTaskRepository tasks;
+    private final TaskDeliveryPhotoRepository photos;
+    private final TaskEventRepository events;
     private final TaskEvidenceStorage storage;
+    private final GovernanceService governance;
+    private final UserRoleService roles;
 
-    public TaskEvidenceService(
-            RewardTaskRepository rewardTaskRepository,
-            TaskDeliveryPhotoRepository photoRepository,
-            TaskEventRepository taskEventRepository,
-            UserRepository userRepository,
-            TaskEvidenceStorage storage) {
-        this.rewardTaskRepository = rewardTaskRepository;
-        this.photoRepository = photoRepository;
-        this.taskEventRepository = taskEventRepository;
-        this.userRepository = userRepository;
+    public TaskEvidenceService(RewardTaskRepository tasks, TaskDeliveryPhotoRepository photos,
+            TaskEventRepository events, TaskEvidenceStorage storage, GovernanceService governance, UserRoleService roles) {
+        this.tasks = tasks;
+        this.photos = photos;
+        this.events = events;
         this.storage = storage;
+        this.governance = governance;
+        this.roles = roles;
     }
 
     @Transactional
-    public TaskDeliveryPhotoSummary upload(Long taskId, Long uploaderId, MultipartFile file,
-            String clientRequestId, String note) {
-        String idempotencyKey = normalizeClientRequestId(clientRequestId);
-        RewardTask task = findTaskForUpdate(taskId);
-        TaskDeliveryPhoto existing = photoRepository
-                .findByTaskIdAndUploaderIdAndClientRequestId(taskId, uploaderId, idempotencyKey)
-                .orElse(null);
-        if (existing != null) {
-            return TaskDeliveryPhotoSummary.from(existing);
-        }
-        TaskApplication application = ensureRunnerCanUpload(task, uploaderId);
-        if (photoRepository.countByTaskId(taskId) >= MAX_PHOTOS) {
-            throw new BusinessException("每个任务最多上传 3 张凭证图片");
-        }
-        Long storedBytes = photoRepository.sumSizeBytesByTaskId(taskId);
-        long existingBytes = storedBytes == null ? 0 : storedBytes;
-        if (file == null || file.getSize() < 0 || existingBytes + file.getSize() > MAX_TASK_BYTES) {
-            throw new BusinessException("任务凭证图片总大小不能超过 15 MiB");
-        }
-        User uploader = findUser(uploaderId);
-        StoredTaskEvidence stored;
-        try {
-            stored = storage.store(file, taskId);
-        } catch (IllegalArgumentException exception) {
-            throw new BusinessException(exception.getMessage());
-        }
-        if (existingBytes + stored.sizeBytes() > MAX_TASK_BYTES) {
-            storage.delete(stored.storageKey());
-            throw new BusinessException("任务凭证图片总大小不能超过 15 MiB");
-        }
-        AtomicBoolean cleaned = new AtomicBoolean();
-        Runnable cleanup = () -> cleanupOnce(stored.storageKey(), cleaned);
-        registerCleanupOnRollback(cleanup);
-        try {
-            TaskDeliveryPhoto photo = photoRepository.saveAndFlush(new TaskDeliveryPhoto(
-                    task, application, uploader, stored, idempotencyKey, trimToNull(note)));
-            taskEventRepository.save(new TaskEvent(task, uploader, "PHOTO_UPLOADED", trimToNull(note)));
-            return TaskDeliveryPhotoSummary.from(photo);
-        } catch (RuntimeException exception) {
-            cleanup.run();
-            throw exception;
-        }
+    public TaskDeliveryPhotoSummary uploadRequest(Long taskId, Long actor, MultipartFile file, String key) {
+        return add(taskId, actor, file, key, null, REQUEST);
     }
 
-    private void registerCleanupOnRollback(Runnable cleanup) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            return;
+    @Transactional
+    public TaskDeliveryPhotoSummary upload(Long taskId, Long actor, MultipartFile file, String key, String note) {
+        return add(taskId, actor, file, key, note, DELIVERY);
+    }
+
+    private TaskDeliveryPhotoSummary add(Long taskId, Long actor, MultipartFile file, String key, String note, String type) {
+        RewardTask task = locked(taskId);
+        boolean delivery = DELIVERY.equals(type);
+        requireEditable(task, actor, delivery);
+        if (key == null || key.isBlank() || key.length() > 128 || (note != null && note.length() > 1000)) {
+            throw new BusinessException("请提供有效的 clientRequestId（最多 128 字符）和备注（最多 1000 字符）");
         }
+        key = key.trim();
+        var existing = photos.findByTaskIdAndEvidenceTypeAndUploaderIdAndClientRequestId(taskId, type, actor, key);
+        if (existing.isPresent()) {
+            if (!ACTIVE.equals(existing.get().getStatus())) throw new BusinessException("图片已删除，请使用新的请求编号");
+            return TaskDeliveryPhotoSummary.from(existing.get());
+        }
+        // Independent quotas: 3 files x 5 MiB = at most 15 MiB per kind.
+        if (photos.countByTaskIdAndEvidenceTypeAndStatus(taskId, type, ACTIVE) >= 3) {
+            throw new BusinessException("每类图片最多上传 3 张");
+        }
+        StoredTaskEvidence stored;
+        try { stored = storage.store(file, taskId); }
+        catch (IllegalArgumentException e) { throw new BusinessException(e.getMessage()); }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                if (status != TransactionSynchronization.STATUS_COMMITTED) {
-                    cleanup.run();
-                }
+            @Override public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) storage.delete(stored.storageKey());
             }
+        });
+        var application = delivery ? task.getAcceptedApplication() : null;
+        var uploader = delivery ? application.getApplicant() : task.getPublisher();
+        var photo = photos.saveAndFlush(new TaskDeliveryPhoto(task, application, uploader, stored, type, key, note));
+        if (delivery) events.save(new TaskEvent(task, uploader, "PHOTO_UPLOADED", null));
+        return TaskDeliveryPhotoSummary.from(photo);
+    }
+
+    @Transactional
+    public void remove(Long taskId, Long photoId, Long actor) {
+        RewardTask task = locked(taskId);
+        requireParticipant(task, actor);
+        var photo = activePhoto(taskId, photoId);
+        if (!actor.equals(photo.getUploader().getId())) throw forbidden();
+        requireEditable(task, actor, DELIVERY.equals(photo.getEvidenceType()));
+        photo.markDeleted();
+        String key = photo.getStorageKey();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() { storage.delete(key); }
         });
     }
 
-    private void cleanupOnce(String storageKey, AtomicBoolean cleaned) {
-        if (!cleaned.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            storage.delete(storageKey);
-        } catch (RuntimeException ignored) {
-            // Cleanup is best effort after the transaction manager has completed.
-        }
+    @Transactional(readOnly = true)
+    public List<TaskDeliveryPhotoSummary> listForParticipant(Long taskId, Long viewer) {
+        requireParticipant(task(taskId), viewer);
+        return photos.findByTaskIdAndStatusOrderByIdAsc(taskId, ACTIVE).stream().map(TaskDeliveryPhotoSummary::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDeliveryPhotoSummary> listForParticipant(Long taskId, Long viewerId) {
-        RewardTask task = findTask(taskId);
-        ensureParticipant(task, viewerId);
-        return photoRepository.findByTaskIdAndStatusOrderByCreatedAtAsc(taskId, "UPLOADED")
-                .stream().map(TaskDeliveryPhotoSummary::from).toList();
+    public TaskEvidenceDownload download(Long taskId, Long photoId, Long viewer) {
+        requireParticipant(task(taskId), viewer);
+        var photo = activePhoto(taskId, photoId);
+        return new TaskEvidenceDownload(storage.read(photo.getStorageKey()), photo.getContentType(), photo.getSizeBytes());
     }
 
-    @Transactional(readOnly = true)
-    public TaskEvidenceDownload download(Long taskId, Long photoId, Long viewerId) {
-        TaskDeliveryPhoto photo = photoRepository.findById(photoId)
-                .orElseThrow(() -> new BusinessException("凭证图片不存在"));
-        if (!photo.getTask().getId().equals(taskId) || !"UPLOADED".equals(photo.getStatus())) {
-            throw new BusinessException("凭证图片不存在");
-        }
-        ensureParticipant(photo.getTask(), viewerId);
-        byte[] bytes = storage.read(photo.getStorageKey());
-        return new TaskEvidenceDownload(bytes, photo.getContentType(), photo.getSizeBytes());
-    }
-
-    @Transactional(readOnly = true)
     public boolean hasEvidence(Long taskId) {
-        return photoRepository.countByTaskId(taskId) > 0;
+        return photos.countByTaskIdAndEvidenceTypeAndStatus(taskId, DELIVERY, ACTIVE) > 0;
     }
 
-    private TaskApplication ensureRunnerCanUpload(RewardTask task, Long uploaderId) {
-        if (!TaskVerificationMode.PHOTO_AND_CONFIRMATION.name().equals(task.getVerificationMode())) {
-            throw new BusinessException("该任务不使用图片凭证");
-        }
-        if (!UPLOADABLE_STAGES.contains(task.getWorkflowStatus())) {
-            throw new BusinessException("任务已结束或当前阶段不能上传凭证");
-        }
-        TaskApplication application = task.getAcceptedApplication();
-        if (application == null || !application.getApplicant().getId().equals(uploaderId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有已接单的跑腿者可以上传凭证");
-        }
-        return application;
+    private TaskDeliveryPhoto activePhoto(Long taskId, Long id) {
+        return photos.findByTaskIdAndIdAndStatus(taskId, id, ACTIVE).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "图片不存在"));
     }
 
-    private void ensureParticipant(RewardTask task, Long viewerId) {
-        boolean publisher = task.getPublisher().getId().equals(viewerId);
-        boolean runner = task.getAcceptedApplication() != null
-                && task.getAcceptedApplication().getApplicant().getId().equals(viewerId);
-        if (!publisher && !runner) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有任务参与方可以访问凭证");
+    private void requireEditable(RewardTask task, Long actor, boolean delivery) {
+        if (delivery ? !isRunner(task, actor) : !task.getPublisher().getId().equals(actor)) throw forbidden();
+        var state = task.getWorkflowStatus();
+        if (delivery) {
+            if (!TaskVerificationMode.PHOTO_AND_CONFIRMATION.name().equals(task.getVerificationMode()) || !List.of("DELIVERING", "DELIVERED").contains(state)) {
+                throw new BusinessException("当前任务模式或阶段不能上传凭证");
+            }
+            if (!roles.hasRole(actor, "ROLE_RUNNER")) throw forbidden();
+            governance.ensureCanProvideService(actor);
+        } else if (!List.of("PUBLISHED", "ACCEPTED", "HEADING_TO_PICKUP", "PICKED_UP", "DELIVERING", "DELIVERED", "PENDING_CONFIRMATION").contains(state)) {
+            throw new BusinessException("任务当前不可更改物品图片");
         }
     }
 
-    private RewardTask findTask(Long taskId) {
-        return rewardTaskRepository.findById(taskId)
-                .orElseThrow(() -> new BusinessException("任务不存在"));
+    private static boolean isRunner(RewardTask task, Long actor) {
+        return task.getAcceptedApplication() != null && actor.equals(task.getAcceptedApplication().getApplicant().getId());
     }
-
-    private RewardTask findTaskForUpdate(Long taskId) {
-        return rewardTaskRepository.findByIdForUpdate(taskId)
-                .orElseThrow(() -> new BusinessException("任务不存在"));
+    private static void requireParticipant(RewardTask task, Long actor) {
+        if (!actor.equals(task.getPublisher().getId()) && !isRunner(task, actor)) throw forbidden();
     }
-
-    private User findUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException("用户不存在"));
+    private static ResponseStatusException forbidden() {
+        return new ResponseStatusException(HttpStatus.FORBIDDEN, "只有任务参与方可访问，图片只能由本人更改");
     }
-
-    private String normalizeClientRequestId(String clientRequestId) {
-        String normalized = trimToNull(clientRequestId);
-        if (normalized == null) {
-            throw new BusinessException("clientRequestId 不能为空");
-        }
-        if (normalized.length() > 128) {
-            throw new BusinessException("clientRequestId 不能超过 128 个字符");
-        }
-        return normalized;
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
+    private RewardTask locked(Long id) { return tasks.findByIdForUpdate(id).orElseThrow(() -> new BusinessException("任务不存在")); }
+    private RewardTask task(Long id) { return tasks.findById(id).orElseThrow(() -> new BusinessException("任务不存在")); }
 }

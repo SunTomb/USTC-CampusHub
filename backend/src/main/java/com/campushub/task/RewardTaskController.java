@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -89,11 +90,6 @@ public class RewardTaskController {
         return ApiResponse.ok(runnerTaskService.publish(effectivePublisherId, request));
     }
 
-    @PostMapping("/{taskId}/completion-code")
-    public ApiResponse<CompletionCodeResponse> issueCompletionCode(@PathVariable Long taskId) {
-        return ApiResponse.ok(runnerTaskService.issueCompletionCode(taskId, currentUserService.requireUserId()));
-    }
-
     @PostMapping("/{taskId}/grab")
     public ApiResponse<RewardTaskSummary> grab(@PathVariable Long taskId, @RequestParam(required = false) Long runnerId) {
         Long effectiveRunnerId = requireActor(runnerId);
@@ -155,9 +151,16 @@ public class RewardTaskController {
         return ApiResponse.ok(runnerTaskService.reportIssue(taskId, effectiveReporterId, request));
     }
 
-    @GetMapping("/{taskId}/workspace")
-    public ApiResponse<TaskWorkspaceSummary> workspace(@PathVariable Long taskId) {
-        return ApiResponse.ok(runnerTaskService.workspace(taskId, currentUserService.requireUserId()));
+    @PostMapping(path = "/{taskId}/request-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<TaskDeliveryPhotoSummary> uploadRequestImage(@PathVariable Long taskId,
+            @RequestPart("file") MultipartFile file, @RequestParam String clientRequestId) {
+        return ApiResponse.ok(taskEvidenceService.uploadRequest(taskId, currentUserService.requireUserId(), file, clientRequestId));
+    }
+
+    @DeleteMapping("/{taskId}/evidence/{photoId}")
+    public ApiResponse<Void> deleteEvidence(@PathVariable Long taskId, @PathVariable Long photoId) {
+        taskEvidenceService.remove(taskId, photoId, currentUserService.requireUserId());
+        return ApiResponse.ok(null);
     }
 
     @PostMapping(path = "/{taskId}/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -185,7 +188,7 @@ public class RewardTaskController {
         TaskEvidenceDownload download = taskEvidenceService.download(
                 taskId, photoId, currentUserService.requireUserId());
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
+                .cacheControl(CacheControl.noStore().cachePrivate())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
                 .contentType(MediaType.parseMediaType(download.contentType()))
                 .contentLength(download.sizeBytes())

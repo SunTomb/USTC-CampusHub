@@ -5,7 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
+import java.time.Instant;
+import java.nio.file.attribute.FileTime;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -87,7 +88,11 @@ class TaskEvidenceStorageTest {
         StoredTaskEvidence stored = storage.store(
                 new MockMultipartFile("file", "orphan.png", "image/png", validPng()), 17L);
 
-        storage.reconcile(Set.of());
+        Instant cutoff = Instant.now().minusSeconds(86400);
+        storage.visitStaleFiles(cutoff, (id, key) -> storage.delete(key));
+        assertThat(root.resolve(stored.storageKey())).exists();
+        Files.setLastModifiedTime(root.resolve(stored.storageKey()), FileTime.from(cutoff.minusSeconds(1)));
+        storage.visitStaleFiles(cutoff, (id, key) -> storage.delete(key));
 
         assertThat(Files.exists(root.resolve(stored.storageKey()))).isFalse();
     }

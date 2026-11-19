@@ -22,33 +22,8 @@ public record RewardTaskSummary(
         Long acceptedApplicationId,
         Long publisherId,
         String publisherNickname,
-        BigDecimal weight,
-        String publicNotes) {
-
-    public RewardTaskSummary(
-            Long id,
-            String title,
-            String description,
-            BigDecimal rewardAmount,
-            BigDecimal depositAmount,
-            String taskLocation,
-            LocalDateTime deadline,
-            String status,
-            String acceptanceMode,
-            String originZone,
-            String destinationZone,
-            String originDetail,
-            String destinationDetail,
-            String workflowStatus,
-            String verificationMode,
-            Long acceptedApplicationId,
-            Long publisherId,
-            String publisherNickname) {
-        this(id, title, description, rewardAmount, depositAmount, taskLocation, deadline, status,
-                acceptanceMode, originZone, destinationZone, originDetail, destinationDetail,
-                workflowStatus, verificationMode, acceptedApplicationId, publisherId, publisherNickname,
-                null, null);
-    }
+        Integer weightGrams,
+        String notes) {
 
     public static RewardTaskSummary from(RewardTask task) {
         return new RewardTaskSummary(
@@ -70,7 +45,7 @@ public record RewardTaskSummary(
                 task.getAcceptedApplication() == null ? null : task.getAcceptedApplication().getId(),
                 task.getPublisher().getId(),
                 task.getPublisher().getNickname(),
-                task.getWeight(),
-                task.getPublicNotes());
+                task.getWeightGrams(),
+                task.getNotes());
     }
 }

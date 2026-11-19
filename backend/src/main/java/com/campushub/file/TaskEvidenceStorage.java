@@ -2,7 +2,6 @@ package com.campushub.file;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -10,7 +9,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
-import java.util.Set;
+import java.time.Instant;
+import java.nio.file.LinkOption;
+import java.util.function.BiConsumer;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,11 +69,7 @@ public class TaskEvidenceStorage {
             String storageKey = "task-evidence/" + taskId + "/" + UUID.randomUUID();
             Path destination = root.resolve(storageKey).normalize();
             ensureContained(destination);
-            try {
-                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException exception) {
-                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
             temporary = null;
             return new StoredTaskEvidence(storageKey, safeName, contentType, size,
                     HexFormat.of().formatHex(digest.digest()));
@@ -101,26 +98,24 @@ public class TaskEvidenceStorage {
         }
     }
 
-    public void reconcile(Set<String> referencedKeys) {
-        Path evidenceRoot = root.resolve("task-evidence").normalize();
-        ensureContained(evidenceRoot);
-        if (!Files.exists(evidenceRoot)) {
-            return;
-        }
-        try (var paths = Files.walk(evidenceRoot)) {
-            paths.filter(Files::isRegularFile).forEach(path -> {
+    // Inspect only expired, service-owned names; never touch historical uploads or fresh files.
+    public void visitStaleFiles(Instant cutoff, BiConsumer<Long,String> visitor) {
+        Path evidenceRoot = ensureContained(root.resolve("task-evidence"));
+        if (!Files.isDirectory(evidenceRoot, LinkOption.NOFOLLOW_LINKS)) return;
+        try (var paths = Files.walk(evidenceRoot, 2)) {
+            var iterator = paths.iterator();
+            while (iterator.hasNext()) {
+                Path path = iterator.next();
                 String key = root.relativize(path).toString().replace(java.io.File.separatorChar, '/');
-                if (!referencedKeys.contains(key)) {
-                    try {
-                        Files.deleteIfExists(path);
-                    } catch (IOException exception) {
-                        throw new IllegalStateException("清理孤立任务图片失败", exception);
+                if (!key.matches("task-evidence/[1-9][0-9]{0,17}/([a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}|[.]upload-[0-9]+[.]tmp)")) continue;
+                if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) continue;
+                try {
+                    if (Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS).toInstant().isBefore(cutoff)) {
+                        visitor.accept(Long.valueOf(path.getParent().getFileName().toString()), key);
                     }
-                }
-            });
-        } catch (IOException exception) {
-            throw new IllegalStateException("扫描任务图片失败", exception);
-        }
+                } catch (java.nio.file.NoSuchFileException ignored) { /* Concurrent cleanup. */ }
+            }
+        } catch (IOException e) { throw new IllegalStateException("扫描任务图片失败", e); }
     }
 
     long countStoredFiles() {
@@ -147,6 +142,9 @@ public class TaskEvidenceStorage {
         if (!path.startsWith(root)) {
             throw new IllegalArgumentException("非法文件路径");
         }
+        for (Path current = path; current != null && current.startsWith(root); current = current.getParent()) {
+            if (Files.isSymbolicLink(current)) throw new IllegalArgumentException("非法文件路径");
+        }
         return path;
     }
 
@@ -167,10 +165,15 @@ public class TaskEvidenceStorage {
     }
 
     private void validateImagePayload(Path temporary) {
-        try {
-            if (ImageIO.read(temporary.toFile()) == null) {
-                throw new IllegalArgumentException("图片内容无法解码");
-            }
+        try (var input = ImageIO.createImageInputStream(temporary.toFile())) {
+            var readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw new IllegalArgumentException("图片内容无法解码");
+            var reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                if ((long) reader.getWidth(0) * reader.getHeight(0) > 16_000_000) throw new IllegalArgumentException("图片像素过多");
+                reader.read(0);
+            } finally { reader.dispose(); }
         } catch (IOException exception) {
             throw new IllegalArgumentException("图片内容无法解码", exception);
         }

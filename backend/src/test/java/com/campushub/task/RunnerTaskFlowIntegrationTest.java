@@ -41,7 +41,7 @@ class RunnerTaskFlowIntegrationTest {
                 "西区快递点",
                 "中区宿舍",
                 LocalDateTime.now().plusHours(3),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
 
         RewardTaskSummary accepted = runnerTaskService.grab(published.id(), 2L);
 
@@ -62,7 +62,7 @@ class RunnerTaskFlowIntegrationTest {
                 "东区打印店",
                 "西区宿舍",
                 LocalDateTime.now().plusHours(4),
-                "PHOTO_AND_CONFIRMATION"));
+                "PHOTO_AND_CONFIRMATION", 500, null, null));
 
         TaskApplicationSummary application = runnerTaskService.apply(published.id(), 2L, new ApplyTaskRequest("我现在在东区"));
 
@@ -84,7 +84,7 @@ class RunnerTaskFlowIntegrationTest {
                 "校门",
                 "宿舍",
                 LocalDateTime.now().plusHours(2),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
         runnerTaskService.grab(published.id(), 2L);
         CompletionCodeResponse issued = runnerTaskService.issueCompletionCode(published.id(), 1L);
         runnerTaskService.advance(published.id(), 2L, "HEADING_TO_PICKUP", null);
@@ -111,7 +111,7 @@ class RunnerTaskFlowIntegrationTest {
                 "中区驿站",
                 "西区宿舍",
                 LocalDateTime.now().plusHours(2),
-                "PHOTO_AND_CONFIRMATION"));
+                "PHOTO_AND_CONFIRMATION", 500, null, null));
 
         assertThat(runnerTaskService.listByPublisher(1L))
                 .extracting(RewardTaskSummary::id)
@@ -130,7 +130,7 @@ class RunnerTaskFlowIntegrationTest {
                 "西区",
                 "东区",
                 LocalDateTime.now().plusHours(5),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
         runnerTaskService.grab(published.id(), 2L);
 
         RewardTaskSummary issue = runnerTaskService.reportIssue(published.id(), 2L, new ReportTaskIssueRequest("LOCATION_ERROR", "地点描述不清"));

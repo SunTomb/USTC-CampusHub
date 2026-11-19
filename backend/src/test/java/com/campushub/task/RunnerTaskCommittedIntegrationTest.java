@@ -44,7 +44,7 @@ class RunnerTaskCommittedIntegrationTest {
     private Long task(String mode) {
         return service.publish(1L, new CreateRunnerTaskRequest("独立事务测试", "只用于H2测试",
                 BigDecimal.TEN, BigDecimal.ZERO, mode, "WEST", "CENTRAL", "A", "B",
-                LocalDateTime.now().plusHours(2), "COMPLETION_CODE")).id();
+                LocalDateTime.now().plusHours(2), "COMPLETION_CODE", 500, null, null)).id();
     }
 
     private void delivered(Long id) {

@@ -49,7 +49,7 @@ class RunnerTaskBoundaryIntegrationTest {
 
     private CreateRunnerTaskRequest request(String mode, String verification, BigDecimal amount, LocalDateTime deadline) {
         return new CreateRunnerTaskRequest("测试任务", "公开地点交接", amount, BigDecimal.ZERO,
-                mode, "CENTRAL", "WEST", "图书馆", "食堂门口", deadline, verification);
+                mode, "CENTRAL", "WEST", "图书馆", "食堂门口", deadline, verification, 500, null, null);
     }
 
     private String auth(Long id) { return "Bearer " + tokens.issueToken(id, "test-user"); }
@@ -63,7 +63,7 @@ class RunnerTaskBoundaryIntegrationTest {
 
     @Test
     void rejectsOutOfOrderAndTerminalTransitionsWithoutMutatingTask() {
-        var task = publish("GRAB", "PHOTO_AND_CONFIRMATION");
+        var task = publish("GRAB", "COMPLETION_CODE");
         service.grab(task.id(), 2L);
         assertThatThrownBy(() -> service.advance(task.id(), 2L, "COMPLETED", null)).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.confirmCompletion(task.id(), 1L, null)).isInstanceOf(BusinessException.class);
@@ -98,7 +98,7 @@ class RunnerTaskBoundaryIntegrationTest {
     void publishRejectsNegativeAmountPastDeadlineAndOrderDeposits() {
         assertThatThrownBy(() -> service.publish(1L, request("GRAB", "PHOTO_AND_CONFIRMATION", new BigDecimal("-1"), LocalDateTime.now().plusHours(1)))).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.publish(1L, request("GRAB", "PHOTO_AND_CONFIRMATION", BigDecimal.ONE, LocalDateTime.now().minusMinutes(1)))).isInstanceOf(BusinessException.class);
-        var request = new CreateRunnerTaskRequest("保证金不开放", "测试", BigDecimal.TEN, BigDecimal.ONE, "GRAB", "CENTRAL", "WEST", "A", "B", LocalDateTime.now().plusHours(1), "COMPLETION_CODE");
+        var request = new CreateRunnerTaskRequest("保证金不开放", "测试", BigDecimal.TEN, BigDecimal.ONE, "GRAB", "CENTRAL", "WEST", "A", "B", LocalDateTime.now().plusHours(1), "COMPLETION_CODE", 500, null, null);
         assertThatThrownBy(() -> service.publish(1L, request)).isInstanceOf(BusinessException.class);
     }
 

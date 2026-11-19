@@ -27,12 +27,15 @@ public class TaskDeliveryPhoto {
     private RewardTask task;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "accepted_application_id", nullable = false)
+    @JoinColumn(name = "accepted_application_id")
     private TaskApplication acceptedApplication;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploader_id", nullable = false)
     private User uploader;
+
+    @Column(name = "evidence_type", nullable = false)
+    private String evidenceType;
 
     @Column(name = "storage_key", nullable = false, length = 255)
     private String storageKey;
@@ -58,15 +61,17 @@ public class TaskDeliveryPhoto {
     @Column(nullable = false, length = 30)
     private String status;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     protected TaskDeliveryPhoto() {
     }
 
     public TaskDeliveryPhoto(RewardTask task, TaskApplication acceptedApplication, User uploader,
-            StoredTaskEvidence stored, String clientRequestId, String note) {
+            StoredTaskEvidence stored, String evidenceType, String clientRequestId, String note) {
         this.task = task;
+        this.evidenceType = evidenceType;
+        this.createdAt = LocalDateTime.now();
         this.acceptedApplication = acceptedApplication;
         this.uploader = uploader;
         this.storageKey = stored.storageKey();
@@ -79,6 +84,8 @@ public class TaskDeliveryPhoto {
         this.status = "UPLOADED";
     }
 
+    public String getEvidenceType() { return evidenceType; }
+    public void markDeleted() { status = "DELETED"; }
     public Long getId() { return id; }
     public RewardTask getTask() { return task; }
     public TaskApplication getAcceptedApplication() { return acceptedApplication; }

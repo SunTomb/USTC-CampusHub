@@ -33,6 +33,7 @@ public class RunnerTaskService {
     private final GovernanceService governanceService;
     private final UserRoleService userRoleService;
     private final PasswordEncoder passwordEncoder;
+    private final TaskEvidenceService evidence;
 
     public RunnerTaskService(
             RewardTaskRepository rewardTaskRepository,
@@ -43,7 +44,8 @@ public class RunnerTaskService {
             NotificationService notificationService,
             GovernanceService governanceService,
             UserRoleService userRoleService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, TaskEvidenceService evidence) {
+        this.evidence = evidence;
         this.rewardTaskRepository = rewardTaskRepository;
         this.taskApplicationRepository = taskApplicationRepository;
         this.taskEventRepository = taskEventRepository;
@@ -79,15 +81,23 @@ public class RunnerTaskService {
         validateEnum(CampusZone.class, request.destinationZone(), "不支持的终点校区");
         validateEnum(TaskVerificationMode.class, request.verificationMode(), "不支持的完成确认方式");
 
+        if (request.weightGrams() == null || request.weightGrams() < 1 || request.weightGrams() > 100000) {
+            throw new BusinessException("任务重量必须为 1 至 100000 克的整数");
+        }
+        if ((request.notes() != null && request.notes().length() > 1000)
+                || (request.pickupCode() != null && request.pickupCode().length() > 120)) {
+            throw new BusinessException("备注或取件码过长");
+        }
         RewardTask task = new RewardTask(
                 publisher,
                 request.title(),
-                request.description(),
+                request.description() == null ? "" : request.description(),
                 request.rewardAmount(),
                 request.depositAmount() == null ? BigDecimal.ZERO : request.depositAmount(),
                 buildTaskLocation(request),
                 request.deadline(),
                 "PUBLISHED");
+        task.setParcelDetails(request.weightGrams(), trimToNull(request.notes()), trimToNull(request.pickupCode()));
         task.publishWorkflow(
                 normalizeEnum(request.acceptanceMode()),
                 normalizeEnum(request.originZone()),
@@ -180,6 +190,9 @@ public class RunnerTaskService {
         User actor = findUser(actorId);
         TaskWorkflowStatus status = validateEnum(TaskWorkflowStatus.class, nextStatus, "不支持的任务状态");
         ensureLegalTransition(task.getWorkflowStatus(), status);
+        if (status == TaskWorkflowStatus.PENDING_CONFIRMATION && TaskVerificationMode.PHOTO_AND_CONFIRMATION.name().equals(task.getVerificationMode())) {
+            throw new BusinessException("请通过图片凭证提交确认");
+        }
         task.moveTo(status.name());
         recordEvent(task, actor, "STATUS_CHANGED", request == null ? null : request.note());
         notificationService.notify(task.getPublisher(), "任务状态已更新", "任务状态更新为 " + status.name(), "TASK", task.getId());
@@ -210,6 +223,9 @@ public class RunnerTaskService {
         RewardTask task = findTaskForUpdate(taskId);
         ensureAssignedRunner(task, runnerId);
         ensureLegalTransition(task.getWorkflowStatus(), TaskWorkflowStatus.PENDING_CONFIRMATION);
+        if (!TaskVerificationMode.PHOTO_AND_CONFIRMATION.name().equals(task.getVerificationMode()) || !evidence.hasEvidence(taskId)) {
+            throw new BusinessException("仅图片确认任务可提交，且必须至少上传一张图片凭证");
+        }
         User runner = findUser(runnerId);
         task.moveTo(TaskWorkflowStatus.PENDING_CONFIRMATION.name());
         recordEvent(task, runner, "PHOTO_SUBMITTED", request == null ? null : request.note());
@@ -225,6 +241,9 @@ public class RunnerTaskService {
             throw new BusinessException("只有发布者可以确认完成");
         }
         ensurePendingConfirmation(task);
+        if (TaskVerificationMode.PHOTO_AND_CONFIRMATION.name().equals(task.getVerificationMode()) && !evidence.hasEvidence(taskId)) {
+            throw new BusinessException("缺少送达凭证");
+        }
         task.clearCompletionCode();
         task.moveTo(TaskWorkflowStatus.COMPLETED.name());
         if (task.getAcceptedApplication() != null) {
@@ -290,7 +309,8 @@ public class RunnerTaskService {
                 .map(TaskEventSummary::from)
                 .toList();
         return new TaskWorkspaceSummary(RewardTaskSummary.from(task),
-                TaskParticipantContact.from(task.getPublisher()), runner, events);
+                TaskParticipantContact.from(task.getPublisher()), runner, events,
+                new TaskPrivateDetails(task.getPickupCode()), evidence.listForParticipant(taskId, viewerId));
     }
 
     private boolean isEventVisibleTo(TaskEvent event, RewardTask task, Long viewerId) {
