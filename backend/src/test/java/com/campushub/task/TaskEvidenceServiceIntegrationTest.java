@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -17,7 +21,10 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @Transactional
@@ -38,6 +45,9 @@ class TaskEvidenceServiceIntegrationTest {
 
     @Autowired
     private TaskEventRepository taskEventRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @DynamicPropertySource
     static void fileProperties(DynamicPropertyRegistry registry) {
@@ -93,6 +103,44 @@ class TaskEvidenceServiceIntegrationTest {
         assertThat(taskEventRepository.findByTaskIdOrderByCreatedAtAsc(published.id()))
                 .extracting(TaskEvent::getEventType)
                 .contains("PHOTO_UPLOADED", "PHOTO_SUBMITTED");
+    }
+
+    @Test
+    void photoTaskCannotBeCompletedThroughGenericAdvance() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
+        runnerTaskService.grab(published.id(), 2L);
+
+        assertThatThrownBy(() -> runnerTaskService.advance(
+                published.id(), 2L, "COMPLETED", null))
+                .hasMessageContaining("只能由发布者确认完成");
+
+        taskEvidenceService.upload(published.id(), 2L,
+                new MockMultipartFile("file", "proof.png", "image/png", png()),
+                "advance-guard", null);
+        runnerTaskService.submitDeliveryPhoto(
+                published.id(), 2L, new TaskActionRequest("submitted", null));
+        assertThatThrownBy(() -> runnerTaskService.advance(
+                published.id(), 2L, "COMPLETED", null))
+                .hasMessageContaining("只能由发布者确认完成");
+
+        RewardTaskSummary completed = runnerTaskService.confirmCompletion(published.id(), 1L, null);
+        assertThat(completed.workflowStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void transactionRollbackRemovesFinalFileAfterMetadataWasFlushed() throws Exception {
+        long before = countStoredFiles();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            RewardTaskSummary published = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION"));
+            runnerTaskService.grab(published.id(), 2L);
+            taskEvidenceService.upload(published.id(), 2L,
+                    new MockMultipartFile("file", "rollback.png", "image/png", png()),
+                    "rollback-key", null);
+            status.setRollbackOnly();
+        });
+
+        assertThat(countStoredFiles()).isEqualTo(before);
     }
 
     @Test
@@ -165,7 +213,22 @@ class TaskEvidenceServiceIntegrationTest {
     }
 
     private static byte[] png() {
-        return new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02};
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), "png", output);
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    private static long countStoredFiles() throws Exception {
+        if (!Files.exists(FILE_ROOT)) {
+            return 0;
+        }
+        try (var paths = Files.walk(FILE_ROOT)) {
+            return paths.filter(Files::isRegularFile).count();
+        }
     }
 
     private static Path createTempRoot() {

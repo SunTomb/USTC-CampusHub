@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
@@ -16,7 +20,7 @@ class TaskEvidenceStorageTest {
 
     @Test
     void storesValidPngWithOpaqueContainedKeyAndDigest() throws Exception {
-        byte[] png = new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02};
+        byte[] png = validPng();
         TaskEvidenceStorage storage = new TaskEvidenceStorage(root.toString());
 
         StoredTaskEvidence stored = storage.store(
@@ -40,6 +44,11 @@ class TaskEvidenceStorageTest {
                 new MockMultipartFile("file", "note.png", "image/png", "not an image".getBytes()), 17L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("图片格式");
+        assertThatThrownBy(() -> storage.store(
+                new MockMultipartFile("file", "truncated.png", "image/png",
+                        new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}), 17L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("图片内容无法解码");
         assertThat(storage.countStoredFiles()).isZero();
     }
 
@@ -65,4 +74,15 @@ class TaskEvidenceStorageTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("非法文件路径");
     }
+
+    private static byte[] validPng() {
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), "png", output);
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        }
+    }
+
 }

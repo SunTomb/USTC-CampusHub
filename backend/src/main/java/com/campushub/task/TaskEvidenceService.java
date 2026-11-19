@@ -10,9 +10,12 @@ import com.campushub.file.TaskEvidenceStorage;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -64,19 +67,52 @@ public class TaskEvidenceService {
             throw new BusinessException("任务凭证图片总大小不能超过 15 MiB");
         }
         User uploader = findUser(uploaderId);
-        StoredTaskEvidence stored = storage.store(file, taskId);
+        StoredTaskEvidence stored;
+        try {
+            stored = storage.store(file, taskId);
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(exception.getMessage());
+        }
         if (existingBytes + stored.sizeBytes() > MAX_TASK_BYTES) {
             storage.delete(stored.storageKey());
             throw new BusinessException("任务凭证图片总大小不能超过 15 MiB");
         }
+        AtomicBoolean cleaned = new AtomicBoolean();
+        Runnable cleanup = () -> cleanupOnce(stored.storageKey(), cleaned);
+        registerCleanupOnRollback(cleanup);
         try {
             TaskDeliveryPhoto photo = photoRepository.saveAndFlush(new TaskDeliveryPhoto(
                     task, application, uploader, stored, idempotencyKey, trimToNull(note)));
             taskEventRepository.save(new TaskEvent(task, uploader, "PHOTO_UPLOADED", trimToNull(note)));
             return TaskDeliveryPhotoSummary.from(photo);
         } catch (RuntimeException exception) {
-            storage.delete(stored.storageKey());
+            cleanup.run();
             throw exception;
+        }
+    }
+
+    private void registerCleanupOnRollback(Runnable cleanup) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    cleanup.run();
+                }
+            }
+        });
+    }
+
+    private void cleanupOnce(String storageKey, AtomicBoolean cleaned) {
+        if (!cleaned.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            storage.delete(storageKey);
+        } catch (RuntimeException ignored) {
+            // Cleanup is best effort after the transaction manager has completed.
         }
     }
 

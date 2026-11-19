@@ -16,6 +16,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5242880B
+      max-request-size: 6291456B
 
 campushub:
   jwt:

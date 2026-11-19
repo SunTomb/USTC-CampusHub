@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -62,6 +63,7 @@ public class TaskEvidenceStorage {
                 }
             }
             String contentType = detectContentType(signature, signatureLength, file.getContentType());
+            validateImagePayload(temporary, contentType, size);
             String storageKey = "task-evidence/" + taskId + "/" + UUID.randomUUID();
             Path destination = root.resolve(storageKey).normalize();
             ensureContained(destination);
@@ -145,6 +147,56 @@ public class TaskEvidenceStorage {
             return "image/webp";
         }
         throw new IllegalArgumentException("仅支持 JPEG、PNG 或 WebP 图片格式");
+    }
+
+    private void validateImagePayload(Path temporary, String contentType, long size) {
+        try {
+            if ("image/webp".equals(contentType)) {
+                validateWebp(Files.readAllBytes(temporary), size);
+                return;
+            }
+            if (ImageIO.read(temporary.toFile()) == null) {
+                throw new IllegalArgumentException("图片内容无法解码");
+            }
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("图片内容无法解码", exception);
+        }
+    }
+
+    private void validateWebp(byte[] bytes, long size) {
+        if (bytes.length != size || bytes.length < 20
+                || bytes[0] != 'R' || bytes[1] != 'I' || bytes[2] != 'F' || bytes[3] != 'F'
+                || bytes[8] != 'W' || bytes[9] != 'E' || bytes[10] != 'B' || bytes[11] != 'P') {
+            throw new IllegalArgumentException("图片内容无法解码");
+        }
+        long riffSize = littleEndianInt(bytes, 4);
+        if (riffSize != bytes.length - 8) {
+            throw new IllegalArgumentException("图片内容无法解码");
+        }
+        int offset = 12;
+        boolean imageChunk = false;
+        while (offset + 8 <= bytes.length) {
+            int chunkSize = (int) littleEndianInt(bytes, offset + 4);
+            if (chunkSize < 0 || offset + 8L + chunkSize > bytes.length) {
+                throw new IllegalArgumentException("图片内容无法解码");
+            }
+            String chunkType = new String(bytes, offset, 4, java.nio.charset.StandardCharsets.US_ASCII);
+            if (("VP8 ".equals(chunkType) || "VP8L".equals(chunkType) || "VP8X".equals(chunkType))
+                    && chunkSize > 0) {
+                imageChunk = true;
+            }
+            offset += 8 + chunkSize + (chunkSize & 1);
+        }
+        if (offset != bytes.length || !imageChunk) {
+            throw new IllegalArgumentException("图片内容无法解码");
+        }
+    }
+
+    private long littleEndianInt(byte[] bytes, int offset) {
+        return (bytes[offset] & 0xffL)
+                | ((bytes[offset + 1] & 0xffL) << 8)
+                | ((bytes[offset + 2] & 0xffL) << 16)
+                | ((bytes[offset + 3] & 0xffL) << 24);
     }
 
     private void requireDeclaredType(String suppliedType, String expected) {
