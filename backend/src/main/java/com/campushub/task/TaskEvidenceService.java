@@ -60,7 +60,8 @@ public class TaskEvidenceService {
         if (photos.countByTaskIdAndEvidenceTypeAndStatus(taskId, type, ACTIVE) >= 3) {
             throw new BusinessException("每类图片最多上传 3 张");
         }
-        long existingBytes = photos.sumSizeBytesByTaskId(taskId) == null ? 0L : photos.sumSizeBytesByTaskId(taskId);
+        Long storedBytes = photos.sumSizeBytesByTaskId(taskId);
+        long existingBytes = storedBytes == null ? 0L : storedBytes;
         if (file == null || file.getSize() < 0 || existingBytes + file.getSize() > 15L * 1024 * 1024) {
             throw new BusinessException("任务图片总大小不能超过 15 MiB");
         }

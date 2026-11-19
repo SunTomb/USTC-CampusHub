@@ -101,8 +101,18 @@ class TaskEvidenceServiceIntegrationTest {
     @Test
     void combinedTaskPhotoQuotaAppliesAcrossBothEvidenceTypes() {
         Long id = runnerTaskService.publish(1L, request("PHOTO_AND_CONFIRMATION")).id();
-        var large = new MockMultipartFile("file", "large.png", "image/png", png());
-        for (int i = 0; i < 3; i++) taskEvidenceService.uploadRequest(id, 1L, large, "quota-" + i);
+        byte[] fourMiB = new byte[4 * 1024 * 1024];
+        fourMiB[0] = (byte) 0x89;
+        fourMiB[1] = 0x50;
+        fourMiB[2] = 0x4e;
+        fourMiB[3] = 0x47;
+        fourMiB[4] = 0x0d;
+        fourMiB[5] = 0x0a;
+        fourMiB[6] = 0x1a;
+        fourMiB[7] = 0x0a;
+        var large = new MockMultipartFile("file", "large.png", "image/png", fourMiB);
+        taskEvidenceService.uploadRequest(id, 1L, large, "quota-1");
+        taskEvidenceService.uploadRequest(id, 1L, large, "quota-2");
         runnerTaskService.grab(id, 2L);
         advanceToDelivering(id);
         taskEvidenceService.upload(id, 2L, large, "delivery-quota", null);
