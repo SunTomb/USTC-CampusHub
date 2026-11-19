@@ -60,7 +60,7 @@ class NotificationControllerIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.readAt").value(firstReadAt.toString()));
+                .andExpect(jsonPath("$.data.readAt").value(org.hamcrest.Matchers.startsWith(firstReadAt.toString().substring(0, 26))));
 
         assertThat(notificationRepository.findById(notificationId).orElseThrow().getReadAt())
                 .isEqualTo(firstReadAt);

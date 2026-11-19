@@ -79,11 +79,13 @@ test('public task response remains visible when the same-token session restore c
 test('duplicate task submission is blocked and no deposit field is sent', async () => {
   let resolve, count = 0, payload;
   const h = pageHarness('tasks/publish', { publishTask: data => { count++; payload = data; return new Promise(done => { resolve = done; }); } });
-  h.page.setData({ form: { title: '取教材', description: '两本教材，公开地点交接', originDetail: '图书馆', destinationDetail: '食堂门口', rewardAmount: '6.50', acceptanceMode: 'GRAB' }, date: '2099-01-01', time: '12:30' });
+  h.page.setData({ form: { title: '取教材', originDetail: '图书馆', destinationDetail: '食堂门口', weightKg: '1', notes: '公开地点交接', pickupCode: '', rewardAmount: '6.50', acceptanceMode: 'GRAB', verificationMode: 'PHOTO_AND_CONFIRMATION' }, date: '2099-01-01', time: '12:30' });
+  h.page.next();
   const a = h.page.submit(); await new Promise(resolve => setImmediate(resolve));
   const b = h.page.submit(); await new Promise(resolve => setImmediate(resolve));
   assert.equal(count, 1);
   assert.equal(payload.depositAmount, undefined);
+  assert.equal(payload.weightGrams, 1000);
   assert.equal(payload.deadline, '2099-01-01T12:30:00');
   resolve({ id: 10 }); await Promise.all([a,b]);
   assert.equal(h.calls.filter(x => x[0] === 'redirect').length, 1);
@@ -92,7 +94,8 @@ test('duplicate task submission is blocked and no deposit field is sent', async 
 test('task publish sends the selected completion-code verification mode', async () => {
   let payload;
   const h = pageHarness('tasks/publish', { publishTask: async data => { payload = data; return { id: 10 }; } });
-  h.page.setData({ form: { title: '取教材', description: '公开地点交接', originDetail: '图书馆', destinationDetail: '食堂门口', rewardAmount: '6.50', acceptanceMode: 'GRAB', verificationMode: 'COMPLETION_CODE' }, date: '2099-01-01', time: '12:30' });
+  h.page.setData({ form: { title: '取教材', originDetail: '图书馆', destinationDetail: '食堂门口', weightKg: '1', notes: '公开地点交接', pickupCode: '', rewardAmount: '6.50', acceptanceMode: 'GRAB', verificationMode: 'COMPLETION_CODE' }, date: '2099-01-01', time: '12:30' });
+  h.page.next();
   await h.page.submit();
   assert.equal(payload.verificationMode, 'COMPLETION_CODE');
 });
@@ -276,4 +279,20 @@ test('publisher confirmation and issue actions match server states', async () =>
   const h = pageHarness('tasks/detail', { task: async () => task, taskApplicants: async () => [], taskWorkspace: async () => ({ task, events: [] }) });
   await h.page.reload(); assert.equal(h.page.data.canConfirm, false);
   task.workflowStatus = 'ISSUE_HANDLING'; await h.page.reload(); assert.equal(h.page.data.canIssue, false);
+});
+
+test('new errand needs weight; pickup code remains a separate string, not public description', async () => {
+  const sent=[]; const h=pageHarness('tasks/publish',{publishTask: async data=>{sent.push(data);return{id:101};}});
+  h.page.setData({form:{...h.page.data.form,title:'代取书籍',originDetail:'驿站',destinationDetail:'食堂',rewardAmount:'6'},date:'2099-01-01',time:'12:30'});
+  await h.page.submit(); assert.equal(sent.length,0); assert.match(h.page.data.error,/重量/);
+  h.page.setData({'form.weightKg':'0.75','form.pickupCode':' 0012-A ','form.notes':'请勿折叠'});
+  await h.page.submit(); assert.equal(sent.length,1); assert.equal(sent[0].weightGrams,750);
+  assert.equal(sent[0].pickupCode,'0012-A'); assert.equal(sent[0].notes,'请勿折叠'); assert(!sent[0].description.includes('0012-A'));
+});
+test('after task creation retry only uploads the failed photo, never another task',async()=>{
+  let created=0;const uploaded=[];const h=pageHarness('tasks/publish',{publishTask:async()=>{created++;return{id:119};}});
+  const app=getApp();app.taskMedia={upload: async(id,kind,photo)=>{uploaded.push([id,kind,photo.key]);if(uploaded.length===2)throw new Error('网络中断');return{id:90+uploaded.length};}};global.getApp=()=>app;
+  h.page.setData({form:{...h.page.data.form,title:'代取书籍',weightKg:'1',originDetail:'A',destinationDetail:'B',rewardAmount:'2'},date:'2099-01-01',time:'12:30',photos:[{key:'a',path:'local-a'},{key:'b',path:'local-b'}]});
+  await h.page.submit(); assert.equal(h.page.data.publishedId,119); assert.equal(h.calls.filter(v=>v[0]==='redirect').length,0);
+  await h.page.submit();assert.equal(created,1);assert.deepEqual(uploaded,[[119,'REQUEST_IMAGE','a'],[119,'REQUEST_IMAGE','b'],[119,'REQUEST_IMAGE','b']]);assert.equal(h.calls.filter(v=>v[0]==='redirect').length,1);
 });

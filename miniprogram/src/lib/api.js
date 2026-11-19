@@ -14,6 +14,8 @@ function createApi(client) {
     myPublishedTasks: () => client.get('/tasks/mine'),
     task: taskId => client.get('/tasks/' + id(taskId)),
     taskWorkspace: taskId => client.get('/tasks/' + id(taskId) + '/workspace'),
+    removeTaskPhoto: (taskId, photoId) => client.delete('/tasks/' + id(taskId) + '/evidence/' + id(photoId)),
+    submitEvidence: taskId => client.post('/tasks/' + id(taskId) + '/evidence/submit', {}),
     generateCompletionCode: taskId => client.post('/tasks/' + id(taskId) + '/completion-code', {}),
     completeWithCode: (taskId, completionCode) => {
       if (!/^\d{6}$/.test(String(completionCode || ''))) throw new Error('请输入6位完成码');

@@ -41,8 +41,7 @@ public class SecurityConfig {
                                 "/api/tasks/{id:[0-9]+}",
                                 "/api/shops/**",
                                 "/api/service-items/**",
-                                "/api/project-ads/**",
-                                "/api/files/**")
+                                "/api/project-ads/**")
                         .permitAll()
                         .requestMatchers("/api/admin/payment/**", "/api/admin/wallet/**", "/api/admin/ops/**")
                         .hasAnyAuthority("ROLE_ADMIN", "ROLE_MASTER_ADMIN")

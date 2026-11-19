@@ -16,7 +16,7 @@ function privateWorkspace(value) {
 
 ui.definePage({
   data: {
-    task: null, workspace: null, applicants: [], isOwner: false, isAssigned: false, action: null, canConfirm: false,
+    task: null, workspace: null, applicants: [], photos: [], privateDetails: null, isOwner: false, isAssigned: false, action: null, canConfirm: false,
     confirmLabel: '确认已收到并完成', canGenerateCode: false, canRedeemCode: false, completionCode: null, completionExpiresAt: '',
     enteredCompletionCode: '', canIssue: false, progress: [], issueOpen: false, issueIndex: 0, issueDescription: '',
     issueTypes: [
@@ -49,12 +49,12 @@ ui.definePage({
       const current = codes.indexOf(privateTask.workflowStatus), completionMode = privateTask.verificationMode === 'COMPLETION_CODE';
       const active = ACTIVE_WORKFLOW.includes(privateTask.workflowStatus), canConfirm = isOwner && privateTask.workflowStatus === 'PENDING_CONFIRMATION';
       return {
-        task: view, workspace: privateWorkspace(workspace), isOwner, isAssigned,
+        task: view, workspace: privateWorkspace(workspace), photos: workspace ? (workspace.evidence || []).map(item => ({ ...item, downloading: false })) : [], privateDetails: workspace && workspace.privateDetails || null, isOwner, isAssigned,
         applicants: applicants.map(application => ({ ...application, statusLabel: d.status(application.status), selectable: !!user && isOwner && privateTask.workflowStatus === 'PUBLISHED' && application.status === 'PENDING' && application.applicantId !== user.id })),
         action: rules.nextTaskAction(privateTask, isAssigned && d.hasRole(user, 'RUNNER')), canConfirm,
         confirmLabel: completionMode && privateTask.workflowStatus === 'PENDING_CONFIRMATION' ? '确认完成（发布者兜底）' : '确认已收到并完成',
         canGenerateCode: isOwner && completionMode && active, canRedeemCode: isAssigned && completionMode && privateTask.workflowStatus === 'PENDING_CONFIRMATION',
-        canIssue: (isOwner || isAssigned) && active,
+        canIssue: (isOwner || isAssigned) && active, canSubmitEvidence: isAssigned && privateTask.verificationMode === 'PHOTO_AND_CONFIRMATION' && ['DELIVERING','DELIVERED'].includes(privateTask.workflowStatus) && !(workspace && workspace.evidence && workspace.evidence.length),
         progress: codes.map((code, index) => ({ code, label: d.status(code), reached: current >= index, current: current === index })),
       };
     });
@@ -84,6 +84,19 @@ ui.definePage({
     });
   },
   copyContact(event) { ui.copy(event.currentTarget.dataset.value); },
+  async chooseEvidence() {
+    if (!this.data.canSubmitEvidence || !await ui.requireUser('/pages/tasks/detail?id=' + this.taskId)) return;
+    const epoch = this._privateEpoch, token = getApp().auth.token;
+    try { const photos = await getApp().taskMedia.pick(1); if (!photos.length || epoch !== this._privateEpoch || token !== getApp().auth.token) return; await ui.run(this, () => getApp().taskMedia.upload(this.taskId, 'DELIVERY_PHOTO', photos[0]), async () => { ui.celebrate('凭证已上传'); await this.reload(); }); } catch (error) { this.setData({ error: error.message }); }
+  },
+  async submitEvidence() {
+    if (!this.data.canSubmitEvidence || !await ui.requireUser('/pages/tasks/detail?id=' + this.taskId)) return;
+    await ui.run(this, () => getApp().api.submitEvidence(this.taskId), async () => { ui.celebrate('已提交送达凭证'); await this.reload(); });
+  },
+  async previewEvidence(event) {
+    const photo = this.data.photos[Number(event.currentTarget.dataset.index)]; if (!photo) return;
+    try { const path = await getApp().taskMedia.download(this.taskId, photo.id); wx.previewImage({ current:path, urls:[path] }); } catch (error) { this.setData({ error:error.message }); }
+  },
   async confirmComplete() {
     if (!this.data.canConfirm || !await ui.requireUser('/pages/tasks/detail?id=' + this.taskId)) return;
     if (!await ui.confirm('确认任务完成', '请确认物品已收到，报酬与对方直接结算。')) return;
@@ -103,6 +116,6 @@ ui.definePage({
   },
   clearPrivate() {
     this._privateEpoch++; this._loadSequence++;
-    this.setData({ canIssue: false, loading: false, workspace: null, applicants: [], isOwner: false, isAssigned: false, action: null, canConfirm: false, canGenerateCode: false, canRedeemCode: false, completionCode: null, completionExpiresAt: '', enteredCompletionCode: '', issueOpen: false, issueDescription: '' });
+    this.setData({ canIssue: false, loading: false, workspace: null, photos: [], privateDetails: null, applicants: [], isOwner: false, isAssigned: false, action: null, canConfirm: false, canGenerateCode: false, canRedeemCode: false, completionCode: null, completionExpiresAt: '', enteredCompletionCode: '', issueOpen: false, issueDescription: '' });
   },
 });

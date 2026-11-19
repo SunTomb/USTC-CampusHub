@@ -15,6 +15,7 @@ export class ApiError extends Error {
 }
 
 export interface ApiRequestOptions {
+  signal?: AbortSignal
   skipAuthExpireHandling?: boolean
 }
 

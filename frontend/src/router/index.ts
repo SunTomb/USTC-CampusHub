@@ -59,7 +59,7 @@ const router = createRouter({
         { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView, meta: { requiresAuth: true, requiredRole: 'goodsPublisher', unlockRoute: '/roles', lockedTitle: '需要二手发布者身份' } },
         { path: 'goods/:id', name: 'goods-detail', component: GoodsDetailView },
         { path: 'tasks', name: 'tasks', component: TasksView },
-        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true, requiredRole: 'runner', unlockRoute: '/roles', lockedTitle: '需要跑腿接单者身份' } },
+        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true } },
         { path: 'shops', name: 'shops', component: ShopsView },
         { path: 'shops/merchant', name: 'shop-merchant', component: ShopMerchantView, meta: { requiresAuth: true, requiredRole: 'shopMerchant', unlockRoute: '/roles', lockedTitle: '需要店铺商家身份' } },
         { path: 'shops/:id', name: 'shop-detail', component: ShopDetailView },

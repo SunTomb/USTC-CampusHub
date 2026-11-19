@@ -1,3 +1,4 @@
+const { createTaskMedia } = require('./lib/task-media');
 const { configFor } = require('./lib/config');
 const { createClient } = require('./lib/request');
 const { createSession } = require('./lib/session');
@@ -19,6 +20,7 @@ App({
     });
     this.client = createClient({ baseUrl: this.config.baseUrl, request: options => wx.request(options), getToken: () => this.auth.token, onUnauthorized: token => this.auth.invalidate(token) });
     this.api = createApi(this.client);
+    this.taskMedia = createTaskMedia(this.config, this.auth, wx);
     this.auth.restore();
   },
 });

@@ -1,26 +1,67 @@
 const ui = require('../../lib/ui');
 const d = require('../../lib/display');
 const rules = require('../../lib/rules');
+const { MAX_PHOTOS } = require('../../lib/task-media');
+const emptyForm = () => ({ title:'', originDetail:'', destinationDetail:'', weightKg:'', pickupCode:'', notes:'', rewardAmount:'', acceptanceMode:'GRAB', verificationMode:'PHOTO_AND_CONFIRMATION' });
+
+function payload(page) {
+  const f = page.data.form;
+  const notes = (f.notes || '').trim(), pickupCode = (f.pickupCode || '').trim();
+  const weightGrams = rules.weightGrams(f.weightKg);
+  if (notes.length > 1000 || pickupCode.length > 120) throw new Error('注意事项最多 1000 字，取件码最多 120 字');
+  return { title:rules.required(f.title,'任务标题',120), description:'', weightGrams, notes:notes || null, pickupCode:pickupCode || null,
+    originZone:d.zones[page.data.originIndex].value, destinationZone:d.zones[page.data.destinationIndex].value,
+    originDetail:rules.required(f.originDetail,'取件位置',200), destinationDetail:rules.required(f.destinationDetail,'送达位置',200),
+    rewardAmount:rules.amount(f.rewardAmount), deadline:rules.future(page.data.date,page.data.time), acceptanceMode:f.acceptanceMode, verificationMode:f.verificationMode };
+}
 ui.definePage({
-  data: { step: 0, zones: d.zones, originIndex: 0, destinationIndex: 1, form: { title: '', description: '', originDetail: '', destinationDetail: '', rewardAmount: '', acceptanceMode: 'GRAB', verificationMode: 'PHOTO_AND_CONFIRMATION' }, date: '', time: '' },
-  onLoad() { this.setData(d.dateParts(2 * 3600000)); },
+  data: { step:0,zones:d.zones,originIndex:0,destinationIndex:1,form:emptyForm(),photos:[],publishedId:null,uncertain:false,progress:'',date:'',time:'' },
+  onLoad() { this._epoch=0; this.setData(d.dateParts(2 * 3600000)); },
   async onShow() { await ui.requireUser('/pages/tasks/publish'); },
+  onHide() { if (!this._picking) { this._epoch++; this.setData({'form.pickupCode':'',photos:[]}); } },
   next() {
-    try {
-      if (this.data.step === 0) { rules.required(this.data.form.originDetail, '取件位置', 200); rules.required(this.data.form.destinationDetail, '送达位置', 200); }
-      if (this.data.step === 1) { rules.required(this.data.form.title, '任务标题', 120); rules.required(this.data.form.description, '委托说明', 2000); rules.amount(this.data.form.rewardAmount); rules.future(this.data.date, this.data.time); }
-      this.setData({ step: Math.min(2, this.data.step + 1), error: '' });
-    } catch (error) { this.setData({ error: error.message }); }
+    try { payload(this); this.setData({step:1,error:''}); }
+    catch(e) { this.setData({error:e.message}); }
   },
-  back() { if (!this.data.busy) this.setData({ step: Math.max(0, this.data.step - 1), error: '' }); },
-  mode(event) { this.setData({ 'form.acceptanceMode': event.currentTarget.dataset.value }); },
-  verification(event) { this.setData({ 'form.verificationMode': event.currentTarget.dataset.value }); },
+  back() { if (!this.data.busy && !this.data.publishedId && !this.data.uncertain) this.setData({step:0,error:''}); },
+  mode(e) { if (!this.data.publishedId) this.setData({'form.acceptanceMode':e.currentTarget.dataset.value}); },
+  verification(e) { if (!this.data.publishedId) this.setData({'form.verificationMode':e.currentTarget.dataset.value}); },
+  async pickPhotos() {
+    if (this._picking || this.data.busy) return;
+    const epoch=this._epoch, token=getApp().auth.token, count=MAX_PHOTOS-this.data.photos.length;
+    if (count < 1) return;
+    this._picking=true;
+    try { const added=await getApp().taskMedia.pick(count);
+      if (epoch===this._epoch && this._alive && token===getApp().auth.token) this.setData({photos:[...this.data.photos,...added],error:''});
+    } catch(e) { if (epoch===this._epoch && this._alive) this.setData({error:e.message}); }
+    finally { this._picking=false; }
+  },
+  removePhoto(e) { if (!this.data.busy) this.setData({photos:this.data.photos.filter(p=>p.key!==e.currentTarget.dataset.key)}); },
+  finish() { if (this.data.publishedId) wx.redirectTo({url:'/pages/tasks/detail?id='+this.data.publishedId}); },
   async submit() {
-    if (!await ui.requireUser('/pages/tasks/publish')) return;
-    await ui.run(this, () => {
-      const form = this.data.form;
-      return getApp().api.publishTask({ title: rules.required(form.title, '任务标题', 120), description: rules.required(form.description, '委托说明', 2000), originZone: d.zones[Number(this.data.originIndex)].value, destinationZone: d.zones[Number(this.data.destinationIndex)].value, originDetail: rules.required(form.originDetail, '取件位置', 200), destinationDetail: rules.required(form.destinationDetail, '送达位置', 200), rewardAmount: rules.amount(form.rewardAmount), deadline: rules.future(this.data.date, this.data.time), acceptanceMode: form.acceptanceMode, verificationMode: form.verificationMode });
-    }, result => { ui.rememberTask(result.id); ui.celebrate('跑腿已发布'); wx.redirectTo({ url: '/pages/tasks/detail?id=' + result.id }); });
+    const user=await ui.requireUser('/pages/tasks/publish');
+    if (!user || this.data.busy || this.data.uncertain) return;
+    const auth=getApp().auth, token=auth.token, epoch=this._epoch;
+    const same=()=>this._alive && token===auth.token && auth.user && user.id===auth.user.id;
+    const visible=()=>same() && epoch===this._epoch;
+    await ui.run(this, async()=>{
+      let taskId=this.data.publishedId;
+      if (!taskId) {
+        const body=payload(this);
+        try { const task=await getApp().api.publishTask(body);taskId=task.id; }
+        catch(e) { if (same() && (e.network || e.status>=500)) this.setData({uncertain:true}); throw e; }
+        if (!same()) return;
+        this.setData({publishedId:taskId,'form.pickupCode':''});
+      }
+      for (const photo of this.data.photos.slice()) {
+        if (!visible()) return;
+        await getApp().taskMedia.upload(taskId,'REQUEST_IMAGE',photo,p=>{if(visible())this.setData({progress:'正在上传 '+p+'%'});});
+        if (!visible()) return;
+        this.setData({photos:this.data.photos.filter(p=>p.key!==photo.key)});
+      }
+      if (visible()) { ui.celebrate('跑腿已发布');this.finish(); }
+    });
+    if (visible()) this.setData({progress:''});
   },
-  clearPrivate() { this.setData({ step: 0, form: { title: '', description: '', originDetail: '', destinationDetail: '', rewardAmount: '', acceptanceMode: 'GRAB', verificationMode: 'PHOTO_AND_CONFIRMATION' } }); },
+  clearPrivate() { this._epoch++; this.setData({step:0,form:emptyForm(),photos:[],publishedId:null,uncertain:false,progress:''}); },
 });

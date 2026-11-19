@@ -45,7 +45,8 @@ function contactView(value) {
   return { ...value, items };
 }
 function eventView(value) { return { ...value, eventTypeLabel: eventType(value.eventType), createdAtLabel: dateTimeText(value.createdAt) }; }
-function taskView(task) { return { ...task, originLabel: zone(task.originZone), destinationLabel: zone(task.destinationZone), rewardLabel: money(task.rewardAmount), deadlineLabel: dateText(task.deadline), statusLabel: status(task.workflowStatus || task.status), modeLabel: task.acceptanceMode === 'APPLICATION' ? '报名筛选' : '即时抢单', verificationModeLabel: task.verificationMode === 'COMPLETION_CODE' ? '完成码确认' : '发布者确认', expired: Number.isFinite(localMillis(task.deadline)) && localMillis(task.deadline) <= Date.now() }; }
+function weightLabel(grams) { return !Number.isInteger(grams) || grams < 1 ? '未填写' : grams < 1000 ? grams + ' 克' : (grams / 1000) + ' 公斤'; }
+function taskView(task) { return { ...task, weightLabel: weightLabel(task.weightGrams), originLabel: zone(task.originZone), destinationLabel: zone(task.destinationZone), rewardLabel: money(task.rewardAmount), deadlineLabel: dateText(task.deadline), statusLabel: status(task.workflowStatus || task.status), modeLabel: task.acceptanceMode === 'APPLICATION' ? '报名筛选' : '即时抢单', verificationModeLabel: task.verificationMode === 'COMPLETION_CODE' ? '完成码确认' : '发布者确认', expired: Number.isFinite(localMillis(task.deadline)) && localMillis(task.deadline) <= Date.now() }; }
 function projectView(item) { return { ...item, typeLabel: label(adTypes, item.adType, '校园宣传'), statusLabel: status(item.status), tagList: tags(item.tags), zoneLabel: zone(item.campusZone), expiresLabel: dateText(item.expiresAt), initial: String(item.title || '同').slice(0, 1) }; }
 function serviceView(item) { return { ...item, categoryLabel: label(categories, item.category, '其他服务'), priceLabel: item.minPrice != null && item.maxPrice != null ? money(item.minPrice) + '–' + money(item.maxPrice) : money(item.price) }; }
 function shopView(item, services = []) { return { ...item, zoneLabel: zone(item.campusZone), initial: String(item.name || '店').slice(0, 1), previewServices: services.filter(s => s.shopId === item.id).slice(0, 2).map(serviceView) }; }
@@ -56,4 +57,4 @@ function contacts(value, visible) {
   if (qq) list.push({ label: '复制 QQ 号', value: qq[1] });
   return list.length ? list : [{ label: '复制联系方式', value: text }];
 }
-module.exports = { zones, categories, adTypes, roles, zone, status, eventType, money, dateText, dateTimeText, localMillis, dateParts, hasRole, tags, taskView, contactView, eventView, projectView, serviceView, shopView, contacts };
+module.exports = { weightLabel, zones, categories, adTypes, roles, zone, status, eventType, money, dateText, dateTimeText, localMillis, dateParts, hasRole, tags, taskView, contactView, eventView, projectView, serviceView, shopView, contacts };

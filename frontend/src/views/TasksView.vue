@@ -49,7 +49,11 @@
           </div>
 
           <h3>{{ task.title }}</h3>
-          <p class="ticket-desc">{{ task.description }}</p>
+          <p class="ticket-desc">{{ task.description || '发布者未填写额外说明' }}</p>
+          <div class="ticket-public-details">
+            <span>估重：{{ weightLabel(task.weightGrams) }}</span>
+            <span v-if="task.notes">备注：{{ task.notes }}</span>
+          </div>
 
           <div class="ticket-route-box">
             <div class="route-stop">
@@ -96,18 +100,23 @@
       />
     </div>
 
-    <el-drawer v-model="publisherOpen" append-to-body title="张贴跑腿悬赏单" size="min(520px, 100vw)">
+    <el-drawer v-model="publisherOpen" append-to-body title="张贴跑腿悬赏单" size="min(520px, 100vw)" @close="handlePublishClose">
       <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules" class="form-section-stack">
-        <FormSection title="委托事项" description="简明扼要地说明需要代取或代办的物品，方便顺路同学快速判断。">
-          <el-form-item label="任务标题" prop="title">
-            <el-input v-model="publishForm.title" placeholder="例如：西区近邻宝代取中件快递送到中区宿舍" />
+        <FormSection title="任务信息、路线与时限" description="公开说明可留空；取件码和物品照片仅对任务参与者开放。">
+          <div class="two-column">
+            <el-form-item label="任务标题" prop="title">
+              <el-input v-model="publishForm.title" placeholder="例如：西区近邻宝代取中件快递送到中区宿舍" />
+            </el-form-item>
+            <el-form-item label="预估重量（kg）" prop="weightKg">
+              <el-input v-model="publishForm.weightKg" inputmode="decimal" placeholder="0.001–100 kg" />
+            </el-form-item>
+          </div>
+          <el-form-item label="公开说明（可选）" prop="description">
+            <el-input v-model="publishForm.description" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="可补充物品类型、包装情况或注意事项" />
           </el-form-item>
-          <el-form-item label="详细说明" prop="description">
-            <el-input v-model="publishForm.description" type="textarea" :rows="3" placeholder="说明物品重量、注意事项（取件码可在接单后私聊发送）" />
+          <el-form-item label="公开备注（可选）" prop="notes">
+            <el-input v-model="publishForm.notes" type="textarea" :rows="2" maxlength="1000" show-word-limit placeholder="不填写取件码等隐私信息" />
           </el-form-item>
-        </FormSection>
-
-        <FormSection title="起止路线与时限" description="选择跨校区或同校区路线，注明大致楼宇或驿站位置。">
           <el-form-item label="起点 / 终点校区" required>
             <div class="two-column">
               <el-select v-model="publishForm.originZone">
@@ -126,6 +135,16 @@
           </el-form-item>
           <el-form-item label="期望送达截止时间" prop="deadline">
             <el-date-picker v-model="deadlineDate" type="datetime" class="wide" popper-class="responsive-date-popper" />
+          </el-form-item>
+          <el-form-item label="取件码（可选，仅参与者可见）" prop="pickupCode">
+            <el-input v-model="publishForm.pickupCode" maxlength="120" show-password placeholder="保留前导 0；请勿写入公开说明" />
+          </el-form-item>
+          <el-form-item label="物品照片（可选，最多 3 张）">
+            <input type="file" accept="image/jpeg,image/png" multiple @change="onPublishPhotos" />
+            <div class="photo-previews" v-if="publishPhotos.length">
+              <figure v-for="photo in publishPhotos" :key="photo.clientRequestId"><img :src="photo.url" alt="待上传物品照片" /><button type="button" @click="removePublishPhoto(photo.clientRequestId)">移除</button></figure>
+            </div>
+            <small class="hint">照片仅供参与者查看；每张不超过 5 MiB。</small>
           </el-form-item>
         </FormSection>
 
@@ -162,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -174,7 +193,9 @@ import {
   type CreateRunnerTaskPayload,
   type RewardTaskSummary,
   type TaskAcceptanceMode,
+  uploadTaskEvidence,
 } from '@/api/campushub'
+import { weightGrams, weightLabel, photoProblem, taskError, draftPhoto, discardPhotos, uploadMissing, type DraftPhoto } from '@/utils/taskHandoff'
 import { useAuthStore } from '@/stores/auth'
 import EmptyState from '@/components/common/EmptyState.vue'
 import FormSection from '@/components/common/FormSection.vue'
@@ -190,6 +211,35 @@ const applyTaskId = ref<number | null>(null)
 const applyMessage = ref('')
 const publishFormRef = ref<FormInstance>()
 const deadlineDate = ref<Date>(new Date(Date.now() + 2 * 60 * 60 * 1000))
+const publishPhotos = ref<DraftPhoto[]>([])
+function resetPublishForm() {
+  publishForm.description = ''
+  publishForm.notes = ''
+  publishForm.pickupCode = ''
+  publishForm.weightKg = ''
+  discardPhotos(publishPhotos.value)
+}
+function handlePublishClose() {
+  publishForm.pickupCode = ''
+  discardPhotos(publishPhotos.value)
+}
+function onPublishPhotos(event: Event) {
+  const files = Array.from((event.target as HTMLInputElement).files ?? [])
+  const problem = photoProblem(files, publishPhotos.value.length)
+  if (problem) {
+    ElMessage.error(problem)
+    ;(event.target as HTMLInputElement).value = ''
+    return
+  }
+  publishPhotos.value.push(...files.map(draftPhoto))
+}
+function removePublishPhoto(clientRequestId: string) {
+  const index = publishPhotos.value.findIndex(photo => photo.clientRequestId === clientRequestId)
+  if (index >= 0) {
+    URL.revokeObjectURL(publishPhotos.value[index].url)
+    publishPhotos.value.splice(index, 1)
+  }
+}
 
 const zones: Array<{ label: string; value: CampusZone }> = [
   { label: '中校区', value: 'CENTRAL' },
@@ -204,9 +254,13 @@ const zones: Array<{ label: string; value: CampusZone }> = [
 ]
 
 const filters = reactive<{ originZone?: CampusZone; destinationZone?: CampusZone; acceptanceMode?: TaskAcceptanceMode }>({})
-const publishForm = reactive<CreateRunnerTaskPayload>({
+const publishForm = reactive<CreateRunnerTaskPayload & { weightKg: string }>({
   title: '',
   description: '',
+  weightGrams: 1,
+  weightKg: '',
+  notes: '',
+  pickupCode: '',
   rewardAmount: 5,
   acceptanceMode: 'GRAB',
   originZone: 'CENTRAL',
@@ -217,15 +271,15 @@ const publishForm = reactive<CreateRunnerTaskPayload>({
   verificationMode: 'COMPLETION_CODE',
 })
 
-const publishRules: FormRules<CreateRunnerTaskPayload> = {
+const publishRules: FormRules<CreateRunnerTaskPayload & { weightKg: string }> = {
   title: [
     { required: true, message: '请填写任务标题', trigger: 'blur' },
     { min: 2, max: 80, message: '标题长度应为 2-80 个字符', trigger: 'blur' },
   ],
-  description: [
-    { required: true, message: '请填写任务描述', trigger: 'blur' },
-    { min: 5, max: 1000, message: '描述长度应为 5-1000 个字符', trigger: 'blur' },
-  ],
+  description: [{ max: 1000, message: '公开说明不能超过 1000 个字符', trigger: 'blur' }],
+  notes: [{ max: 1000, message: '公开备注不能超过 1000 个字符', trigger: 'blur' }],
+  pickupCode: [{ max: 120, message: '取件码不能超过 120 个字符', trigger: 'blur' }],
+  weightKg: [{ required: true, message: '请填写预估重量', trigger: 'blur' }],
   rewardAmount: [
     { required: true, message: '请填写任务报酬', trigger: 'change' },
     { type: 'number', min: 0.01, message: '报酬需大于 0 元', trigger: 'change' },
@@ -261,6 +315,15 @@ function openPublishDialog() {
 async function publish() {
   publishForm.deadline = deadlineDate.value?.toISOString() ?? ''
   await publishFormRef.value?.validate()
+  const grams = weightGrams(publishForm.weightKg)
+  if (grams == null) {
+    ElMessage.error('重量需为 0.001–100 kg，精确到克')
+    return
+  }
+  publishForm.weightGrams = grams
+  publishForm.description = publishForm.description.trim()
+  publishForm.notes = publishForm.notes?.trim() || undefined
+  publishForm.pickupCode = publishForm.pickupCode || undefined
   if (!publishForm.originDetail?.trim() || !publishForm.destinationDetail?.trim()) {
     ElMessage.error('请填写起点和终点地点详情')
     return
@@ -270,9 +333,17 @@ async function publish() {
     publishForm.originDetail = publishForm.originDetail.trim()
     publishForm.destinationDetail = publishForm.destinationDetail.trim()
     if (!auth.currentUser) return
-    await publishRunnerTask(publishForm, auth.currentUser.id)
+    const created = await publishRunnerTask(publishForm, auth.currentUser.id)
+    const uploadController = new AbortController()
+    try {
+      await uploadMissing(publishPhotos.value, uploadController.signal, photo => uploadTaskEvidence(created.id, 'REQUEST_IMAGE', photo.file, photo.clientRequestId))
+    } catch (error) {
+      ElMessage.error(taskError(error, '任务已发布，但部分照片上传失败；请在履约台重试'))
+      router.push(`/tasks/${created.id}/workspace`)
+    }
     ElMessage.success('悬赏单已张贴')
     publisherOpen.value = false
+    resetPublishForm()
     await loadTasks()
   } finally {
     publishing.value = false
@@ -303,7 +374,11 @@ async function apply() {
 }
 
 function openWorkspace(taskId: number) {
-  if (!requireRunner()) return
+  if (!auth.currentUser) {
+    ElMessage.warning('请先登录后查看履约台')
+    router.push('/auth')
+    return
+  }
   router.push(`/tasks/${taskId}/workspace`)
 }
 
@@ -341,4 +416,6 @@ function modeLabel(value: TaskAcceptanceMode) {
 }
 
 onMounted(loadTasks)
+
+onUnmounted(() => discardPhotos(publishPhotos.value))
 </script>

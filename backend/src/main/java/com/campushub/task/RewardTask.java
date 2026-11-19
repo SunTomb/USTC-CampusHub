@@ -141,7 +141,7 @@ public class RewardTask {
 
     public Integer getWeightGrams() { return weightGrams; }
     public String getNotes() { return notes; }
-    String getPickupCode() { return pickupCode; }
+    public String getPickupCode() { return pickupCode; }
 
     public String getTaskLocation() {
         return taskLocation;
