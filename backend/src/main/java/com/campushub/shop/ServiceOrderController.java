@@ -31,6 +31,9 @@ public class ServiceOrderController {
         return ApiResponse.ok(shopService.listAllOrders());
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<ServiceOrderSummary> detail(@PathVariable Long id) {return ApiResponse.ok(shopService.participantOrder(id,currentUserService.requireUserId()));}
+
     @GetMapping("/customer/{customerId}")
     public ApiResponse<List<ServiceOrderSummary>> listCustomerOrders(@PathVariable Long customerId) {
         return ApiResponse.ok(shopService.listCustomerOrders(currentUserService.requireSameUser(customerId)));

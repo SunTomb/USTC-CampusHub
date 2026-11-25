@@ -206,6 +206,7 @@
             <template #default="{ row }"><span class="mono-num">#{{ row.id }}</span></template>
           </el-table-column>
           <el-table-column prop="title" label="标题" min-width="180" />
+          <el-table-column label="宣传图片" min-width="160"><template #default="{row}"><CatalogPhotos kind="PROJECT_AD" :object-id="row.id"/></template></el-table-column>
           <el-table-column prop="adType" label="栏目" width="140">
             <template #default="{ row }">{{ formatAdType(row.adType) }}</template>
           </el-table-column>
@@ -234,6 +235,7 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {

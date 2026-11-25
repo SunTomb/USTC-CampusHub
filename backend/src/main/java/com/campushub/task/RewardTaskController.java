@@ -2,7 +2,6 @@ package com.campushub.task;
 
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
-import com.campushub.common.BusinessException;
 import com.campushub.file.TaskDeliveryPhotoSummary;
 import com.campushub.file.TaskEvidenceDownload;
 import jakarta.validation.Valid;
@@ -18,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,6 +55,7 @@ public class RewardTaskController {
     @GetMapping
     public ApiResponse<List<RewardTaskSummary>> listTasks() {
         List<RewardTaskSummary> tasks = rewardTaskRepository.findByStatusOrderByDeadlineAsc("PUBLISHED").stream()
+                .filter(RunnerTaskService::isOpenListing)
                 .map(RewardTaskSummary::from)
                 .toList();
         return ApiResponse.ok(tasks);
@@ -77,9 +78,8 @@ public class RewardTaskController {
 
     @GetMapping("/{id}")
     public ApiResponse<RewardTaskSummary> getTask(@PathVariable Long id) {
-        RewardTask task = rewardTaskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("task not found"));
-        return ApiResponse.ok(RewardTaskSummary.from(task));
+        Long viewerId = currentUserService.optionalUserId().orElse(null);
+        return ApiResponse.ok(runnerTaskService.getPublicTask(id, viewerId, currentUserService.isTradeReader()));
     }
 
     @PostMapping
@@ -88,6 +88,18 @@ public class RewardTaskController {
             @Valid @RequestBody CreateRunnerTaskRequest request) {
         Long effectivePublisherId = requireActor(publisherId);
         return ApiResponse.ok(runnerTaskService.publish(effectivePublisherId, request));
+    }
+
+    @PutMapping("/{taskId}")
+    public ApiResponse<RewardTaskSummary> update(
+            @PathVariable Long taskId,
+            @Valid @RequestBody CreateRunnerTaskRequest request) {
+        return ApiResponse.ok(runnerTaskService.update(taskId, currentUserService.requireUserId(), request));
+    }
+
+    @DeleteMapping("/{taskId}")
+    public ApiResponse<RewardTaskSummary> withdraw(@PathVariable Long taskId) {
+        return ApiResponse.ok(runnerTaskService.withdraw(taskId, currentUserService.requireUserId()));
     }
 
     @PostMapping("/{taskId}/grab")

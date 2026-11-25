@@ -1,0 +1,7 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');const {row,destination}=require('../src/lib/order-desk'),ui=require('../src/lib/ui');
+test('个人 has one order entry separate from notices with five exact tabs',()=>{const config=require('../src/app.json');assert.deepEqual(config.tabBar.list.map(x=>x.text),['跑腿','二手','小店','宣传','个人']);const w=fs.readFileSync(path.join(__dirname,'../src/pages/pass/index.wxml'),'utf8');assert.match(w,/我的订单/);assert.doesNotMatch(w,/data-section="(?:orders|tasks|posts)"/);assert.equal(ui.validRoute('/pages/orders/index?type=GOODS&stage=ENDED'),true);assert.equal(ui.validRoute('/pages/orders/publish'),false);});
+test('unsigned applications are records but not private workspaces; listings and contacts differ',()=>{let a={kind:'TASK',id:1,objectId:7,role:'APPLICANT',status:'PENDING',amount:null};assert.equal(row(a).statusLabel,'已报名');assert.equal(destination(a),'');assert.equal(destination({...a,role:'RUNNER'}),'/pages/tasks/detail?id=7');assert.equal(row({...a,kind:'GOODS_LISTING',status:'PUBLISHED'}).statusLabel,'在售');assert.equal(row({...a,kind:'GOODS_INTENT',status:'OPEN'}).statusLabel,'已联系')});
+
+test('all secondhand order kinds use the underlying goods ID, not the order/intent ID or the seller',()=>{
+ for(const kind of ['GOODS_INTENT','GOODS_ORDER','GOODS_LISTING'])assert.equal(destination({kind,id:444,objectId:27,role:'BUYER'}),'/pages/goods/detail?id=27');
+});

@@ -23,6 +23,8 @@ public class ShopService {
     private final NotificationService notificationService;
     private final GovernanceService governanceService;
 
+    private final com.campushub.orders.CatalogRatings ratings;
+
     public ShopService(
             ShopRepository shopRepository,
             ServiceItemRepository serviceItemRepository,
@@ -31,7 +33,8 @@ public class ShopService {
             RoleApplicationRepository roleApplicationRepository,
             UserRoleService userRoleService,
             NotificationService notificationService,
-            GovernanceService governanceService) {
+            GovernanceService governanceService, com.campushub.orders.CatalogRatings ratings) {
+        this.ratings=ratings;
         this.shopRepository = shopRepository;
         this.serviceItemRepository = serviceItemRepository;
         this.serviceOrderRepository = serviceOrderRepository;
@@ -44,15 +47,19 @@ public class ShopService {
 
     @Transactional(readOnly = true)
     public List<ShopSummary> listApprovedShops() {
+        var scores=ratings.shops();
         return shopRepository.findByStatusOrderByRatingDesc("APPROVED").stream()
-                .map(ShopSummary::from)
+                .map(shop -> ShopSummary.from(shop,scores.get(shop.getId())))
+                .sorted(java.util.Comparator.comparing(ShopSummary::rating, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())).thenComparing(ShopSummary::id))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ShopDetailSummary getShop(Long shopId, Long viewerId) {
         Shop shop = findShop(shopId);
-        return detailFor(shop, viewerId, false);
+        boolean owner=shop.getOwner().getId().equals(viewerId);
+        if(!owner&&!"APPROVED".equals(shop.getStatus()))throw new BusinessException("店铺暂不可查看");
+        return detailFor(shop, viewerId, owner);
     }
 
     @Transactional(readOnly = true)
@@ -107,8 +114,10 @@ public class ShopService {
 
     @Transactional(readOnly = true)
     public List<ServiceItemSummary> listPublishedItems() {
+        var grades=ratings.items();
         return serviceItemRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED").stream()
-                .map(ServiceItemSummary::from)
+                .filter(i -> "APPROVED".equals(i.getShop().getStatus()))
+                .map(i -> ServiceItemSummary.from(i,grades.get(i.getId())))
                 .toList();
     }
 
@@ -117,12 +126,15 @@ public class ShopService {
         List<ServiceItem> items = includeAll
                 ? serviceItemRepository.findByShopIdOrderByCreatedAtDesc(shopId)
                 : serviceItemRepository.findByShopIdAndStatusOrderByCreatedAtDesc(shopId, "PUBLISHED");
-        return items.stream().map(ServiceItemSummary::from).toList();
+        var grades=ratings.items();
+        return items.stream().map(i -> ServiceItemSummary.from(i,grades.get(i.getId()))).toList();
     }
 
     @Transactional(readOnly = true)
-    public ServiceItemSummary getItem(Long itemId) {
-        return ServiceItemSummary.from(findItem(itemId));
+    public ServiceItemSummary getItem(Long itemId,Long viewerId) {
+        var item=findItem(itemId);
+        if(!item.getShop().getOwner().getId().equals(viewerId)&&(!"PUBLISHED".equals(item.getStatus())||!"APPROVED".equals(item.getShop().getStatus())))throw new BusinessException("服务暂不可查看");
+        return ServiceItemSummary.from(item,ratings.forItem(itemId));
     }
 
     @Transactional
@@ -183,6 +195,12 @@ public class ShopService {
     }
 
     @Transactional(readOnly = true)
+    public ServiceOrderSummary participantOrder(Long id,Long actor) {
+        var order=serviceOrderRepository.findById(id).orElseThrow(()->new BusinessException("预约不存在"));
+        ensureParticipant(order,actor); return ServiceOrderSummary.from(order);
+    }
+
+    @Transactional(readOnly=true)
     public List<ServiceOrderSummary> listShopOrders(Long shopId, Long ownerId) {
         Shop shop = findShop(shopId);
         ensureOwner(shop, ownerId);
@@ -267,7 +285,7 @@ public class ShopService {
         boolean hasOrder = viewerId != null && serviceOrderRepository.existsByServiceItemShopIdAndCustomerId(shop.getId(), viewerId);
         boolean contactVisible = owner || hasOrder;
         String contactSnapshot = contactVisible ? buildContactSnapshot(shop.getOwner()) : null;
-        return ShopDetailSummary.from(shop, contactVisible, contactSnapshot, serviceItems);
+        return ShopDetailSummary.from(shop, contactVisible, contactSnapshot, serviceItems, ratings.shops().get(shop.getId()));
     }
 
     private void ensureShopMerchant(Long userId) {
@@ -313,7 +331,7 @@ public class ShopService {
     }
 
     private ServiceOrder findOrder(Long orderId) {
-        return serviceOrderRepository.findById(orderId).orElseThrow(() -> new BusinessException("预约不存在"));
+        return serviceOrderRepository.findForUpdate(orderId).orElseThrow(() -> new BusinessException("预约不存在"));
     }
 
     private String buildContactSnapshot(User user) {

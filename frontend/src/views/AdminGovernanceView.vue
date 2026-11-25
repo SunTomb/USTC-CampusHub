@@ -30,7 +30,7 @@
           <el-option label="二手闲置" value="GOODS" />
           <el-option label="跑腿悬赏" value="TASK" />
           <el-option label="学生小店" value="SHOP" />
-          <el-option label="服务预约" value="SERVICE_ORDER" />
+          <el-option label="预约投诉" value="DESK_BOOKING" /><el-option label="跑腿投诉" value="DESK_TASK" /><el-option label="二手成交投诉" value="DESK_GOODS_INTENT" /><el-option label="历史二手订单投诉" value="DESK_GOODS_ORDER" /><el-option label="历史服务预约" value="SERVICE_ORDER" />
           <el-option label="项目展示" value="PROJECT_AD" />
           <el-option label="互动留言" value="COMMENT" />
           <el-option label="校园用户" value="USER" />

@@ -1,0 +1,17 @@
+[Unit]
+Description=Fixed Brevo SMTP relay for CampusHub production
+Requires=campushub-prod-smtp.socket
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min smtp-relay.brevo.com:587
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=yes
+MemoryMax=32M
+TasksMax=16

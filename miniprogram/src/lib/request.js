@@ -4,11 +4,11 @@ class ApiError extends Error {
   }
 }
 
-const ALLOWED = /^\/(auth|platform|identity|tasks|task-applications|shops|service-items|service-orders|project-ads|interactions|users|notifications)(\/|$|\?)/;
+const ALLOWED = /^\/(catalog-media|goods|categories|orders|auth|platform|identity|tasks|task-applications|shops|service-items|service-orders|project-ads|interactions|users|notifications)(\/|$|\?)/;
 function createClient({ baseUrl, request, getToken, onUnauthorized }) {
   function send(method, path, data, options = {}) {
     return new Promise((resolve, reject) => {
-      if (!ALLOWED.test(path) || path.includes('..') || path.includes('://') || path.startsWith('//')) {
+      if ((path === '/moderation/reports' ? method !== 'POST' : !ALLOWED.test(path)) || (path.startsWith('/goods/') && path.split('/').some(v=>v.split('?')[0]==='orders')) || /[#%]/.test(path) || path.includes(String.fromCharCode(92)) || path.includes('..') || path.includes('://') || path.startsWith('//')) {
         reject(new ApiError('不支持的请求路径')); return;
       }
       const sentToken = getToken();

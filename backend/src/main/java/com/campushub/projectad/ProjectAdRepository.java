@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProjectAdRepository extends JpaRepository<ProjectAd, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select p from ProjectAd p where p.id=:id")
+    Optional<ProjectAd> lockById(@org.springframework.data.repository.query.Param("id") Long id);
+
     @Override
     @EntityGraph(attributePaths = {"publisher", "reviewedBy"})
     Optional<ProjectAd> findById(Long id);

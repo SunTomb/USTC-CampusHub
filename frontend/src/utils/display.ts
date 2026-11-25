@@ -42,6 +42,7 @@ const TARGET_TYPE_LABELS: Record<string, string> = {
   SHOP: '学生小店',
   SERVICE_ITEM: '店铺服务',
   SERVICE_ORDER: '服务预约',
+  DESK_BOOKING: '预约投诉', DESK_TASK: '跑腿投诉', DESK_GOODS_INTENT: '二手成交投诉', DESK_GOODS_ORDER: '二手订单投诉',
   PROJECT_AD: '项目展示',
   ROLE_APPLICATION: '身份保证金',
   ROLE_DEPOSIT: '身份保证金',

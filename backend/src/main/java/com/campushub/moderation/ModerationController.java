@@ -59,7 +59,8 @@ public class ModerationController {
 
     @PostMapping("/reports")
     public ApiResponse<ReportRecordSummary> report(@RequestParam(required = false) Long reporterId, @Valid @RequestBody ReportRequest request) {
-        Long effectiveReporterId = reporterId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(reporterId);
+        Long effectiveReporterId=currentUserService.requireUserId();
+        if(reporterId!=null&&!reporterId.equals(effectiveReporterId))throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,"只能以本人身份举报");
         return ApiResponse.ok(moderationService.report(effectiveReporterId, request));
     }
 

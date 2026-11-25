@@ -34,9 +34,9 @@
       >
         <div class="panel-topline">
           <span class="meta-pill">{{ zoneLabel(shop.campusZone) }}</span>
-          <el-rate :model-value="Number(shop.rating)" disabled size="small" />
+          <span>{{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1)+' 分' }}</span>
         </div>
-        <h3>{{ shop.name }}</h3>
+        <CatalogPhotos kind="SHOP" :object-id="shop.id" compact /><h3>{{ shop.name }}</h3>
         <p>{{ shop.description }}</p>
         <div class="shop-meta">
           <span>🎯 擅长领域：{{ shop.serviceArea }}</span>
@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

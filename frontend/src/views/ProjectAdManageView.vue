@@ -81,6 +81,7 @@
           <el-form-item label="招募截止时间（选填）"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="wide" popper-class="responsive-date-popper" /></el-form-item>
         </FormSection>
 
+        <CatalogPhotos ref="media" kind="PROJECT_AD" :object-id="editingId || 0" editable/>
         <FormSection title="详细介绍与外部链接" description="详细说明背景目标、分工需求或附上 GitHub / 飞书文档链接。">
           <el-form-item label="详细说明"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item>
           <el-form-item label="外部链接（选填）"><el-input v-model="form.linkUrl" placeholder="https://..." /></el-form-item>
@@ -88,13 +89,14 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存项目</el-button>
+        <el-button type="primary" :loading="saving" @click="save">保存项目</el-button>
       </template>
     </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -116,6 +118,7 @@ const auth = useAuthStore()
 const projects = ref<ProjectAdSummary[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
+const media=ref<InstanceType<typeof CatalogPhotos>>(),saving=ref(false)
 const editingId = ref<number | null>(null)
 
 const typeOptions: Array<{ label: string; value: ProjectAdType }> = [
@@ -152,6 +155,7 @@ async function loadProjects() {
 }
 
 function openCreate() {
+  media.value?.reset()
   editingId.value = null
   Object.assign(form, {
     title: '',
@@ -192,14 +196,19 @@ async function save() {
     return
   }
   const payload = { ...form, expiresAt: form.expiresAt || null }
+  if(saving.value)return
+  saving.value=true
+  try {
   if (editingId.value) {
     await updateProjectAd(editingId.value, auth.currentUser.id, payload)
   } else {
-    await createProjectAd(auth.currentUser.id, payload)
+    editingId.value=(await createProjectAd(auth.currentUser.id, payload)).id
   }
+  await media.value?.saveTo(editingId.value!)
   dialogVisible.value = false
   ElMessage.success('已保存，提交审核通过后即可在广场展示')
   await loadProjects()
+  } catch(e){ElMessage.error(e instanceof Error?e.message:'保存失败')} finally{saving.value=false}
 }
 
 async function submit(project: ProjectAdSummary) {

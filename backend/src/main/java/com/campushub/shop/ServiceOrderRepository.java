@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ServiceOrderRepository extends JpaRepository<ServiceOrder, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select o from ServiceOrder o where o.id=:id")
+    Optional<ServiceOrder> findForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
     @Override
     @EntityGraph(attributePaths = {"serviceItem", "serviceItem.shop", "serviceItem.shop.owner", "customer", "provider", "serviceFeeRecord"})
     Optional<ServiceOrder> findById(Long id);

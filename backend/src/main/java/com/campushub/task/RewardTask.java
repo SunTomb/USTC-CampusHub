@@ -214,6 +214,39 @@ public class RewardTask {
         this.status = "PUBLISHED";
     }
 
+    public void updateListing(
+            String title,
+            String description,
+            BigDecimal rewardAmount,
+            BigDecimal depositAmount,
+            String taskLocation,
+            LocalDateTime deadline,
+            String acceptanceMode,
+            String originZone,
+            String destinationZone,
+            String originDetail,
+            String destinationDetail,
+            String verificationMode,
+            Integer weightGrams,
+            String notes,
+            String pickupCode) {
+        this.title = title;
+        this.description = description;
+        this.rewardAmount = rewardAmount;
+        this.depositAmount = depositAmount;
+        this.taskLocation = taskLocation;
+        this.deadline = deadline;
+        this.acceptanceMode = acceptanceMode;
+        this.originZone = originZone;
+        this.destinationZone = destinationZone;
+        this.originDetail = originDetail;
+        this.destinationDetail = destinationDetail;
+        this.verificationMode = verificationMode;
+        this.weightGrams = weightGrams;
+        this.notes = notes;
+        this.pickupCode = pickupCode;
+    }
+
     public void markAccepted(TaskApplication application) {
         this.acceptedApplication = application;
         this.workflowStatus = TaskWorkflowStatus.ACCEPTED.name();

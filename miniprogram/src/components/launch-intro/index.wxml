@@ -11,7 +11,6 @@
     <view class="intro-tagline">校园里的顺路相助</view>
   </view>
   <view class="intro-footer">
-    <text class="intro-independent">独立学生项目 · 非学校官方平台</text>
     <button class="intro-filing" bindtap="showAbout" aria-label="查看备案信息">{{filing.number}}</button>
     <block wx:if="{{mode === 'about'}}">
       <text class="intro-query-label">工信部备案查询</text>

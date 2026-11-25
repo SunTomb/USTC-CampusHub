@@ -67,30 +67,10 @@ public class RunnerTaskService {
     public RewardTaskSummary publish(Long publisherId, CreateRunnerTaskRequest request) {
         User publisher = findUser(publisherId);
         governanceService.ensureCanPost(publisherId);
-        if (request.rewardAmount() == null || request.rewardAmount().signum() < 0) {
-            throw new BusinessException("任务报酬不能为负数");
-        }
-        if (request.depositAmount() != null && request.depositAmount().signum() != 0) {
-            throw new BusinessException("跑腿任务不支持收取或冻结保证金");
-        }
-        if (request.deadline() == null || !request.deadline().isAfter(LocalDateTime.now())) {
-            throw new BusinessException("任务截止时间必须晚于当前时间");
-        }
-        validateEnum(TaskAcceptanceMode.class, request.acceptanceMode(), "不支持的接单模式");
-        validateEnum(CampusZone.class, request.originZone(), "不支持的起点校区");
-        validateEnum(CampusZone.class, request.destinationZone(), "不支持的终点校区");
-        validateEnum(TaskVerificationMode.class, request.verificationMode(), "不支持的完成确认方式");
-
-        if (request.weightGrams() == null || request.weightGrams() < 1 || request.weightGrams() > 100000) {
-            throw new BusinessException("任务重量必须为 1 至 100000 克的整数");
-        }
-        if ((request.notes() != null && request.notes().length() > 1000)
-                || (request.pickupCode() != null && request.pickupCode().length() > 120)) {
-            throw new BusinessException("备注或取件码过长");
-        }
+        validateTaskRequest(request);
         RewardTask task = new RewardTask(
                 publisher,
-                request.title(),
+                request.title().trim(),
                 request.description() == null ? "" : request.description(),
                 request.rewardAmount(),
                 request.depositAmount() == null ? BigDecimal.ZERO : request.depositAmount(),
@@ -108,6 +88,78 @@ public class RunnerTaskService {
         RewardTask saved = rewardTaskRepository.save(task);
         recordEvent(saved, publisher, "PUBLISHED", "发布跑腿任务");
         return RewardTaskSummary.from(saved);
+    }
+
+    @Transactional
+    public RewardTaskSummary update(Long taskId, Long publisherId, CreateRunnerTaskRequest request) {
+        RewardTask task = findTaskForUpdate(taskId);
+        if (!task.getPublisher().getId().equals(publisherId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有发布者可以修改任务");
+        }
+        governanceService.ensureCanPost(publisherId);
+        validateTaskRequest(request);
+        if (!isUnassignedListing(task)) {
+            throw new BusinessException("当前任务状态不可修改");
+        }
+        if (taskApplicationRepository.existsByTaskId(taskId)) {
+            throw new BusinessException("已有同学报名，不可修改任务内容；如需调整可撤下后重新发布");
+        }
+        task.updateListing(
+                request.title().trim(),
+                request.description() == null ? "" : request.description(),
+                request.rewardAmount(),
+                request.depositAmount() == null ? BigDecimal.ZERO : request.depositAmount(),
+                buildTaskLocation(request),
+                request.deadline(),
+                normalizeEnum(request.acceptanceMode()),
+                normalizeEnum(request.originZone()),
+                normalizeEnum(request.destinationZone()),
+                trimToNull(request.originDetail()),
+                trimToNull(request.destinationDetail()),
+                normalizeEnum(request.verificationMode()),
+                request.weightGrams(),
+                trimToNull(request.notes()),
+                trimToNull(request.pickupCode()));
+        recordEvent(task, task.getPublisher(), "TASK_UPDATED", "发布者修改了任务信息");
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional
+    public RewardTaskSummary withdraw(Long taskId, Long publisherId) {
+        RewardTask task = findTaskForUpdate(taskId);
+        if (!task.getPublisher().getId().equals(publisherId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有发布者可以撤下任务");
+        }
+        if (!isUnassignedListing(task)) {
+            throw new BusinessException("当前任务已接单或已结束，不可撤下");
+        }
+        taskApplicationRepository.findByTaskIdOrderByCreatedAtDesc(taskId).stream()
+                .filter(application -> "PENDING".equals(application.getStatus()) || "APPLIED".equals(application.getStatus()))
+                .forEach(application -> {
+                    application.markClosed();
+                    notificationService.notify(
+                            application.getApplicant(),
+                            "跑腿任务已撤下",
+                            "发布者已撤下任务「" + task.getTitle() + "」，你的接单申请已关闭",
+                            "TASK",
+                            task.getId());
+                });
+        task.clearCompletionCode();
+        task.moveTo(TaskWorkflowStatus.CANCELLED.name());
+        recordEvent(task, task.getPublisher(), "CANCELLED", "发布者撤下了任务");
+        return RewardTaskSummary.from(task);
+    }
+
+    @Transactional(readOnly = true)
+    public RewardTaskSummary getPublicTask(Long taskId, Long viewerId, boolean tradeReader) {
+        RewardTask task = rewardTaskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "任务不存在"));
+        boolean hidden = TaskWorkflowStatus.CANCELLED.name().equals(task.getWorkflowStatus())
+                || TaskWorkflowStatus.DRAFT.name().equals(task.getWorkflowStatus());
+        if (hidden && !isParticipant(task, viewerId) && !tradeReader) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "任务不存在或已撤下");
+        }
+        return RewardTaskSummary.from(task);
     }
 
     @Transactional
@@ -308,9 +360,19 @@ public class RunnerTaskService {
                 .filter(event -> isEventVisibleTo(event, task, viewerId))
                 .map(TaskEventSummary::from)
                 .toList();
+        boolean isPublisher = task.getPublisher().getId().equals(viewerId);
+        boolean canWithdraw = isPublisher && isUnassignedListing(task);
+        boolean canEdit = canWithdraw && !taskApplicationRepository.existsByTaskId(taskId);
         return new TaskWorkspaceSummary(RewardTaskSummary.from(task),
                 TaskParticipantContact.from(task.getPublisher()), runner, events,
-                new TaskPrivateDetails(task.getPickupCode()), evidence.listForParticipant(taskId, viewerId));
+                new TaskPrivateDetails(task.getPickupCode()), evidence.listForParticipant(taskId, viewerId),
+                canEdit, canWithdraw);
+    }
+
+    private boolean isParticipant(RewardTask task, Long userId) {
+        return userId != null && (task.getPublisher().getId().equals(userId)
+                || (task.getAcceptedApplication() != null
+                        && task.getAcceptedApplication().getApplicant().getId().equals(userId)));
     }
 
     private boolean isEventVisibleTo(TaskEvent event, RewardTask task, Long viewerId) {
@@ -409,17 +471,58 @@ public class RunnerTaskService {
         }
     }
 
+    private static boolean isUnassignedListing(RewardTask task) {
+        return TaskWorkflowStatus.PUBLISHED.name().equals(task.getWorkflowStatus())
+                && "PUBLISHED".equals(task.getStatus()) && task.getAcceptedApplication() == null;
+    }
+
+    // Expiry removes a listing from the hall, not from its publisher's order history or controls.
+    static boolean isOpenListing(RewardTask task) {
+        return isUnassignedListing(task) && task.getDeadline() != null && task.getDeadline().isAfter(LocalDateTime.now());
+    }
+
     private void ensureTaskPublished(RewardTask task) {
-        if (!TaskWorkflowStatus.PUBLISHED.name().equals(task.getWorkflowStatus())) {
-            throw new BusinessException("任务当前不可接单");
-        }
         if (task.getDeadline() == null || !task.getDeadline().isAfter(LocalDateTime.now())) {
             throw new BusinessException("任务已过截止时间");
         }
+        if (!isOpenListing(task)) throw new BusinessException("任务当前不可接单");
     }
 
     private void recordEvent(RewardTask task, User actor, String eventType, String note) {
         taskEventRepository.save(new TaskEvent(task, actor, eventType, note));
+    }
+
+    private void validateTaskRequest(CreateRunnerTaskRequest request) {
+        if (request.title() == null || request.title().isBlank() || request.title().trim().length() > 120) {
+            throw new BusinessException("任务标题不能为空且不能超过 120 字符");
+        }
+        if (request.description() != null && request.description().length() > 2000) {
+            throw new BusinessException("任务说明不能超过 2000 字符");
+        }
+        if (request.rewardAmount() == null || request.rewardAmount().signum() < 0) {
+            throw new BusinessException("任务报酬不能为负数");
+        }
+        if (request.depositAmount() != null && request.depositAmount().signum() != 0) {
+            throw new BusinessException("跑腿任务不支持收取或冻结保证金");
+        }
+        if (request.deadline() == null || !request.deadline().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("任务截止时间必须晚于当前时间");
+        }
+        validateEnum(TaskAcceptanceMode.class, request.acceptanceMode(), "不支持的接单模式");
+        validateEnum(CampusZone.class, request.originZone(), "不支持的起点校区");
+        validateEnum(CampusZone.class, request.destinationZone(), "不支持的终点校区");
+        validateEnum(TaskVerificationMode.class, request.verificationMode(), "不支持的完成确认方式");
+        if (request.weightGrams() == null || request.weightGrams() < 1 || request.weightGrams() > 100000) {
+            throw new BusinessException("任务重量必须为 1 至 100000 克的整数");
+        }
+        if ((request.notes() != null && request.notes().length() > 1000)
+                || (request.pickupCode() != null && request.pickupCode().length() > 120)) {
+            throw new BusinessException("备注或取件码过长");
+        }
+        if ((request.originDetail() != null && request.originDetail().length() > 200)
+                || (request.destinationDetail() != null && request.destinationDetail().length() > 200)) {
+            throw new BusinessException("取件或送达地点描述过长");
+        }
     }
 
     private String buildTaskLocation(CreateRunnerTaskRequest request) {

@@ -45,10 +45,17 @@ const projects=[{id:1,publisherId:900030,publisherNickname:'示例同学',title:
 const applications=[],bookings=[],notes=[],roleApplications=[],completionCodes={};let logged=false,nextId=100;
 const seed=JSON.stringify({user,tasks,projects});
 module.exports.reset=function(){const data=JSON.parse(seed);Object.assign(user,data.user);tasks.splice(0,tasks.length,...data.tasks);projects.splice(0,projects.length,...data.projects);applications.length=0;bookings.length=0;notes.length=0;roleApplications.length=0;Object.keys(completionCodes).forEach(key=>delete completionCodes[key]);logged=false;nextId=100;};
-function resolve(method,path,body){
+function bookingRow(b){return {kind:'BOOKING',id:b.id,objectId:b.serviceItemId,title:b.serviceItemTitle,role:'CUSTOMER',stage:'PENDING',status:b.status,createdAt:b.appointmentTime,interested:0,amount:b.amount,canReview:false,reviewed:false,canComplain:false,complained:false};}
+function resolve(method,path,body,query){
  const id=Number(path.split('/')[2]);
  if(path==='/auth/login'){logged=true;return{accessToken:'offline-not-a-real-token',user:{...user,roles:[...user.roles]}};}
  if(path==='/auth/me'){if(!logged)throw{status:401,message:'请使用离线演示账号登录'};return{...user,roles:[...user.roles]};}
+ if(path==='/orders/mine'){const type=query.type||'ALL',stage=query.stage||'ALL';const rows=(type==='ALL'||type==='BOOKING'?bookings:[]).map(bookingRow);const items=rows.filter(r=>stage==='ALL'||r.stage===stage);return {items,total:items.length,counts:{ALL:rows.length,PENDING:rows.length,ACTIVE:0,REVIEW:0,ENDED:0}};}
+ if(path.startsWith('/orders/BOOKING/')){const b=bookings.find(x=>x.id===Number(path.split('/')[3]));if(b)return bookingRow(b);}
+ if(path.startsWith('/service-orders/')&&Number.isInteger(id)){const b=bookings.find(x=>x.id===id);if(b)return b;}
+ if(path.startsWith('/catalog-media/')&&method==='GET')return [];
+ if(path==='/goods'&&method==='GET')return [];
+ if(path==='/categories')return [{id:1,name:'教材',enabled:true}];
  if(path==='/platform/features')return{financialEnabled:false};
  if(path.startsWith('/platform/protocols/'))return{version:'离线样例',title:'离线演示协议（不是正式协议）',content:('此文本仅供测试阅读和勾选交互，不具有真实平台协议含义。\\n').repeat(25),effectiveAt:'2026-11-11T00:00:00'};
  if(path==='/tasks'&&method==='GET')return tasks.filter(t=>t.workflowStatus==='PUBLISHED');
@@ -65,7 +72,7 @@ function resolve(method,path,body){
  if(path==='/shops')return shops;
  if(/^\\/shops\\/\\d+$/.test(path)){const s=shops.find(x=>x.id===id);const visible=bookings.some(b=>b.shopId===id);return{...s,serviceItems:services.filter(x=>x.shopId===id),contactVisible:visible,contactSnapshot:visible?'微信:offline_sample':null};}
  if(path==='/service-items')return services;
- if(/\\/service-items\\/\\d+\\/orders/.test(path)){const s=services.find(x=>x.id===id);const b={id:nextId++,serviceItemTitle:s.title,shopId:s.shopId,shopName:shops.find(x=>x.id===s.shopId).name,customerId:user.id,providerId:900020,appointmentTime:body.appointmentTime,amount:s.price,status:'REQUESTED',contactSnapshot:'微信:offline_sample',actions:[]};bookings.push(b);return b;}
+ if(/\\/service-items\\/\\d+\\/orders/.test(path)){const s=services.find(x=>x.id===id);const b={id:nextId++,serviceItemId:id,serviceItemTitle:s.title,shopId:s.shopId,shopName:shops.find(x=>x.id===s.shopId).name,customerId:user.id,providerId:900020,appointmentTime:body.appointmentTime,amount:s.price,status:'REQUESTED',contactSnapshot:'微信:offline_sample',actions:[]};bookings.push(b);return b;}
  if(path.startsWith('/service-orders/customer/'))return bookings;
  if(path.startsWith('/service-orders/provider/'))return [];
  if(path==='/project-ads'&&method==='GET')return projects;
@@ -84,7 +91,7 @@ function resolve(method,path,body){
  if(path.endsWith('/notifications'))return [];
  throw{status:400,message:'这个操作尚未包含在离线样例中，不会请求真实服务器'};
 }
-module.exports.request=function(options){setTimeout(()=>{try{const path=options.url.split('/api')[1].split('?')[0];const data=resolve(options.method,path,options.data||{});options.success({statusCode:200,data:{success:true,data}});}catch(e){options.success({statusCode:e.status||400,data:{success:false,message:e.message||'离线样例操作未完成'}});}},120);};
+module.exports.request=function(options){setTimeout(()=>{try{const path=options.url.split('/api')[1].split('?')[0];const query=Object.fromEntries((options.url.split('?')[1]||'').split('&').filter(Boolean).map(p=>p.split('=')));const data=resolve(options.method,path,options.data||{},query);options.success({statusCode:200,data:{success:true,data}});}catch(e){options.success({statusCode:e.status||400,data:{success:false,message:e.message||'离线样例操作未完成'}});}},120);};
 `;
 fs.writeFileSync(path.join(destination, 'src/offline-fixture.js'), fixture);
 fs.writeFileSync(path.join(destination, 'README.txt'), '离线样例项目，只供界面预览。账号用户名填任意非空文本、密码填任意非空文本；无真实登录。所有 API 在内存中模拟，重编译清空样例状态，绝不上传/发布。\n');

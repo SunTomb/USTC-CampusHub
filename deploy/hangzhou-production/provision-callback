@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "Historical payment-center callbacks are retired. No credentials accepted." >&2
+exit 1

@@ -219,12 +219,12 @@ test('publicity private contact and comments are scrubbed when a viewer signs ou
   assert.equal(h.page.data.project, null);
 });
 
-test('non-merchants cannot mistake customer orders for the provider queue', async () => {
-  const h = pageHarness('pass/index', { customerOrders: async () => [{ id: 4, customerId: 1, providerId: 2, status: 'REQUESTED' }] });
-  h.page.setData({ section: 'orders', roleCards: [{ value: 'SHOP_MERCHANT', active: false, pending: false }] });
-  await h.page.toggleOrders({ currentTarget: { dataset: { provider: 'yes' } } });
-  assert.equal(h.page.data.providerMode, false);
-  assert.equal(h.page.data.unlock, true);
+test('订单中的预约按钮由实际下单/接单方决定，不依赖个人页切换身份', () => {
+  const {orderActions}=require('../src/lib/rules');
+  const order={id:4,customerId:1,providerId:2,status:'REQUESTED'};
+  assert.deepEqual(orderActions(order,1).map(x=>x.value),['cancel']);
+  assert.deepEqual(orderActions(order,2).map(x=>x.value),['accept','reject','cancel']);
+  assert.deepEqual(orderActions(order,3),[]);
 });
 
 test('booking has no payment call and returned contact data is hidden after logout', async () => {
@@ -295,4 +295,53 @@ test('after task creation retry only uploads the failed photo, never another tas
   h.page.setData({form:{...h.page.data.form,title:'代取书籍',weightKg:'1',originDetail:'A',destinationDetail:'B',rewardAmount:'2'},date:'2099-01-01',time:'12:30',photos:[{key:'a',path:'local-a'},{key:'b',path:'local-b'}]});
   await h.page.submit(); assert.equal(h.page.data.publishedId,119); assert.equal(h.calls.filter(v=>v[0]==='redirect').length,0);
   await h.page.submit();assert.equal(created,1);assert.deepEqual(uploaded,[[119,'REQUEST_IMAGE','a'],[119,'REQUEST_IMAGE','b'],[119,'REQUEST_IMAGE','b']]);assert.equal(h.calls.filter(v=>v[0]==='redirect').length,1);
+});
+
+function photoWorkspace(owner = false) {
+  const task = { id: 10, publisherId: owner ? 1 : 3, acceptedApplicationId: 22, verificationMode: 'PHOTO_AND_CONFIRMATION', workflowStatus: 'DELIVERING' };
+  const evidence = [{ id: 41, evidenceType: 'REQUEST_IMAGE', downloadPath: '/private/request' }];
+  const api = { task: async () => task, taskApplicants: async () => [], myTaskApplications: async () => [{id:22, applicantId:1, status:'ACCEPTED'}],
+    taskWorkspace: async () => ({ task, evidence, events: [] }), submitEvidence: async () => { task.workflowStatus = 'PENDING_CONFIRMATION'; } };
+  const h = pageHarness('tasks/detail', api), discarded = [];
+  const media = { download: async (_, id) => 'wxfile://tmp/' + id, discard: p => discarded.push(p) };
+  const app = { ...getApp(), taskMedia:media }; global.getApp = () => app;
+  return { ...h, evidence, discarded, media, task };
+}
+test('item photos allow delivery upload but only delivery evidence unlocks runner submission', async () => {
+  const h = photoWorkspace(); await h.page.reload();
+  assert.equal(h.page.data.canUploadDelivery, true); assert.equal(h.page.data.canSubmitEvidence, false);
+  await h.page.submitEvidence(); assert.equal(h.task.workflowStatus, 'DELIVERING');
+  h.evidence.push({id:42,evidenceType:'DELIVERY_PHOTO'}); await h.page.reload();
+  assert.equal(h.page.data.canSubmitEvidence, true); await h.page.submitEvidence();
+  assert.equal(h.task.workflowStatus,'PENDING_CONFIRMATION'); assert.equal(h.page.data.canSubmitEvidence,false);
+});
+test('publisher sees both protected photos via local files, cannot submit, clears files on hide',async()=>{
+  const h=photoWorkspace(true); h.evidence.push({id:42,evidenceType:'DELIVERY_PHOTO'}); await h.page.reload();
+  assert.deepEqual(h.page.data.photos.map(p=>p.previewPath),['wxfile://tmp/41','wxfile://tmp/42']);
+  assert.equal(h.page.data.canSubmitEvidence,false); h.page.onHide(); assert.deepEqual(h.page.data.photos,[]);
+  assert.deepEqual(h.discarded.sort(),['wxfile://tmp/41','wxfile://tmp/42']);
+});
+test('late authenticated thumbnail after unload is discarded rather than displayed',async()=>{
+  const h=photoWorkspace(); let finish; h.media.download=()=>new Promise(done=>{finish=done;});
+  const loading=h.page.reload(); await new Promise(done=>setImmediate(done)); h.page.onUnload();
+  assert.equal(typeof finish,'function'); finish('wxfile://tmp/late'); await loading;
+  assert.deepEqual(h.discarded,['wxfile://tmp/late']); assert.deepEqual(h.page.data.photos,[]);
+});
+test('picker may hide and reopen detail: only the refreshed owner can upload a request photo',async()=>{
+  const h=photoWorkspace(true);await h.page.reload();let picked;const uploads=[];
+  h.media.pick=()=>new Promise(done=>{picked=done});h.media.upload=async(id,kind,p)=>uploads.push([id,kind,p.key]);
+  const choosing=h.page.chooseEvidence({currentTarget:{dataset:{kind:'REQUEST_IMAGE'}}});h.page.onHide();h.page.onShow();picked([{key:'same-selection'}]);await choosing;
+  assert.deepEqual(uploads,[[10,'REQUEST_IMAGE','same-selection']]);
+  const stale=h.page.chooseEvidence({currentTarget:{dataset:{kind:'REQUEST_IMAGE'}}});h.auth.login('replacement',{id:4});picked([{key:'old-selection'}]);await stale;
+  assert.equal(uploads.length,1);assert.deepEqual(h.page.data.photos,[]);
+});
+
+test('二手订单打开同一商品；返回时取最新内容，只有详情 410 才显示已删除', async () => {
+  let title='书本',failure=0;
+  const h=pageHarness('goods/detail',{goodsDetail:async id=>{assert.equal(id,10);if(failure){const e=Error('未能读取');e.status=failure;throw e;}return {id,sellerId:2,status:'SOLD',title,price:16};}});
+  await h.page.onShow();assert.equal(h.page.data.item.title,'书本');
+  title='新版说明';h.page.onHide();await h.page.onShow();assert.equal(h.page.data.item.title,'新版说明');
+  failure=404;await h.page.reload();assert.equal(h.page.data.deleted,false);assert.equal(h.page.data.item,null);assert.ok(h.page.data.error);
+  failure=503;await h.page.reload();assert.equal(h.page.data.deleted,false);assert.ok(h.page.data.error);
+  failure=410;await h.page.reload();assert.equal(h.page.data.deleted,true);assert.equal(h.page.data.item,null);assert.deepEqual(h.page.data.contacts,[]);
 });

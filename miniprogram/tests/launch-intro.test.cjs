@@ -105,9 +105,9 @@ test('passport can open filing later even when launch intro was already claimed'
   assert(h.events.includes('close'));
 });
 
-test('every entry page mounts the launch component and keeps ten pages/four tabs', () => {
+test('every entry page mounts the launch component and includes the marketplace and order desk', () => {
   const config = JSON.parse(fs.readFileSync(path.join(src, 'app.json'), 'utf8'));
-  assert.equal(config.pages.length, 10); assert.equal(config.tabBar.list.length, 4);
+  assert.equal(config.pages.length, 15); assert.equal(config.tabBar.list.length, 5);
   assert.equal(config.usingComponents['launch-intro'], '/components/launch-intro/index');
   for (const route of config.pages) {
     const wxml = fs.readFileSync(path.join(src, route + '.wxml'), 'utf8');

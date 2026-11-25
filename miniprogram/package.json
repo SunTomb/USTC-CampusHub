@@ -1,6 +1,6 @@
 {
   "name": "woke-tonglu-miniprogram",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "蜗壳同路原生微信小程序；无需安装运行时依赖",
   "scripts": {

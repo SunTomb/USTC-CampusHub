@@ -18,7 +18,7 @@
               去逛悬赏与市集
             </el-button>
             <el-button size="large" class="hero-ghost-btn" @click="router.push('/goods')">浏览校友闲置</el-button>
-            <el-button size="large" text class="hero-link-btn" @click="router.push('/policy')">社区公约与保障 →</el-button>
+            <el-button size="large" text class="hero-link-btn" @click="router.push('/policy')">服务协议与社区公约 →</el-button>
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@
           {{
             auth.isAuthenticated
               ? '已绑定校园邮箱，可随时发起同城跑腿、流转闲置或预约同窗技能。'
-              : '使用 edu.cn 校园邮箱验证后，可申请身份并参与互助与交易。邮箱验证不等于实名认证。'
+              : '使用 edu.cn 校园邮箱登录，即可参与校园跑腿、闲置流转与技能互助。'
           }}
         </p>
 
@@ -117,24 +117,28 @@
       </section>
 
       <section class="premium-panel editorial-note-panel">
-        <span class="eyebrow">交易与隐私守则</span>
-        <h3>同窗互信，安心交接</h3>
+        <span class="eyebrow">校内交易</span>
+        <h3>联系与交接</h3>
         <ul class="editorial-pledge-list">
           <li>
-            <strong>微信号与 QQ 隐私保护</strong>
-            <span>你的联系方式不会在大厅公开展示，仅在接单、预约或提交购买意向后向交易对方开放。</span>
+            <strong>何时能看到联系方式？</strong>
+            <span>接单、预约或提交购买意向后，对方可查看你的微信或 QQ。</span>
           </li>
           <li>
-            <strong>资金功能暂未开放</strong>
-            <span>当前不创建充值、提现、身份保证金或线上担保业务；线下交接请双方自行核验并保留沟通凭证。</span>
+            <strong>线下当面交接</strong>
+            <span>约好校内交接地点，见面后双方直接结算。</span>
           </li>
           <li>
-            <strong>邮箱验证与社区信用</strong>
-            <span>每一次准时送达、如实描述与友善沟通，都有助于维护你的校园信用誉分。</span>
+            <strong>校园信用分</strong>
+            <span>在信用中心可以查看分数变化和反馈进度。</span>
           </li>
         </ul>
       </section>
     </div>
+    <footer class="home-filing">
+      <small>Copyright © 2026 蜗壳同路 CampusHub. All Rights Reserved.</small>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">浙ICP备2026099873号-2</a>
+    </footer>
   </section>
 </template>
 
@@ -230,7 +234,7 @@ const nextActions = computed(() => {
     ]
   }
   return [
-    { title: '了解资金与交接边界', description: '查看当前暂未开放的资金功能说明，以及校内当面交接建议。', to: '/policy' },
+    { title: '查看服务协议与社区公约', description: '了解平台使用规范、隐私说明与交易建议。', to: '/policy' },
     { title: '点亮更多创作者身份', description: '一键开通跑腿接单员、闲置卖家或申请技能店主理人。', to: '/roles' },
     { title: '查收最新站内通知', description: '及时跟进你的接单进度、买家意向与预约提醒。', to: '/notifications' },
   ]
@@ -244,3 +248,9 @@ function handleSpotlight(event: MouseEvent) {
   target.style.setProperty('--mouse-y', `${event.clientY - rect.top}px`)
 }
 </script>
+
+<style scoped>
+.home-filing { display: grid; gap: .25rem; width: 100%; padding-block: 1rem; text-align: center; color: #526075; }
+.home-filing small { font-size: .8125rem; }
+.home-filing a { color: #526075; font-size: .875rem; text-underline-offset: .2em; }
+</style>

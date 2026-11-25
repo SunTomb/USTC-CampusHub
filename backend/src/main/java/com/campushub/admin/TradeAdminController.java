@@ -2,7 +2,7 @@ package com.campushub.admin;
 
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
-import com.campushub.goods.Goods;
+import com.campushub.goods.GoodsService;
 import com.campushub.goods.GoodsOrderRepository;
 import com.campushub.goods.GoodsOrderSummary;
 import com.campushub.goods.GoodsRepository;
@@ -28,6 +28,7 @@ public class TradeAdminController {
     private final RewardTaskRepository rewardTaskRepository;
     private final RunnerTaskService runnerTaskService;
     private final TaskIssueRepository taskIssueRepository;
+    private final GoodsService goodsService;
     private final GoodsRepository goodsRepository;
     private final GoodsOrderRepository goodsOrderRepository;
 
@@ -36,12 +37,13 @@ public class TradeAdminController {
             RewardTaskRepository rewardTaskRepository,
             RunnerTaskService runnerTaskService,
             TaskIssueRepository taskIssueRepository,
-            GoodsRepository goodsRepository,
+            GoodsService goodsService, GoodsRepository goodsRepository,
             GoodsOrderRepository goodsOrderRepository) {
         this.currentUserService = currentUserService;
         this.rewardTaskRepository = rewardTaskRepository;
         this.runnerTaskService = runnerTaskService;
         this.taskIssueRepository = taskIssueRepository;
+        this.goodsService=goodsService;
         this.goodsRepository = goodsRepository;
         this.goodsOrderRepository = goodsOrderRepository;
     }
@@ -67,9 +69,7 @@ public class TradeAdminController {
     @PostMapping("/goods/{goodsId}/off-shelf")
     public ApiResponse<GoodsSummary> offShelfGoods(@PathVariable Long goodsId, @RequestBody(required = false) AdminActionRequest request) {
         currentUserService.requireTradeAdminId();
-        Goods goods = goodsRepository.findById(goodsId).orElseThrow();
-        goods.offShelf();
-        return ApiResponse.ok(GoodsSummary.from(goodsRepository.save(goods)));
+        return ApiResponse.ok(goodsService.offShelfByAdmin(goodsId));
     }
 
     @GetMapping("/goods-orders")

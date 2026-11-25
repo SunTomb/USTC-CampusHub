@@ -1,0 +1,29 @@
+#!/bin/bash
+# Disposable pre-cutover test. No production database access, mail, host ports or gateway.
+set -euo pipefail
+umask 077
+cd /opt/campushub/production
+backup=/opt/campushub-backups/prelaunch-snapshots/rehearsal-20261111T111315Z-ityaa3mq/database.sql.gz
+printf '%s  %s\n' c724c662561fb589ac1bc171605c358a4f573b2ad746cabc81c9d4b22e72dbe4 "$backup" | sha256sum -c --status
+w=$(mktemp -d /opt/campushub/upgrade-check.XXXXXXXX); ns=chcheck-$(basename "$w" | cut -d. -f2 | tr '[:upper:]' '[:lower:]'); db=$ns-db; app=$ns-app
+# Only clean resources created here. The image VOLUME gets an anonymous volume, removed by rm -v.
+owned=(); net=false
+cleanup() { for ((i=${#owned[@]}-1;i>=0;i--)); do docker rm -fv "${owned[i]}" >/dev/null || :; done; if $net; then docker network rm "$ns" >/dev/null || :; fi; rm -f "$w/db.env" "$w/app.env"; rmdir "$w" || :; }; trap cleanup EXIT
+python3 -I - "$w" "$db" <<'PY'
+import sys,secrets,pathlib
+w=pathlib.Path(sys.argv[1]);pw=secrets.token_hex(32)
+(w/'db.env').write_text('MYSQL_ROOT_PASSWORD='+secrets.token_hex(32)+'\nMYSQL_DATABASE=campushub\nMYSQL_USER=campushub\nMYSQL_PASSWORD='+pw+'\n')
+(w/'app.env').write_text('SPRING_PROFILES_ACTIVE=prod\nSPRING_DATASOURCE_URL=jdbc:mysql://'+sys.argv[2]+':3306/campushub?serverTimezone=Asia/Shanghai\nSPRING_DATASOURCE_USERNAME=campushub\nSPRING_DATASOURCE_PASSWORD='+pw+'\nCAMPUSHUB_JWT_SECRET='+secrets.token_hex(48)+'\nCAMPUSHUB_MAIL_ENABLED=false\nCAMPUSHUB_MAIL_PROVIDER=mock\nCAMPUSHUB_MAIL_FROM=unused@example.invalid\nCAMPUSHUB_MAIL_SMTP_HOST=localhost\nCAMPUSHUB_MAIL_SMTP_USERNAME=disabled\nCAMPUSHUB_MAIL_SMTP_PASSWORD=disabled\nCAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false\nCAMPUSHUB_PAYMENT_PROVIDER=payment-center\nCAMPUSHUB_PAYMENT_MOCK_ENABLED=false\nCAMPUSHUB_BETA_DEMO_RESET_ENABLED=false\nCAMPUSHUB_FILE_ROOT=/tmp/check-uploads\nJAVA_TOOL_OPTIONS=-Xmx240m -Xss512k\nTZ=Asia/Shanghai\n')
+PY
+docker network create --internal "$ns" >/dev/null; net=true
+docker run -d --name "$db" --network "$ns" --env-file "$w/db.env" --cpus=.65 --memory=448m --memory-swap=640m campushub-rehearsal/mysql:8.4-source-20261111 --innodb-buffer-pool-size=96M --performance-schema=OFF --event-scheduler=OFF >/dev/null; owned+=("$db")
+sql() { docker exec -i "$db" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql --protocol=TCP -h127.0.0.1 -uroot -NB campushub' ; }
+for ((i=0;i<75;i++)); do if echo 'SELECT 1' | sql >/dev/null 2>&1; then break; fi; sleep 2; done
+[[ $(echo 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()' | sql) == 0 ]]
+gzip -dc "$backup" | sql >/dev/null
+versions='SELECT MAX(CAST(version AS UNSIGNED)) FROM flyway_schema_history WHERE success=1'; [[ $(echo "$versions" | sql) == 16 ]]; echo 'Fresh private MySQL restore at V16'
+docker run -d --network "$ns" --name "$app" --cpus=.80 --memory=480m --memory-swap=704m --env-file "$w/app.env" campushub-hz/backend:20261124-v18 >/dev/null; owned+=("$app")
+started=false; for ((i=0;i<100;i++)); do if docker logs "$app" 2>&1 | grep -E 'Started .*Application in' >/dev/null; then started=true; break; fi; [[ $(docker inspect -f '{{.State.Running}}' "$app") == true ]] || break; sleep 2; done
+if ! $started; then docker logs "$app" 2>&1 | grep -E 'Migration checksum mismatch|Migration of schema|SQL State|Error Code|Schema-validation:|Validate failed|Migration version|Caused by: org.flywaydb' | tail -15; exit 1; fi
+[[ $(echo "$versions" | sql) == 18 ]]; [[ $(echo 'SELECT COUNT(*) FROM flyway_schema_history WHERE success=0' | sql) == 0 ]]; echo 'MySQL 8.4 Flyway V18 and Hibernate startup OK'
+docker run --rm --network "$ns" --entrypoint sh campushub-rehearsal/web:971adab -ec 'wget -qO- "http://$1:8080/api/tasks" | grep -q "\"success\":true"' sh "$app"; echo 'Private task list succeeded'

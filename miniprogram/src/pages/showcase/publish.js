@@ -131,6 +131,7 @@ ui.definePage({
           editable: true, dirty: !!(local && local.dirty), hint: local && !local.id ? '已恢复当前账号的本机未发送草稿。' : '' };
       }, result => {
         this._initialized = true;
+        this._savedStatus=result.project && result.project.status;
         this._coverFileId = result.project && result.project.coverFileId || null;
         this._savedPayload = result.local && !result.dirty ? result.local.savedPayload || '' : '';
         this._awaitingSubmit = !!(result.id && result.local && result.local.awaitingSubmit &&
@@ -221,7 +222,7 @@ ui.definePage({
           if (!id) {
             const uncertain = !!(error.network || !error.status || error.status >= 500 || error.status === 200);
             // Store the pending marker BEFORE create, so unloading or switching accounts cannot lead to an automatic duplicate.
-            this.setData({ creationUncertain: uncertain, savedMessage: uncertain ? '未能确认新草稿是否保存。请先到通行证核对“我的宣传”，不要重复创建。' : '' }); this.persist();
+            this.setData({ creationUncertain: uncertain, savedMessage: uncertain ? '未能确认新草稿是否保存。请先到个人 → 我的订单 → 宣传核对，不要重复创建。' : '' }); this.persist();
           }
           throw error;
         }
@@ -237,11 +238,16 @@ ui.definePage({
           editable: ['DRAFT', 'REJECTED'].includes(saved.status), canSubmit: true,
           savedMessage: '已保存到服务器（编号 ' + id + '），当前状态：' + display.status(saved.status) + '。' });
         this.persist();
-        if (saved.status === 'PENDING_REVIEW') {
+        this._savedStatus=saved.status;
+      }
+      if (!active() || !this._visible) return;
+      const photos=this.selectComponent?.('#project-media');
+      if(photos)await photos.saveTo(Number(id));
+      if(!active())return;
+      if (this._savedStatus === 'PENDING_REVIEW') {
           this._awaitingSubmit = false;
           this.setData({ canSubmit: false, savedMessage: '已提交站务核验（编号 ' + id + '），通过后公开展示。' });
           this.persist(); ui.toast('已提交站务核验'); return;
-        }
       }
       if (!active() || !this._visible) return;
       if (!submit) { if (!this._storageUnavailable) ui.toast('已保存'); return; }
@@ -264,7 +270,7 @@ ui.definePage({
   async resolveCreate() {
     if (!this.sameSession() || this.data.busy || !this.data.creationUncertain || this._confirming) return;
     this._confirming = true;
-    const confirmed = await ui.confirm('已核对我的宣传？', '若上次已经创建，请从通行证进入那份草稿。只有确认不存在该宣传时，才继续尝试创建。');
+    const confirmed = await ui.confirm('已核对我的宣传？', '若上次已经创建，请从个人 → 我的订单 → 宣传进入草稿。只有确认不存在该宣传时，才继续尝试创建。');
     this._confirming = false;
     if (confirmed && this.sameSession()) { this.setData({ creationUncertain: false, savedMessage: '' }); this.persist(); }
   },

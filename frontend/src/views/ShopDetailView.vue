@@ -22,12 +22,12 @@
       <el-card shadow="never" class="shop-hero premium-panel">
         <div>
           <el-tag :type="statusTone(shop.status)">{{ shop.status === 'APPROVED' ? '营业接单中' : formatStatus(shop.status) }}</el-tag>
-          <h3>{{ shop.description }}</h3>
+          <CatalogPhotos kind="SHOP" :object-id="shop.id"/><h3>{{ shop.description }}</h3>
           <p>主理人：<strong>{{ shop.ownerNickname }}</strong> · 校内信用分 <span class="mono-num">{{ shop.ownerCreditScore }}</span></p>
         </div>
         <div class="metric-column">
-          <span>同窗口碑评分</span>
-          <strong class="mono-num">{{ shop.rating }}</strong>
+          <span>店铺评分</span>
+          <strong class="mono-num">{{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1)+' 分' }}</strong>
         </div>
       </el-card>
 
@@ -48,16 +48,18 @@
             <el-tag effect="plain">{{ categoryLabel(item.category) }}</el-tag>
             <span class="mono-num">约 {{ item.durationMinutes }} 分钟</span>
           </div>
-          <h3>{{ item.title }}</h3>
+          <CatalogPhotos kind="SERVICE_ITEM" :object-id="item.id"/><h3><router-link :to="`/shops/${shop.id}/items/${item.id}`">{{ item.title }}</router-link></h3>
+          <ItemRatings :id="item.id" :score="item.rating" :count="item.reviewCount" />
           <p>{{ item.description }}</p>
           <div class="goods-price-row">
             <strong class="mono-num">{{ priceLabel(item) }}</strong>
             <span>/ {{ item.priceUnit }}</span>
           </div>
-          <el-button type="primary" @click="openBooking(item)">立即预约这项服务</el-button>
+          <el-button type="primary"  :disabled="shop.ownerId===auth.currentUser?.id" @click="openBooking(item)">立即预约这项服务</el-button>
         </el-card>
         <el-empty v-if="shop.serviceItems.length === 0" description="主理人正在整理服务价目表，请稍后再来" />
       </div>
+      <ContentReport v-if="shop.status==='APPROVED' && auth.currentUser?.id!==shop.ownerId" kind="SHOP" :id="shop.id" />
     </template>
 
     <el-dialog v-model="bookingOpen" append-to-body title="发起服务预约" width="460px">
@@ -82,6 +84,9 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
+import ItemRatings from '@/components/ItemRatings.vue'
+import ContentReport from '@/components/ContentReport.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -124,6 +129,8 @@ async function loadShop() {
   try {
     const id = Number(route.params.id)
     shop.value = await getShopDetail(id, auth.currentUser?.id)
+    const book=Number(route.query.book);const item=shop.value.serviceItems.find(s=>s.id===book && s.status==='PUBLISHED');
+    if(item && auth.currentUser && auth.currentUser.id!==shop.value.ownerId){openBooking(item);void router.replace({path:route.path})}
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '店铺详情加载失败')
   } finally {
@@ -149,7 +156,7 @@ async function submitBooking() {
   submitting.value = true
   try {
     await createServiceOrder(selectedItem.value.id, auth.currentUser.id, {
-      appointmentTime: appointmentDate.value.toISOString(),
+      appointmentTime: new Date(appointmentDate.value.getTime()-appointmentDate.value.getTimezoneOffset()*60000).toISOString().slice(0,19),
       amount: bookingForm.amount,
       note: bookingForm.note,
     })

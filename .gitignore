@@ -6,3 +6,9 @@ uploads/
 .env.*
 !.env.prod.example
 *.log
+
+# Local acceptance traces, private preview codes and nested worktrees
+/.claude/verification/
+/.claude/worktrees/
+/.superpowers/brainstorm/
+/output/

@@ -7,11 +7,17 @@
         <p>跨校区代取快递、急送实验材料或食堂顺路带饭——支持直接抢单或报名筛选。</p>
       </div>
       <div class="heading-actions">
+        <el-button v-if="auth.currentUser" @click="router.push('/orders?type=TASK')">我的订单</el-button>
+        <el-button v-if="auth.currentUser" :loading="mineLoading" @click="loadMine">我的履约台</el-button>
         <el-button @click="loadTasks" :loading="loading">刷新告示</el-button>
         <el-button type="primary" @click="openPublishDialog">张贴悬赏单</el-button>
       </div>
     </div>
 
+    <el-card v-if="mine !== null" shadow="never"><h3>我的履约台</h3>
+      <p v-if="!mine.length">暂无已发布或已承接的跑腿。</p>
+      <el-button v-for="item in mine" :key="item.id" @click="openWorkspace(item.id)">{{ item.role }} · {{ item.title }} #{{ item.id }}</el-button>
+    </el-card>
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="filters" class="compact-filter-form">
         <el-form-item label="取件校区">
@@ -83,9 +89,9 @@
             <small>委托人：{{ task.publisherNickname }}</small>
           </div>
           <div class="card-actions">
-            <el-button v-if="task.acceptanceMode === 'GRAB'" type="primary" @click="grab(task.id)">立即抢单</el-button>
-            <el-button v-else type="primary" @click="openApply(task)">报名接单</el-button>
-            <el-button plain @click="openWorkspace(task.id)">履约台</el-button>
+            <el-button v-if="task.publisherId !== auth.currentUser?.id && task.acceptanceMode === 'GRAB'" type="primary" @click="grab(task.id)">立即抢单</el-button>
+            <el-button v-else-if="task.publisherId !== auth.currentUser?.id" type="primary" @click="openApply(task)">报名接单</el-button>
+            <el-button v-if="task.publisherId === auth.currentUser?.id" plain @click="openWorkspace(task.id)">履约台</el-button>
           </div>
         </div>
       </article>
@@ -100,9 +106,11 @@
       />
     </div>
 
-    <el-drawer v-model="publisherOpen" append-to-body title="张贴跑腿悬赏单" size="min(520px, 100vw)" @close="handlePublishClose">
-      <el-form ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules" class="form-section-stack">
-        <FormSection title="任务信息、路线与时限" description="公开说明可留空；取件码和物品照片仅对任务参与者开放。">
+    <el-drawer v-model="publisherOpen" append-to-body :title="editId ? '修改跑腿委托' : '张贴跑腿悬赏单'" size="min(520px, 100vw)" destroy-on-close :before-close="beforeClosePublish">
+      <p v-if="editLoading" role="status">正在读取你的委托…</p>
+      <el-alert v-else-if="editError" :title="editError" type="warning" :closable="false"><el-button v-if="editId" text @click="openEditor(editId)">刷新编辑权限</el-button></el-alert>
+      <el-form v-else-if="!pendingTaskId && !uncertain" :disabled="publishing" ref="publishFormRef" label-position="top" :model="publishForm" :rules="publishRules" class="form-section-stack">
+        <FormSection title="任务信息、路线与时限" description="填写取件点、送达地点和截止时间。">
           <div class="two-column">
             <el-form-item label="任务标题" prop="title">
               <el-input v-model="publishForm.title" placeholder="例如：西区近邻宝代取中件快递送到中区宿舍" />
@@ -112,10 +120,10 @@
             </el-form-item>
           </div>
           <el-form-item label="公开说明（可选）" prop="description">
-            <el-input v-model="publishForm.description" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="可补充物品类型、包装情况或注意事项" />
+            <el-input v-model="publishForm.description" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="可补充物品类型、包装情况或注意事项" />
           </el-form-item>
           <el-form-item label="公开备注（可选）" prop="notes">
-            <el-input v-model="publishForm.notes" type="textarea" :rows="2" maxlength="1000" show-word-limit placeholder="不填写取件码等隐私信息" />
+            <el-input v-model="publishForm.notes" type="textarea" :rows="2" maxlength="1000" show-word-limit placeholder="如：易碎、需要保温袋、放宿舍楼下等" />
           </el-form-item>
           <el-form-item label="起点 / 终点校区" required>
             <div class="two-column">
@@ -136,13 +144,14 @@
           <el-form-item label="期望送达截止时间" prop="deadline">
             <el-date-picker v-model="deadlineDate" type="datetime" class="wide" popper-class="responsive-date-popper" />
           </el-form-item>
-          <el-form-item label="取件码（可选，仅参与者可见）" prop="pickupCode">
-            <el-input v-model="publishForm.pickupCode" maxlength="120" show-password placeholder="保留前导 0；请勿写入公开说明" />
+          <el-form-item label="取件码" prop="pickupCode">
+            <el-input v-model="publishForm.pickupCode" maxlength="120" show-password placeholder="选填，仅任务参与方可见" />
           </el-form-item>
-          <el-form-item label="物品照片（可选，最多 3 张）">
-            <input type="file" accept="image/jpeg,image/png" multiple @change="onPublishPhotos" />
+          <p v-if="editId" class="hint">原有照片会保留；可在履约台管理参与方照片。</p>
+          <el-form-item v-else label="物品照片（可选，最多 3 张）">
+            <input type="file" accept="image/jpeg,image/png" multiple :disabled="publishing" @change="onPublishPhotos" />
             <div class="photo-previews" v-if="publishPhotos.length">
-              <figure v-for="photo in publishPhotos" :key="photo.clientRequestId"><img :src="photo.url" alt="待上传物品照片" /><button type="button" @click="removePublishPhoto(photo.clientRequestId)">移除</button></figure>
+              <figure v-for="photo in publishPhotos" :key="photo.clientRequestId"><img :src="photo.url" alt="待上传物品照片" /><button type="button" :disabled="publishing" @click="removePublishPhoto(photo.clientRequestId)">移除</button></figure>
             </div>
             <small class="hint">照片仅供参与者查看；每张不超过 5 MiB。</small>
           </el-form-item>
@@ -164,10 +173,14 @@
               </el-select>
             </div>
           </el-form-item>
-          <p class="hint">温馨提示：跑腿酬金由委托人与接单同学在送达后直接结算，请勿在公开描述中填写取件码或隐私密码。</p>
+          <p class="hint">跑腿酬金由双方在送达后直接结算。</p>
         </FormSection>
-        <el-button type="primary" class="wide" :loading="publishing" @click="publish">确认张贴悬赏单</el-button>
+        <el-button type="primary" class="wide" :loading="publishing" @click="publish">{{ editId ? '保存修改' : '确认张贴悬赏单' }}</el-button>
       </el-form>
+      <div v-else-if="pendingTaskId"><p>悬赏单 #{{ pendingTaskId }} 已发布，不要重复张贴。</p>
+        <el-button v-if="publishPhotos.some(p => !p.uploaded)" :loading="publishing" @click="publish">重试未完成照片</el-button>
+        <el-button :disabled="publishing" @click="openWorkspace(pendingTaskId)">打开已有履约台</el-button></div>
+      <div v-else><p>未收到发布结果。请先在“我的订单”核对任务，再决定是否重新张贴。</p><el-button @click="acknowledgeUncertain">查看我的订单</el-button></div>
     </el-drawer>
 
     <el-dialog v-model="applyOpen" append-to-body title="报名承接跑腿" width="420px">
@@ -181,14 +194,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
   applyRunnerTask,
   grabRunnerTask,
-  listTasks,
-  publishRunnerTask,
+  listTasks, listMyPublishedTasks, listMyTaskApplications,
+  publishRunnerTask, updateRunnerTask, getTaskWorkspace,
   type CampusZone,
   type CreateRunnerTaskPayload,
   type RewardTaskSummary,
@@ -200,7 +213,7 @@ import { useAuthStore } from '@/stores/auth'
 import EmptyState from '@/components/common/EmptyState.vue'
 import FormSection from '@/components/common/FormSection.vue'
 
-const router = useRouter()
+const router = useRouter(), route = useRoute()
 const auth = useAuthStore()
 const tasks = ref<RewardTaskSummary[]>([])
 const loading = ref(false)
@@ -212,19 +225,52 @@ const applyMessage = ref('')
 const publishFormRef = ref<FormInstance>()
 const deadlineDate = ref<Date>(new Date(Date.now() + 2 * 60 * 60 * 1000))
 const publishPhotos = ref<DraftPhoto[]>([])
-function resetPublishForm() {
-  publishForm.description = ''
-  publishForm.notes = ''
-  publishForm.pickupCode = ''
-  publishForm.weightKg = ''
-  discardPhotos(publishPhotos.value)
+const editId=ref<number|null>(null), editLoading=ref(false), editError=ref('')
+const pendingTaskId = ref<number | null>(null), uncertain = ref(false)
+const mine = ref<{id:number; title:string; role:string}[] | null>(null), mineLoading = ref(false)
+let session = new AbortController()
+function clearHistory() { session.abort(); session = new AbortController(); mine.value = null; mineLoading.value = false }
+async function loadMine() {
+  if (!auth.currentUser || mineLoading.value || document.hidden) return
+  const signal = session.signal; mineLoading.value = true
+  try {
+    const [published, applications] = await Promise.all([listMyPublishedTasks({signal}), listMyTaskApplications(auth.currentUser.id,{signal})])
+    if (!signal.aborted) mine.value = [...published.map(t => ({id:t.id,title:t.title,role:'发布'})),
+      ...applications.filter(a => ['ACCEPTED','COMPLETED'].includes(a.status)).map(a => ({id:a.taskId,title:a.taskTitle,role:'承接'}))]
+  } catch(error) { if (!signal.aborted) ElMessage.error(taskError(error,'履约记录加载失败')) }
+  finally { if (!signal.aborted) mineLoading.value = false }
 }
-function handlePublishClose() {
-  publishForm.pickupCode = ''
+let controller = new AbortController(), creating = false
+function clearDraft() {
+  controller.abort(); controller = new AbortController(); publishing.value = creating = false
+  Object.assign(publishForm, initialForm()); deadlineDate.value = new Date(Date.now() + 2 * 60 * 60 * 1000)
   discardPhotos(publishPhotos.value)
+  editId.value=null; editLoading.value=false; editError.value=''
+}
+function beforeClosePublish(done: () => void) {
+  if (publishing.value) return
+  clearDraft(); pendingTaskId.value = null; done(); if(route.query.edit != null) void router.replace('/tasks')
+}
+function acknowledgeUncertain() { uncertain.value = false; clearDraft(); publisherOpen.value = false; void router.push('/orders?type=TASK') }
+function clearPrivate() {
+  clearHistory()
+  publisherOpen.value = false; applyOpen.value = false; applyMessage.value = ''; applyTaskId.value = null
+  clearDraft(); pendingTaskId.value = null; uncertain.value = false
+}
+function hideDraft() {
+  if (!document.hidden) {
+    if (route.query.edit != null && !publisherOpen.value && !pendingTaskId.value) void openEditor(Number(route.query.edit))
+    return
+  }
+  clearHistory()
+  // A canceled create response cannot tell us whether the server committed the task.
+  if (creating) uncertain.value = true
+  clearDraft(); publisherOpen.value = false; applyOpen.value = false; applyMessage.value = ''
 }
 function onPublishPhotos(event: Event) {
+  if (!publisherOpen.value || publishing.value || pendingTaskId.value || !auth.currentUser) return
   const files = Array.from((event.target as HTMLInputElement).files ?? [])
+  ;(event.target as HTMLInputElement).value = ''
   const problem = photoProblem(files, publishPhotos.value.length)
   if (problem) {
     ElMessage.error(problem)
@@ -254,7 +300,7 @@ const zones: Array<{ label: string; value: CampusZone }> = [
 ]
 
 const filters = reactive<{ originZone?: CampusZone; destinationZone?: CampusZone; acceptanceMode?: TaskAcceptanceMode }>({})
-const publishForm = reactive<CreateRunnerTaskPayload & { weightKg: string }>({
+const initialForm = (): CreateRunnerTaskPayload & { weightKg: string } => ({
   title: '',
   description: '',
   weightGrams: 1,
@@ -271,18 +317,20 @@ const publishForm = reactive<CreateRunnerTaskPayload & { weightKg: string }>({
   verificationMode: 'COMPLETION_CODE',
 })
 
+const publishForm = reactive(initialForm())
+
 const publishRules: FormRules<CreateRunnerTaskPayload & { weightKg: string }> = {
   title: [
     { required: true, message: '请填写任务标题', trigger: 'blur' },
-    { min: 2, max: 80, message: '标题长度应为 2-80 个字符', trigger: 'blur' },
+    { min: 1, max: 120, message: '标题长度应为 1-120 个字符', trigger: 'blur' },
   ],
-  description: [{ max: 1000, message: '公开说明不能超过 1000 个字符', trigger: 'blur' }],
+  description: [{ max: 2000, message: '公开说明不能超过 2000 个字符', trigger: 'blur' }],
   notes: [{ max: 1000, message: '公开备注不能超过 1000 个字符', trigger: 'blur' }],
   pickupCode: [{ max: 120, message: '取件码不能超过 120 个字符', trigger: 'blur' }],
   weightKg: [{ required: true, message: '请填写预估重量', trigger: 'blur' }],
   rewardAmount: [
     { required: true, message: '请填写任务报酬', trigger: 'change' },
-    { type: 'number', min: 0.01, message: '报酬需大于 0 元', trigger: 'change' },
+    { type: 'number', min: 0, message: '报酬不能为负数', trigger: 'change' },
   ],
   deadline: [{ required: true, message: '请选择截止时间', trigger: 'change' }],
 }
@@ -309,54 +357,78 @@ async function loadTasks() {
 
 function openPublishDialog() {
   if (!requireLogin()) return
+  if(route.query.edit != null){void openEditor(Number(route.query.edit));return}
   publisherOpen.value = true
 }
 
-async function publish() {
-  publishForm.deadline = deadlineDate.value?.toISOString() ?? ''
-  await publishFormRef.value?.validate()
-  const grams = weightGrams(publishForm.weightKg)
-  if (grams == null) {
-    ElMessage.error('重量需为 0.001–100 kg，精确到克')
-    return
-  }
-  publishForm.weightGrams = grams
-  publishForm.description = publishForm.description.trim()
-  publishForm.notes = publishForm.notes?.trim() || undefined
-  publishForm.pickupCode = publishForm.pickupCode || undefined
-  if (!publishForm.originDetail?.trim() || !publishForm.destinationDetail?.trim()) {
-    ElMessage.error('请填写起点和终点地点详情')
-    return
-  }
-  publishing.value = true
+async function openEditor(id:number) {
+  if(!auth.currentUser || !auth.token || document.hidden)return
+  clearDraft(); pendingTaskId.value=null; uncertain.value=false; publisherOpen.value=true; editId.value=id; editLoading.value=true
+  const signal=controller.signal, user=auth.currentUser.id
   try {
-    publishForm.originDetail = publishForm.originDetail.trim()
-    publishForm.destinationDetail = publishForm.destinationDetail.trim()
-    if (!auth.currentUser) return
-    const created = await publishRunnerTask(publishForm, auth.currentUser.id)
-    const uploadController = new AbortController()
-    try {
-      await uploadMissing(publishPhotos.value, uploadController.signal, photo => uploadTaskEvidence(created.id, 'REQUEST_IMAGE', photo.file, photo.clientRequestId))
-    } catch (error) {
-      ElMessage.error(taskError(error, '任务已发布，但部分照片上传失败；请在履约台重试'))
-      router.push(`/tasks/${created.id}/workspace`)
+    if(!Number.isSafeInteger(id)||id<1)throw Error('无效的委托编号')
+    const w=await getTaskWorkspace(id,{signal}); if(signal.aborted)return
+    if(!w.canEdit || w.task.publisherId!==user)throw Error('该委托已有报名、已被接单或已结束，不能修改')
+    const t=w.task
+    Object.assign(publishForm,{title:t.title,description:t.description||'',rewardAmount:t.rewardAmount,
+      originZone:t.originZone,destinationZone:t.destinationZone,originDetail:t.originDetail||'',destinationDetail:t.destinationDetail||'',
+      acceptanceMode:t.acceptanceMode,verificationMode:t.verificationMode,weightKg:t.weightGrams==null?'':String(t.weightGrams/1000),
+      notes:t.notes||'',pickupCode:w.privateDetails?.pickupCode||'',deadline:t.deadline})
+    deadlineDate.value=new Date(t.deadline)
+  }catch(e){if(!signal.aborted)editError.value=taskError(e,'无法读取这条委托')}finally{if(!signal.aborted)editLoading.value=false}
+}
+function localDeadline(date:Date){const pad=(n:number)=>String(n).padStart(2,'0');return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`}
+
+async function publish() {
+  if (!publisherOpen.value || !auth.currentUser || !auth.token || publishing.value || uncertain.value || editLoading.value || editError.value) return
+  publishing.value = true
+  const signal = controller.signal, userId = auth.currentUser.id
+  try {
+    let id = pendingTaskId.value
+    if (!id) {
+      if (!deadlineDate.value || !(deadlineDate.value.getTime() > Date.now())) return ElMessage.error('请选择未来的截止时间')
+      publishForm.deadline = localDeadline(deadlineDate.value)
+      if (publishFormRef.value && !await publishFormRef.value.validate().catch(() => false)) return
+      if (signal.aborted) return
+      const grams = weightGrams(publishForm.weightKg)
+      if (grams == null) return ElMessage.error('重量需为 0.001–100 kg，精确到克')
+      if (!publishForm.originDetail?.trim() || !publishForm.destinationDetail?.trim()) return ElMessage.error('请填写起点和终点地点详情')
+      const { weightKg: _, ...fields } = publishForm
+      const payload={...fields, weightGrams:grams, description:fields.description.trim(), notes:fields.notes?.trim() || undefined,
+        pickupCode:fields.pickupCode?.trim() || undefined, originDetail:fields.originDetail?.trim(), destinationDetail:fields.destinationDetail?.trim()}
+      if (editId.value) {
+        const id=editId.value
+        await updateRunnerTask(id,payload,{signal}); if(signal.aborted)return
+        publisherOpen.value=false; clearDraft(); ElMessage.success('委托已修改'); openWorkspace(id); return
+      }
+      creating = true
+      try {
+        const created = await publishRunnerTask(payload,userId,{signal})
+        if (signal.aborted) return
+        id = pendingTaskId.value = created.id; publishForm.pickupCode = ''
+      } catch (error) {
+        const e = error as {response?:{status?:number};status?:number}
+        const status = e.response?.status ?? e.status
+        if (!signal.aborted && (!status || status >= 500 || status === 408)) uncertain.value = true
+        throw error
+      } finally { if (!signal.aborted) creating = false }
     }
-    ElMessage.success('悬赏单已张贴')
-    publisherOpen.value = false
-    resetPublishForm()
-    await loadTasks()
-  } finally {
-    publishing.value = false
-  }
+    const task = id
+    await uploadMissing(publishPhotos.value, signal, photo => uploadTaskEvidence(task, 'REQUEST_IMAGE', photo.file, photo.clientRequestId, {signal}))
+    if (signal.aborted) return
+    ElMessage.success('悬赏单已张贴'); publisherOpen.value = false; pendingTaskId.value = null; clearDraft(); await loadTasks()
+  } catch (error) {
+    if (!signal.aborted) ElMessage.error(pendingTaskId.value ? `任务已发布，照片未全部上传：${taskError(error,'请重试')}` : taskError(error,editId.value?'修改未完成':'发布未完成'))
+  } finally { if (!signal.aborted) publishing.value = false }
 }
 
 async function grab(taskId: number) {
   if (!requireRunner()) return
   const user = auth.currentUser
   if (!user) return
-  await grabRunnerTask(taskId, user.id)
-  ElMessage.success('抢单成功，请前往履约台查看详情')
-  await loadTasks()
+  const signal = session.signal
+  await grabRunnerTask(taskId, user.id,{signal})
+  if (!signal.aborted) openWorkspace(taskId)
 }
 
 function openApply(task: RewardTaskSummary) {
@@ -415,7 +487,19 @@ function modeLabel(value: TaskAcceptanceMode) {
   return value === 'GRAB' ? '即时抢单' : '报名筛选'
 }
 
-onMounted(loadTasks)
-
-onUnmounted(() => discardPhotos(publishPhotos.value))
+watch([() => auth.token, () => auth.currentUser?.id], clearPrivate, {flush:'sync'})
+watch([()=>route.query.edit,()=>auth.currentUser?.id,()=>auth.token],([raw])=>{
+  if(raw!=null)void openEditor(Number(raw))
+  else if(editId.value!==null){clearDraft();publisherOpen.value=false}
+}, {immediate:true})
+watch(() => route.query.publish === '1' || route.query.open === 'publish', open => {
+  if (open && !publisherOpen.value && auth.currentUser) openPublishDialog()
+}, {immediate:true})
+onMounted(() => { document.addEventListener('visibilitychange', hideDraft); void loadTasks() })
+onBeforeUnmount(() => { document.removeEventListener('visibilitychange', hideDraft); clearPrivate() })
 </script>
+<style scoped>
+.photo-previews { display:flex; flex-wrap:wrap; gap:.75rem }
+.photo-previews figure { margin:0; display:grid; gap:.25rem }
+.photo-previews img { width:6rem; height:6rem; object-fit:cover; border-radius:.5rem }
+</style>

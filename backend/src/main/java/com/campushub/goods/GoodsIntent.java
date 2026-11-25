@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "goods_intents")
@@ -34,6 +35,9 @@ public class GoodsIntent {
     private User seller;
 
     private String message;
+
+    @Column(name = "settled_amount")
+    private BigDecimal settledAmount;
 
     @Column(name = "contact_snapshot", nullable = false)
     private String contactSnapshot;
@@ -74,7 +78,19 @@ public class GoodsIntent {
         this.serviceFee = serviceFee;
     }
 
+    public boolean contactAvailable() {
+        boolean active = "OPEN".equals(status) && "PUBLISHED".equals(goods.getStatus());
+        boolean winner = "SOLD".equals(goods.getStatus()) && "COMPLETED".equals(status) && goods.getSoldToUser() != null
+                && goods.getSoldToUser().getId().equals(buyer.getId());
+        return (active || winner) && (serviceFee == null || "PAID".equals(serviceFee.getStatus()));
+    }
+
     public void complete() {
+        this.settledAmount = goods.getPrice();
         this.status = "COMPLETED";
+    }
+
+    public void close() {
+        this.status = "CLOSED";
     }
 }

@@ -1,12 +1,13 @@
-const TABS = ['/pages/tasks/index', '/pages/shops/index', '/pages/showcase/index', '/pages/pass/index'];
-function validRoute(route) { return typeof route === 'string' && /^\/pages\/(tasks|shops|showcase|pass)\/(index|detail|publish|auth)(\?[A-Za-z0-9_%=&-]*)?$/.test(route); }
+const TABS = ['/pages/tasks/index', '/pages/goods/index', '/pages/shops/index', '/pages/showcase/index', '/pages/pass/index'];
+const ROUTES = new Set([...TABS, '/pages/tasks/detail', '/pages/tasks/publish', '/pages/goods/detail', '/pages/goods/publish', '/pages/shops/detail', '/pages/shops/item', '/pages/showcase/detail', '/pages/showcase/publish', '/pages/pass/auth', '/pages/orders/index']);
+function validRoute(route) { return typeof route==='string' && /^\/pages\/[a-z]+\/[a-z]+(?:\?[A-Za-z0-9_%=&-]*)?$/.test(route) && ROUTES.has(route.split('?')[0]); }
 function open(route) { if (!validRoute(route)) return; if (TABS.includes(route.split('?')[0])) wx.switchTab({ url: route.split('?')[0] }); else wx.navigateTo({ url: route }); }
 function authRoute(next) {
   const url = '/pages/pass/auth' + (validRoute(next) ? '?next=' + encodeURIComponent(next) : '');
   const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
   const current = pages[pages.length - 1];
   if (current && current.route === 'pages/pass/auth') return;
-  if (current && /^pages\/(tasks|showcase)\/publish$/.test(current.route)) wx.redirectTo({ url });
+  if (current && /^pages\/(tasks|showcase|goods)\/publish$/.test(current.route)) wx.redirectTo({ url });
   else wx.navigateTo({ url });
 }
 async function requireUser(next) { const auth = getApp().auth; await auth.restore(); if (!auth.authenticated) { authRoute(next); return null; } return auth.user; }
@@ -20,10 +21,11 @@ function definePage(def) {
       if (!this._alive) return;
       const userId = auth.user && auth.user.id;
       const identityChanged = !!this._observedUserId && this._observedUserId !== userId;
-      if (this._observedToken !== auth.token || identityChanged) { this._loadSequence++; this.setData({ loading: false }); }
+      const tokenChanged = this._observedToken !== auth.token;
+      if (tokenChanged || identityChanged) { this._loadSequence++; this.setData({ loading: false }); }
       this._observedToken = auth.token; this._observedUserId = userId;
       this.setData({ user: auth.user });
-      if ((!auth.user || identityChanged) && this.clearPrivate) this.clearPrivate();
+      if ((!auth.user || identityChanged || tokenChanged) && this.clearPrivate) this.clearPrivate();
     });
     if (load) load.call(this, query || {});
   };

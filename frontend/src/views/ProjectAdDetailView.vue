@@ -21,7 +21,7 @@
       <div class="detail-header">
         <div>
           <p class="eyebrow">{{ formatAdType(project.adType) }}</p>
-          <h2>{{ project.title }}</h2>
+          <CatalogPhotos kind="PROJECT_AD" :object-id="project.id"/><h2>{{ project.title }}</h2>
           <p>{{ project.summary }}</p>
           <div class="tag-list">
             <el-tag v-if="project.featured" type="warning">站务精选</el-tag>
@@ -53,7 +53,7 @@
         </el-alert>
         <div class="action-row" style="margin-top: 14px">
           <el-button type="primary" :disabled="!auth.currentUser" @click="favoriteProject">收藏关注</el-button>
-          <el-button :disabled="!auth.currentUser" @click="reportVisible = true">反馈问题</el-button>
+          <ContentReport v-if="project.status==='APPROVED' && auth.currentUser?.id!==project.publisherId" kind="PROJECT_AD" :id="project.id" />
         </div>
       </el-card>
     </div>
@@ -77,22 +77,17 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="reportVisible" append-to-body title="反馈项目问题" width="420px">
-      <el-input v-model="reportForm.reason" placeholder="反馈原因" />
-      <el-input v-model="reportForm.description" class="form-gap" type="textarea" :rows="3" placeholder="补充具体说明" />
-      <template #footer>
-        <el-button @click="reportVisible = false">取消</el-button>
-        <el-button type="danger" @click="submitReport">提交反馈</el-button>
-      </template>
-    </el-dialog>
+
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
+import ContentReport from '@/components/ContentReport.vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { commentTarget, favoriteTarget, getProjectAd, reportTarget, type ProjectAdDetailSummary } from '@/api/campushub'
+import { commentTarget, favoriteTarget, getProjectAd, type ProjectAdDetailSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 import { formatAdType } from '@/utils/display'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -103,8 +98,6 @@ const auth = useAuthStore()
 const project = ref<ProjectAdDetailSummary | null>(null)
 const loading = ref(false)
 const commentContent = ref('')
-const reportVisible = ref(false)
-const reportForm = reactive({ reason: '', description: '' })
 
 const contactHint = computed(() => {
   if (!auth.currentUser) return '登录校园账号后即可按发起人设置查看联络方式。'
@@ -136,18 +129,6 @@ async function submitComment() {
   commentContent.value = ''
   ElMessage.success('留言已发送')
   await loadProject()
-}
-
-async function submitReport() {
-  if (!auth.currentUser || !project.value) return
-  await reportTarget(auth.currentUser.id, {
-    targetType: 'PROJECT_AD',
-    targetId: project.value.id,
-    reason: reportForm.reason || '项目展示反馈',
-    description: reportForm.description || reportForm.reason,
-  })
-  reportVisible.value = false
-  ElMessage.success('反馈已提交')
 }
 
 function splitTags(tags: string | null) {

@@ -1,6 +1,18 @@
+const { createGoodsApi } = require('./goods-api');
 function createApi(client) {
   const id = value => { if (!/^\d+$/.test(String(value)) || Number(value) < 1) throw new Error('记录编号无效'); return String(value); };
   return {
+    ...createGoodsApi(client),
+    updateTask: (taskId,data)=>client.put('/tasks/'+id(taskId),data),
+    withdrawTask: taskId=>client.delete('/tasks/'+id(taskId)),
+    orderDesk: query=>client.get('/orders/mine',query),
+    deskDetail: (kind,rowId)=>client.get('/orders/'+kind+'/'+id(rowId)),
+    orderReview: (kind,rowId,data)=>client.post('/orders/'+kind+'/'+id(rowId)+'/review',data),
+    orderComplaint: (kind,rowId,data)=>client.post('/orders/'+kind+'/'+id(rowId)+'/complaint',data),
+    bookingRecord: rowId=>client.get('/service-orders/'+id(rowId)),
+    serviceItem: itemId=>client.get('/service-items/'+id(itemId)),
+    itemRatings: (itemId,page)=>client.get('/service-items/'+id(itemId)+'/ratings',{page}),
+    reportContent: data=>client.post('/moderation/reports',data),
     features: () => client.get('/platform/features'),
     me: () => client.get('/auth/me', null, { quiet401: true }),
     login: data => client.post('/auth/login', data),

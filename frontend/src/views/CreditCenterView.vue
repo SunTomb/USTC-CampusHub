@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">我的书院 · 守信记录</p>
         <h2>校园信用中心</h2>
-        <p>查看你的校内信用誉分、守信记录、权限状态与我提交的反馈进度。</p>
+        <p>查看你的校园信用分、守信记录、权限状态与我提交的反馈进度。</p>
       </div>
       <el-button :loading="loading" @click="load">刷新记录</el-button>
     </div>
@@ -13,19 +13,12 @@
       <div>
         <span>当前校园信用分</span>
         <strong class="mono-num">{{ center.creditScore }}</strong>
-        <p>{{ center.nickname }} · 信用记录用于社区治理，不构成学校认证或交易担保</p>
+        <p>{{ center.nickname }} · 校园信用记录</p>
       </div>
       <el-tag :type="center.activeRestrictions.length ? 'danger' : 'success'" size="large">
         {{ center.activeRestrictions.length ? '部分权限受限' : '信用状态良好' }}
       </el-tag>
     </el-card>
-
-    <el-alert
-      title="蜗壳同路通过校园邮箱、协议确认与信用评价共同维护校园互信。线下当面交接或微信/QQ 沟通时，请妥善保留沟通与交接凭证。"
-      type="info"
-      show-icon
-      :closable="false"
-    />
 
     <el-tabs v-if="center" class="tabs-surface premium-panel">
       <el-tab-pane label="当前权限限制">

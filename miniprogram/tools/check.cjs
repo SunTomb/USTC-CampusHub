@@ -8,9 +8,9 @@ const src = path.join(root, 'src');
 const walk = directory => fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? walk(path.join(directory, entry.name)) : [path.join(directory, entry.name)]);
 const all = walk(src);
 const app = JSON.parse(fs.readFileSync(path.join(src, 'app.json'), 'utf8'));
-assert.equal(app.pages.length, 10, 'Native package should have exactly 10 focused pages');
-assert.equal(app.tabBar.list.length, 4, 'Native navigation must have exactly four tabs');
-assert.deepEqual(app.tabBar.list.map(t => t.text), ['跑腿', '小店', '宣传', '通行证']);
+assert.equal(app.pages.length, 15, 'Native package should have exactly 15 focused pages');
+assert.equal(app.tabBar.list.length, 5, 'Native navigation must have exactly five tabs');
+assert.deepEqual(app.tabBar.list.map(t => t.text), ['跑腿', '二手', '小店', '宣传', '个人']);
 const components = Object.values(app.usingComponents).map(value => value.replace(/^\//, ''));
 for (const base of [...app.pages, ...components]) {
   for (const extension of ['js', 'wxml', 'wxss', 'json']) assert(fs.existsSync(path.join(src, base + '.' + extension)), 'Missing ' + base + '.' + extension);
@@ -56,7 +56,7 @@ for (const tab of app.tabBar.list) {
 }
 const bytes = all.reduce((sum, file) => sum + fs.statSync(file).size, 0);
 assert(bytes < 2 * 1024 * 1024, 'Native main package exceeds 2MiB');
-console.log('PASS static package: ' + app.pages.length + ' pages, 4 tabs, ' + all.length + ' files, ' + bytes + ' bytes; no external runtime dependencies.');
+console.log('PASS static package: ' + app.pages.length + ' pages, 5 tabs, ' + all.length + ' files, ' + bytes + ' bytes; no external runtime dependencies.');
 
 const compilerRoot = process.env.WECHAT_COMPILER_DIR || 'C:/Program Files (x86)/Tencent/微信web开发者工具/resources/app.asar.unpacked/node_modules/wcc-exec';
 const wcc = path.join(compilerRoot, 'wcc.exe');

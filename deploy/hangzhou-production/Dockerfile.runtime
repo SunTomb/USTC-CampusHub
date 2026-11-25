@@ -1,0 +1,2 @@
+FROM campushub-rehearsal/backend:971adab
+COPY app.jar /app/campushub-backend.jar

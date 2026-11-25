@@ -9,5 +9,7 @@ public record TaskWorkspaceSummary(
         TaskParticipantContact runnerContact,
         List<TaskEventSummary> events,
         TaskPrivateDetails privateDetails,
-        List<TaskDeliveryPhotoSummary> evidence) {
+        List<TaskDeliveryPhotoSummary> evidence,
+        boolean canEdit,
+        boolean canWithdraw) {
 }

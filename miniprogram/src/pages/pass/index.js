@@ -1,8 +1,8 @@
+const rules = require('../../lib/rules');
 const ui = require('../../lib/ui');
 const d = require('../../lib/display');
-const rules = require('../../lib/rules');
 ui.definePage({
-  data: { aboutOpen: false, section: 'pass', profile: null, creditLabel: '—', roleCards: [], role: 'RUNNER', unlock: false, notices: [], unread: 0, applications: [], tasks: [], publishedTasks: [], orders: [], providerMode: false, posts: [], profileOpen: false, passwordOpen: false, profileForm: { username: '', nickname: '', wechatContact: '', qqContact: '' }, passwordForm: { currentPassword: '', newPassword: '' }, protocolOpen: false, protocol: null, orderOpen: false, selectedOrder: null, actionReason: '' },
+  data: { orderCounts:{}, shortcuts:[{key:'PENDING',label:'待处理'},{key:'ACTIVE',label:'进行中'},{key:'REVIEW',label:'待评价'},{key:'ENDED',label:'已结束'}], aboutOpen: false, section: 'pass', profile: null, creditLabel: '—', roleCards: [], role: 'RUNNER', unlock: false, notices: [], unread: 0, applications: [], profileOpen: false, passwordOpen: false, profileForm: { username: '', nickname: '', wechatContact: '', qqContact: '' }, passwordForm: { currentPassword: '', newPassword: '' }, protocolOpen: false, protocol: null,  },
   onShow() { this.reload(); },
   openAbout() { this.setData({ aboutOpen: true }); },
   closeAbout() { this.setData({ aboutOpen: false }); },
@@ -11,42 +11,18 @@ ui.definePage({
     if (!app.auth.authenticated) { this.clearPrivate(); this.setData({ loading: false, error: app.auth.error }); return; }
     const user = app.auth.user;
     await ui.load(this, async () => {
-      const [profile, applications, notices] = await Promise.all([app.api.profile(user.id), app.api.applications(user.id), app.api.notifications(user.id)]);
-      return { profile, applications, notices };
-    }, ({ profile, applications, notices }) => {
+      const [profile, applications, notices, desk] = await Promise.all([app.api.profile(user.id), app.api.applications(user.id), app.api.notifications(user.id),app.api.orderDesk({size:1}).catch(()=>null)]);
+      return { profile, applications, notices, desk };
+    }, ({ profile, applications, notices, desk }) => {
       const unread = notices.filter(n => n.readAt == null).length;
-      if (unread) wx.setTabBarBadge({ index: 3, text: unread > 99 ? '99+' : String(unread), fail() {} }); else wx.removeTabBarBadge({ index: 3, fail() {} });
-      return { profile, applications, notices: notices.map(n => ({ ...n, dateLabel: d.dateText(n.createdAt), unread: n.readAt == null })), unread, creditLabel: profile.creditScore == null ? '—' : String(profile.creditScore), roleCards: d.roles.map(role => { const application = applications.find(a => a.roleType === role.value); const active = d.hasRole(user, role.value); return { ...role, active, pending: !active && application && application.reviewStatus === 'PENDING_REVIEW', statusLabel: active ? '已开通' : application && application.reviewStatus === 'PENDING_REVIEW' ? '核验中' : role.review ? '协议后核验' : '同意协议开通' }; }) };
+      if (unread) wx.setTabBarBadge({ index: 4, text: unread > 99 ? '99+' : String(unread), fail() {} }); else wx.removeTabBarBadge({ index: 4, fail() {} });
+      return { orderCounts:desk?.counts||{}, profile, applications, notices: notices.map(n => ({ ...n, dateLabel: d.dateText(n.createdAt), unread: n.readAt == null })), unread, creditLabel: profile.creditScore == null ? '—' : String(profile.creditScore), roleCards: d.roles.map(role => { const application = applications.find(a => a.roleType === role.value); const active = d.hasRole(user, role.value); return { ...role, active, pending: !active && application && application.reviewStatus === 'PENDING_REVIEW', statusLabel: active ? '已开通' : application && application.reviewStatus === 'PENDING_REVIEW' ? '核验中' : role.review ? '协议后核验' : '同意协议开通' }; }) };
     });
-    if (this.data.section !== 'pass' && this.data.section !== 'notices') await this.loadSection();
   },
-  async switchSection(event) { const section = event.currentTarget.dataset.section; this.setData({ section, error: '' }); if (!await ui.requireUser('/pages/pass/index')) return; if (section === 'pass' || section === 'notices') this.reload(); else this.loadSection(); },
-  async loadSection() {
-    const app = getApp(), user = await ui.requireUser('/pages/pass/index');
-    if (!user) return;
-    const section = this.data.section;
-    await ui.load(this, async () => {
-      if (section === 'tasks') {
-        const [own, posted] = await Promise.all([app.api.myTaskApplications(user.id), app.api.myPublishedTasks()]);
-        return { tasks: own.map(a => ({ ...a, statusLabel: d.status(a.status), dateLabel: d.dateText(a.createdAt) })), publishedTasks: posted.map(d.taskView) };
-      }
-      if (section === 'orders') {
-        const provider = this.data.providerMode && d.hasRole(user, 'SHOP_MERCHANT');
-        const orders = await (provider ? app.api.providerOrders(user.id) : app.api.customerOrders(user.id));
-        return { orders: orders.map(order => ({ ...order, amountLabel: d.money(order.amount), statusLabel: d.status(order.status), dateLabel: d.dateText(order.appointmentTime), actions: rules.orderActions(order, user.id), contacts: d.contacts(order.contactSnapshot, order.customerId === user.id) })) };
-      }
-      if (section === 'posts') return { posts: (await app.api.myProjects(user.id)).map(d.projectView) };
-      return {};
-    }, result => result);
-  },
-  async toggleOrders(event) {
-    const providerMode = event.currentTarget.dataset.provider === 'yes';
-    if (providerMode && !d.hasRole(getApp().auth.user, 'SHOP_MERCHANT')) {
-      this.setData({ providerMode: false });
-      await this.openRole({ currentTarget: { dataset: { role: 'SHOP_MERCHANT' } } });
-      return;
-    }
-    this.setData({ providerMode }); await this.loadSection();
+  async switchSection(event) {
+    const section=event.currentTarget.dataset.section;
+    if (!['pass','notices'].includes(section) || !await ui.requireUser('/pages/pass/index')) return;
+    this.setData({section,error:''}); await this.reload();
   },
   async openRole(event) {
     if (!await ui.requireUser('/pages/pass/index')) return;
@@ -91,21 +67,10 @@ ui.definePage({
     const notice = this.data.notices.find(n => n.id === Number(event.currentTarget.dataset.id));
     const user = getApp().auth.user;
     if (!notice || !user || notice.recipientId !== user.id) return;
-    if (notice.unread) await ui.run(this, () => getApp().api.readNotification(notice.id), () => { this.setData({ notices: this.data.notices.map(n => n.id === notice.id ? { ...n, unread: false } : n), unread: Math.max(0, this.data.unread - 1) }); if (!this.data.unread) wx.removeTabBarBadge({ index: 3, fail() {} }); });
-  },
-  showOrder(event) { const order = this.data.orders.find(o => o.id === Number(event.currentTarget.dataset.id)); if (order) this.setData({ selectedOrder: order, orderOpen: true, actionReason: '', error: '' }); },
-  closeOrder() { if (!this.data.busy) this.setData({ orderOpen: false, selectedOrder: null }); },
-  copyContact(event) { const order = this.data.selectedOrder, user = getApp().auth.user; if (!order || !user || order.customerId !== user.id) return; const contact = order.contacts[Number(event.currentTarget.dataset.index)]; if (contact) ui.copy(contact.value); },
-  async orderAction(event) {
-    const order = this.data.selectedOrder, user = await ui.requireUser('/pages/pass/index');
-    if (!order || !user) return;
-    const action = rules.orderActions(order, user.id).find(a => a.value === event.currentTarget.dataset.action);
-    if (!action) return;
-    if (!await ui.confirm(action.label, '确认更新本次预约状态？具体费用由双方直接结算。')) return;
-    await ui.run(this, () => getApp().api.orderAction(order.id, action.value, ['cancel', 'reject'].includes(action.value) ? rules.required(this.data.actionReason, '取消或婉拒原因', 500) : undefined), async () => { this.setData({ orderOpen: false, selectedOrder: null }); ui.celebrate('预约已更新'); await this.loadSection(); });
+    if (notice.unread) await ui.run(this, () => getApp().api.readNotification(notice.id), () => { this.setData({ notices: this.data.notices.map(n => n.id === notice.id ? { ...n, unread: false } : n), unread: Math.max(0, this.data.unread - 1) }); if (!this.data.unread) wx.removeTabBarBadge({ index: 4, fail() {} }); });
   },
   clearPrivate() {
-    this.setData({ profile: null, roleCards: [], notices: [], unread: 0, applications: [], tasks: [], publishedTasks: [], orders: [], posts: [], profileOpen: false, passwordOpen: false, orderOpen: false, selectedOrder: null, unlock: false, profileForm: { username: '', nickname: '', wechatContact: '', qqContact: '' }, passwordForm: { currentPassword: '', newPassword: '' } });
-    wx.removeTabBarBadge({ index: 3, fail() {} });
+    this.setData({ orderCounts:{}, profile: null, roleCards: [], notices: [], unread: 0, applications: [], profileOpen: false, passwordOpen: false, unlock: false, profileForm: { username: '', nickname: '', wechatContact: '', qqContact: '' }, passwordForm: { currentPassword: '', newPassword: '' } });
+    wx.removeTabBarBadge({ index: 4, fail() {} });
   },
 });

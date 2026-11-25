@@ -1,0 +1,17 @@
+<launch-intro id="launch-intro" />
+<view class="page with-dock"><view class="title">{{editId ? '编辑闲置' : '上架闲置'}}</view><view class="caption">如实描述成色和使用痕迹，约在校内公共地点交接。</view>
+  <state-view loading="{{loading}}" error="{{!ready && error ? error : ''}}" bind:retry="reload" />
+  <button wx:if="{{!ready && !unlock && !loading && !error}}" class="plain" bindtap="reload">登录并阅读发布协议</button>
+  <block wx:if="{{ready}}"><block wx:if="{{!savedId && !uncertain}}">
+    <view class="field"><text class="field-label">物品名称</text><input class="input" disabled="{{busy}}" value="{{form.title}}" data-field="form.title" bindinput="field" maxlength="120" placeholder="例如：数据库教材"/></view>
+    <view class="form-row"><view class="field"><text class="field-label">分类</text><picker disabled="{{busy}}" range="{{categories}}" range-key="name" value="{{categoryIndex}}" data-field="categoryIndex" bindchange="field"><view class="picker">{{categories[categoryIndex].name || '请选择分类'}}</view></picker></view><view class="field"><text class="field-label">成色</text><input class="input" disabled="{{busy}}" value="{{form.conditionLevel}}" data-field="form.conditionLevel" bindinput="field" maxlength="40" placeholder="如：九成新"/></view></view>
+    <view class="field"><text class="field-label">物品说明</text><textarea disabled="{{busy}}" value="{{form.description}}" data-field="form.description" bindinput="field" maxlength="4000" placeholder="使用情况、配件与瑕疵"/></view>
+    <view class="form-row"><view class="field"><text class="field-label">转让价（元）</text><input class="input" type="digit" disabled="{{busy}}" value="{{form.price}}" data-field="form.price" bindinput="field" placeholder="0.00"/></view><view class="field"><text class="field-label">原价（选填）</text><input class="input" type="digit" disabled="{{busy}}" value="{{form.originalPrice}}" data-field="form.originalPrice" bindinput="field"/></view></view>
+    <view class="form-row"><view class="field"><text class="field-label">所在校区</text><picker disabled="{{busy}}" range="{{zones}}" range-key="label" value="{{zoneIndex}}" data-field="zoneIndex" bindchange="field"><view class="picker">{{zones[zoneIndex].label}}</view></picker></view><view class="field"><text class="field-label">交接方式</text><picker disabled="{{busy}}" range="{{methods}}" range-key="label" value="{{methodIndex}}" data-field="methodIndex" bindchange="field"><view class="picker">{{methods[methodIndex].label}}</view></picker></view></view>
+    <view class="field"><text class="field-label">交接点</text><input class="input" disabled="{{busy}}" value="{{form.tradeLocation}}" data-field="form.tradeLocation" bindinput="field" maxlength="120" placeholder="如：图书馆门口"/></view>
+  </block>
+  <catalog-photos id="goods-photos" kind="GOODS" object-id="{{savedId || editId || 0}}" editable="{{true}}" />
+  <view wx:if="{{savedId}}" class="notice">闲置 #{{savedId}} 已保存，可重试未上传的图片，不会重复上架。</view><view wx:if="{{uncertain}}" class="notice">未收到上架结果。请先在「个人 → 我的订单」核对，避免重复发布。</view><view wx:if="{{error}}" class="error">{{error}}</view></block>
+</view>
+<view wx:if="{{ready}}" class="dock"><button wx:if="{{uncertain}}" class="plain" data-url="/pages/orders/index?type=GOODS" bindtap="go">我的订单</button><block wx:else><button wx:if="{{savedId}}" class="plain" data-url="/pages/goods/detail?id={{savedId}}" bindtap="go">查看闲置</button><button class="primary" bindtap="save" loading="{{busy}}" disabled="{{busy}}">{{savedId ? '重试图片' : editId ? '保存修改' : '确认上架'}}</button></block></view>
+<role-unlock visible="{{unlock}}" role="GOODS_PUBLISHER" bind:close="closeUnlock" bind:opened="opened" />

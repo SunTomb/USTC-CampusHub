@@ -48,6 +48,7 @@
             </div>
             <el-form-item label="主理人介绍与小店公告"><el-input v-model="shopForm.description" type="textarea" :rows="3" /></el-form-item>
           </FormSection>
+          <CatalogPhotos ref="cover" kind="SHOP" :object-id="shop?.id || 0" editable />
           <el-button type="primary" :loading="savingShop" @click="saveShop">{{ shop ? '保存店铺资料' : '立即创建小店' }}</el-button>
         </el-form>
       </el-card>
@@ -80,6 +81,7 @@
             </div>
             <el-form-item label="服务包含内容与说明"><el-input v-model="itemForm.description" type="textarea" :rows="3" /></el-form-item>
           </FormSection>
+          <CatalogPhotos ref="photos" kind="SERVICE_ITEM" :object-id="editingItemId || 0" editable />
           <el-button type="primary" :loading="savingItem" @click="saveItem">保存服务项目</el-button>
         </el-form>
 
@@ -129,6 +131,7 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -178,6 +181,7 @@ const zones: Array<{ label: string; value: CampusZone }> = [
   { label: '其他', value: 'OTHER' },
 ]
 
+const cover=ref<InstanceType<typeof CatalogPhotos>>(), photos=ref<InstanceType<typeof CatalogPhotos>>()
 const shopForm = reactive<CreateShopPayload>({
   name: '',
   description: '',
@@ -225,6 +229,7 @@ async function saveShop() {
     shop.value = shop.value
       ? await updateShop(shop.value.id, auth.currentUser.id, shopForm)
       : await createShop(auth.currentUser.id, shopForm)
+    await cover.value?.saveTo(shop.value.id)
     ElMessage.success('店铺资料已保存')
     await loadWorkspace()
   } catch (error) {
@@ -241,8 +246,9 @@ async function saveItem() {
     if (editingItemId.value) {
       await updateServiceItem(editingItemId.value, auth.currentUser.id, itemForm)
     } else {
-      await createServiceItem(shop.value.id, auth.currentUser.id, itemForm)
+      editingItemId.value=(await createServiceItem(shop.value.id, auth.currentUser.id, itemForm)).id
     }
+    await photos.value?.saveTo(editingItemId.value!)
     ElMessage.success('服务项目已保存')
     resetItemForm()
     await loadWorkspace()
@@ -266,6 +272,7 @@ function editItem(item: ServiceItemSummary) {
 }
 
 function resetItemForm() {
+  photos.value?.reset()
   editingItemId.value = null
   Object.assign(itemForm, { category: 'OTHER', title: '', description: '', price: 0, priceUnit: '次', durationMinutes: 60 })
 }

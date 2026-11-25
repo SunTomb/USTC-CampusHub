@@ -12,7 +12,7 @@
       <p class="eyebrow">当前已点亮身份</p>
       <h3>蜗壳同路 CampusHub 身份</h3>
       <IdentityBadge :identities="identityProfile.identities" />
-      <p>历史身份继续有效，不会因为资金功能暂未开放而被自动撤销。</p>
+      <p>已开通的身份可直接前往对应板块使用。</p>
     </div>
 
     <div class="role-grid">
@@ -53,16 +53,9 @@
           <strong>协议版本 {{ agreement.version }}</strong>
           <span>生效时间：{{ agreement.effectiveAt?.slice(0, 10) || '当前版本' }}</span>
         </div>
-        <el-alert title="请注意受托物品、交付责任、个人信息核查与争议处理条款。协议同意不是任意公开联系方式的授权。" type="warning" show-icon :closable="false" />
         <div class="protocol-text" tabindex="0">{{ agreement.content }}</div>
-        <el-alert
-          title="蜗壳同路 CampusHub 是独立学生项目，不代表任何学校或机构官方立场。"
-          type="info"
-          show-icon
-          :closable="false"
-        />
         <el-checkbox v-model="agreementAccepted" class="protocol-checkbox">
-          我已阅读并同意《{{ agreement.title }}》（{{ agreement.version }}），并已注意重要条款。
+          我已阅读并同意《{{ agreement.title }}》（{{ agreement.version }}）
         </el-checkbox>
       </div>
       <template #footer>
@@ -170,7 +163,7 @@ function hasIdentity(roleType: string) {
 }
 
 function agreementStatusText(status?: string | null) {
-  if (!status || status === 'LEGACY') return '历史记录（未补写协议同意）'
+  if (!status || status === 'LEGACY') return '历史申请记录'
   if (status === 'CONSENTED') return '已同意所列版本'
   return formatStatus(status)
 }

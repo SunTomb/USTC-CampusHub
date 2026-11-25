@@ -20,6 +20,8 @@ public interface TaskApplicationRepository extends JpaRepository<TaskApplication
 
     Optional<TaskApplication> findByTaskIdAndApplicantId(Long taskId, Long applicantId);
 
+    boolean existsByTaskId(Long taskId);
+
     @EntityGraph(attributePaths = {"task", "task.publisher", "applicant"})
     List<TaskApplication> findByApplicantIdOrderByCreatedAtDesc(Long applicantId);
 }

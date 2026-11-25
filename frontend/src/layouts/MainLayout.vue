@@ -9,7 +9,7 @@
         </div>
         <div class="brand-text" @click="router.push('/')" style="cursor: pointer">
           <strong>蜗壳同路 CampusHub</strong>
-          <span>独立学生项目 · 校园生活共同体</span>
+          <span>校园生活共同体</span>
         </div>
         <el-button class="sidebar-toggle" size="small" text title="收起侧栏" @click="sidebarCollapsed = true">
           <el-icon><Fold /></el-icon>

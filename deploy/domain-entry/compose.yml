@@ -1,0 +1,30 @@
+name: campushub-domain-entry
+x-common: &common
+  image: campushub-rehearsal/web:971adab
+  pull_policy: never
+  entrypoint: [nginx]
+  restart: unless-stopped
+  read_only: true
+  mem_limit: 48m
+  cpus: 0.20
+  security_opt: [no-new-privileges:true]
+  tmpfs: ['/tmp:rw,noexec,nosuid,size=4m', '/var/cache/nginx:rw,noexec,nosuid,size=8m']
+services:
+  http:
+    <<: *common
+    command: [-c, /srv/entry/nginx/http.conf, -g, 'daemon off;']
+    ports: ['80:8080']
+    volumes:
+      - ./nginx:/srv/entry/nginx:ro
+      - ./site:/srv/entry/site:ro
+      - ./acme:/srv/entry/acme:ro
+  https:
+    <<: *common
+    profiles: [tls]
+    command: [-c, /srv/entry/nginx/https.conf, -g, 'daemon off;']
+    ports: ['443:8443']
+    volumes:
+      - ./nginx:/srv/entry/nginx:ro
+      - ./site:/srv/entry/site:ro
+      - /etc/letsencrypt/live/ustc.suntomb.cn:/etc/letsencrypt/live/ustc.suntomb.cn:ro
+      - /etc/letsencrypt/archive/ustc.suntomb.cn:/etc/letsencrypt/archive/ustc.suntomb.cn:ro

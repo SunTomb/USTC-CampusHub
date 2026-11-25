@@ -17,9 +17,12 @@ public record ServiceItemSummary(
         Long coverFileId,
         Integer durationMinutes,
         String status,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt, BigDecimal rating, long reviewCount) {
 
     public static ServiceItemSummary from(ServiceItem item) {
+        return from(item,null);
+    }
+    public static ServiceItemSummary from(ServiceItem item, com.campushub.orders.CatalogRatings.Grade grade) {
         return new ServiceItemSummary(
                 item.getId(),
                 item.getShop().getId(),
@@ -34,6 +37,6 @@ public record ServiceItemSummary(
                 item.getCoverFileId(),
                 item.getDurationMinutes(),
                 item.getStatus(),
-                item.getCreatedAt());
+                item.getCreatedAt(),grade==null?null:grade.score(),grade==null?0:grade.count());
     }
 }

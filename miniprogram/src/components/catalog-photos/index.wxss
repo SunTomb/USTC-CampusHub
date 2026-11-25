@@ -1,0 +1,1 @@
+.thumbs{display:flex;flex-wrap:wrap;gap:8rpx}.thumbs image{width:170rpx;height:132rpx;border-radius:8rpx}.thumbs.compact image{width:180rpx;height:116rpx}.gallery{margin:8rpx 0}

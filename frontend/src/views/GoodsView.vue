@@ -7,6 +7,7 @@
         <p>课本教材、数码外设、代步单车与宿舍好物——先看卖家校内信用，提交意向后再解锁微信号或 QQ。</p>
       </div>
       <div class="heading-actions">
+        <el-button v-if="auth.currentUser" @click="router.push('/orders?type=GOODS')">我的订单</el-button>
         <el-button @click="loadGoods" :loading="loading">刷新市集</el-button>
         <el-button type="primary" @click="goPublish">{{ auth.canAccessIdentity('goodsPublisher') ? '上架闲置好物' : '阅读发布协议' }}</el-button>
       </div>
@@ -29,12 +30,8 @@
         @click="router.push(`/goods/${item.id}`)"
       >
         <div class="goods-cover" :class="`cover-tone-${item.id % 4}`">
-          <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" />
-          <div v-else class="goods-cover-art">
-            <span class="cover-art-zone">{{ formatCampusZone(item.campusZone) }}</span>
-            <strong class="cover-art-glyph">{{ item.title.slice(0, 1) || '物' }}</strong>
-            <small class="cover-art-sub">{{ item.conditionLevel || '校友闲置' }}</small>
-          </div>
+          <div class="goods-cover-art"><strong class="cover-art-glyph">{{ item.title.slice(0, 1) || '物' }}</strong><small class="cover-art-sub">{{ item.conditionLevel }}</small></div>
+          <div class="catalog-cover"><CatalogPhotos kind="GOODS" :object-id="item.id" compact /></div>
           <span class="goods-zone-floating">{{ formatCampusZone(item.campusZone) }}</span>
         </div>
 
@@ -72,6 +69,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listGoods, type GoodsSummary } from '@/api/campushub'
 import { formatCampusZone } from '@/utils/display'
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const auth = useAuthStore()
@@ -96,3 +94,5 @@ async function loadGoods() {
 
 onMounted(loadGoods)
 </script>
+
+<style scoped>.goods-cover{position:relative}.catalog-cover{position:absolute;inset:0;pointer-events:none}.catalog-cover :deep(img){width:100%;height:100%;max-height:none}.catalog-cover :deep(figure),.catalog-cover :deep(.gallery),.catalog-cover :deep(.catalog-pictures){width:100%;height:100%}</style>

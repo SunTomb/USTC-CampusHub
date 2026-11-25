@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
+    boolean existsByIdAndEnabledTrue(Long id);
+
     @EntityGraph(attributePaths = "parent")
     List<Category> findByEnabledTrueOrderBySortOrderAscIdAsc();
 }

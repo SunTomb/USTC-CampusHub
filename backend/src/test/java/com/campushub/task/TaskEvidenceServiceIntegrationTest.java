@@ -114,6 +114,7 @@ class TaskEvidenceServiceIntegrationTest {
     }
 
 
+    @DynamicPropertySource
     static void fileProperties(DynamicPropertyRegistry registry) {
         registry.add("campushub.file-storage.root", () -> FILE_ROOT.toString());
     }
@@ -324,6 +325,19 @@ class TaskEvidenceServiceIntegrationTest {
         advanceToDelivering(id);
         assertThat(taskEvidenceService.download(id, image.id(), 2L).bytes()).containsExactly(png());
         assertThatThrownBy(() -> taskEvidenceService.upload(id, 2L, file, "runner", null)).hasMessageContaining("不能上传凭证");
+    }
+
+    @Test
+    void publisherWithdrawalRetainsEvidenceAndPrivateCodeWithoutOpeningThemToOthers() throws Exception {
+        var task=runnerTaskService.publish(1L,request("COMPLETION_CODE"));
+        var photo=taskEvidenceService.uploadRequest(task.id(),1L,new MockMultipartFile("file","parcel.png","image/png",png()),"pre-withdraw");
+        runnerTaskService.withdraw(task.id(),1L);
+        assertThat(runnerTaskService.workspace(task.id(),1L).privateDetails().pickupCode()).isEqualTo("PICK-42");
+        assertThat(taskEvidenceService.download(task.id(),photo.id(),1L).bytes()).containsExactly(png());
+        assertThatThrownBy(()->taskEvidenceService.remove(task.id(),photo.id(),1L)).hasMessageContaining("不可更改");
+        mvc.perform(get(photo.downloadPath()).header("Authorization",bearer(3))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/tasks/{id}",task.id())).andExpect(status().isNotFound());
+        assertThat(taskEventRepository.findByTaskIdOrderByCreatedAtAsc(task.id())).extracting(TaskEvent::getEventType).contains("PUBLISHED","CANCELLED");
     }
 
     private void advanceToDelivering(Long taskId) {

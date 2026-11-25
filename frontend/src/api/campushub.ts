@@ -102,6 +102,8 @@ export interface ReviewSummary {
 }
 
 export interface GoodsDetailSummary extends GoodsSummary {
+  categoryId: number; categoryName: string|null; soldAt:string|null; myIntentStatus:string|null
+  canEdit:boolean; canDelete:boolean; canOffShelf:boolean; canMarkSold:boolean
   deliveryMethod: string
   contactVisibility: string
   publishedAt: string | null
@@ -136,7 +138,7 @@ export interface GoodsIntentSummary {
   sellerId: number
   sellerNickname: string
   message: string | null
-  contactSnapshot: string
+  contactSnapshot: string | null
   status: string
   serviceFeeId: number | null
   createdAt: string
@@ -248,6 +250,7 @@ export interface TaskActionPayload {
 }
 
 export interface TaskWorkspaceSummary {
+  canEdit?:boolean; canWithdraw?:boolean
   task: RewardTaskSummary
   publisherContact: TaskParticipantContact
   runnerContact: TaskParticipantContact | null
@@ -435,7 +438,7 @@ export interface ShopSummary {
   openingHours: string | null
   coverFileId: number | null
   status: string
-  rating: number
+  rating: number | null
 }
 
 export interface ServiceItemSummary {
@@ -450,6 +453,8 @@ export interface ServiceItemSummary {
   maxPrice: number | null
   priceUnit: string
   coverFileId: number | null
+  rating: number | null
+  reviewCount: number
   durationMinutes: number
   status: string
   createdAt: string
@@ -940,6 +945,14 @@ export function listTasks() {
   return getApi<RewardTaskSummary[]>('/tasks')
 }
 
+export function listMyPublishedTasks(options?: ApiRequestOptions) {
+  return getApi<RewardTaskSummary[]>('/tasks/mine', options)
+}
+
+export function listMyTaskApplications(userId: number, options?: ApiRequestOptions) {
+  return getApi<TaskApplicationSummary[]>(`/task-applications/applicant/${userId}`, options)
+}
+
 export function publishRunnerTask(payload: CreateRunnerTaskPayload, _publisherId?: number, options?: ApiRequestOptions) {
   return postApi<RewardTaskSummary>('/tasks', payload, options)
 }
@@ -958,6 +971,10 @@ export function acceptRunnerTaskApplication(taskId: number, applicationId: numbe
 
 export function advanceRunnerTask(taskId: number, _userId: number, nextStatus: string, payload: TaskActionPayload, options?: ApiRequestOptions) {
   return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}`, payload, options)
+}
+
+export function issueRunnerCompletionCode(taskId: number, options?: ApiRequestOptions) {
+  return postApi<{ completionCode: string; expiresAt: string }>(`/tasks/${taskId}/completion-code`, {}, options)
 }
 
 export function completeRunnerTaskWithCode(taskId: number, _userId: number, payload: TaskActionPayload, options?: ApiRequestOptions) {
@@ -1433,3 +1450,11 @@ export function listReviewRecords() {
 export function listReportRecords() {
   return getApi<ReportRecordSummary[]>('/moderation/reports')
 }
+
+export const listGoodsIntents=(id:number)=>getApi<GoodsIntentSummary[]>(`/goods/${id}/intents`)
+export const updateGoods=(id:number,payload:CreateGoodsPayload)=>putApi<GoodsDetailSummary>(`/goods/${id}`,payload)
+export const deleteGoods=async (id:number)=>unwrapApiResponse((await apiClient.delete<ApiResponse<void>>(`/goods/${id}`)).data)
+export const offShelfGoods=(id:number)=>postApi<GoodsDetailSummary>(`/goods/${id}/off-shelf`,{})
+export const listGoodsCategories=()=>getApi<{id:number;name:string;enabled:boolean;parentId:number|null}[]>('/categories')
+export const updateRunnerTask=(id:number,payload:CreateRunnerTaskPayload,options?:ApiRequestOptions)=>putApi<RewardTaskSummary>(`/tasks/${id}`,payload,options)
+export const withdrawRunnerTask=async(id:number,options?:ApiRequestOptions)=>unwrapApiResponse((await apiClient.delete<ApiResponse<RewardTaskSummary>>(`/tasks/${id}`,options)).data)

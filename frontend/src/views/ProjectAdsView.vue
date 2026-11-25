@@ -42,7 +42,7 @@
         shadow="hover"
         @click="goDetail(project.id)"
       >
-        <div class="showcase-cover" :class="`showcase-tone-${project.id % 3}`">
+        <CatalogPhotos kind="PROJECT_AD" :object-id="project.id" compact/><div class="showcase-cover" :class="`showcase-tone-${project.id % 3}`">
           <span>{{ typeLabel(project.adType) }}</span>
           <el-tag v-if="project.featured" type="warning" effect="dark">站务精选</el-tag>
         </div>
@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

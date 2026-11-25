@@ -12,7 +12,6 @@ button::after{border:0}
 .intro-rule{height:3rpx;width:52rpx;margin:34rpx 0 24rpx;background:var(--intro-gold);flex-shrink:0}
 .intro-tagline{font-size:27rpx;letter-spacing:2rpx;line-height:1.6;color:var(--intro-secondary)}
 .intro-footer{display:flex;flex-direction:column;align-items:center;text-align:center;flex-shrink:0;gap:8rpx}
-.intro-independent{font-size:22rpx;color:var(--intro-secondary);line-height:1.6}
 button.intro-filing{background:transparent;color:var(--intro-ink);font-size:25rpx;line-height:1.6;font-weight:500;width:auto;max-width:100%;min-width:0;min-height:80rpx;margin:0;padding:20rpx 8rpx;white-space:normal;word-break:break-all;border-radius:12rpx}
 .intro-hint,.intro-query-help{font-size:22rpx;line-height:1.6;color:var(--intro-secondary)}
 .intro-query-label{font-size:23rpx;color:var(--intro-secondary)}

@@ -166,25 +166,30 @@ public class ServiceOrder {
     }
 
     public void accept() {
+        if (!java.util.Set.of("REQUESTED").contains(status)) throw new com.campushub.common.BusinessException("预约状态已变化，请刷新");
         this.status = "ACCEPTED";
     }
 
     public void reject(String cancelReason) {
+        if (!java.util.Set.of("REQUESTED").contains(status)) throw new com.campushub.common.BusinessException("预约状态已变化，请刷新");
         this.status = "REJECTED";
         this.cancelReason = cancelReason;
         this.canceledAt = LocalDateTime.now();
     }
 
     public void start() {
+        if (!java.util.Set.of("ACCEPTED").contains(status)) throw new com.campushub.common.BusinessException("预约状态已变化，请刷新");
         this.status = "IN_SERVICE";
     }
 
     public void complete() {
+        if (!java.util.Set.of("IN_SERVICE").contains(status)) throw new com.campushub.common.BusinessException("预约状态已变化，请刷新");
         this.status = "COMPLETED";
         this.completedAt = LocalDateTime.now();
     }
 
     public void cancel(String cancelReason) {
+        if (!java.util.Set.of("REQUESTED", "ACCEPTED").contains(status)) throw new com.campushub.common.BusinessException("预约状态已变化，请刷新");
         this.status = "CANCELED";
         this.cancelReason = cancelReason;
         this.canceledAt = LocalDateTime.now();

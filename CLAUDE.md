@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Current production: order desk, 2026-11-25
+
+Hangzhou is live on the order-desk release; Flyway V20, V21 and V22 succeeded (do not edit V1-V22). Finance, Alipay collection, mock payments and beta reset remain disabled. At upload time native 0.1.2 was a development version, with 0.1.1 online. On 2026-11-26 the operator reported that WeChat returned the review for lack of genuine operating content in 小店. An example listing is not evidence of review approval. Deployment hashes, pre-upgrade backup, rollback and remaining real-device/privacy checks: `docs/operations/2026-11-25-order-desk-release.md`. The historical sections below describe earlier snapshots.
+
+## Current production: Hangzhou, 2026-11-24
+
+Hangzhou `https://ustc.suntomb.cn` is now authoritative. The old Hong Kong CampusHub containers, database volume, and checkouts have been removed. Only the shared gateway keeps the legacy redirect and HTTP 410 for old APIs; API-Transfer-Station remains active. The cutover backup is on Hangzhou, not a live fallback. Final V16 restore matched 42 tables / 229 rows and 0 uploaded files; production now runs V19. Do not modify V1–V19. Both financial features and independent Alipay collection remain disabled. The new AppID is configured for an independent **desktop** Alipay provider, not the old payment center. No real payment keys were accessed or deployed; production signing requires operator-managed custody and a separate decision. Details including deployment, verification and recovery: `docs/operations/2026-11-24-hangzhou-live-alipay.md`. This section supersedes historical migration and payment directions below.
+
 ## Current production boundary, 2026-11-11
 
 This section supersedes historical payment and identity handoffs below.

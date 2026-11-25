@@ -30,13 +30,14 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, exception) -> writeAuthFailure(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "当前账号无权限执行此操作")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/register/send-code", "/api/auth/register", "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/payment/callbacks/payment-center").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payment/callbacks/payment-center", "/api/payment/alipay/notify").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/platform/features",
                                 "/api/platform/protocols/{roleType}",
                                 "/api/goods",
                                 "/api/goods/{id:[0-9]+}",
                                 "/api/categories/**",
+                                "/api/catalog-media/**",
                                 "/api/tasks",
                                 "/api/tasks/{id:[0-9]+}",
                                 "/api/shops/**",

@@ -1,0 +1,13 @@
+[Unit]
+Description=Private SMTP socket for CampusHub Hangzhou production
+Requires=docker.service
+After=docker.service
+
+[Socket]
+ListenStream=10.240.3.1:1588
+FreeBind=true
+NoDelay=true
+Service=campushub-prod-smtp.service
+
+[Install]
+WantedBy=sockets.target

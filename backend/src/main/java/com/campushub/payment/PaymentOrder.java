@@ -43,7 +43,7 @@ public class PaymentOrder {
     @Column(name = "provider_order_no")
     private String providerOrderNo;
 
-    @Column(name = "pay_url")
+    @Column(name = "pay_url", length = 4096)
     private String payUrl;
 
     @Column(nullable = false)

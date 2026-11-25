@@ -72,7 +72,7 @@ ui.definePage({
       return {
         project: safeProject,
         contacts: display.contacts(safeProject.contactInfo, contactVisible),
-        contactHint: contactVisible ? '请礼貌联系，不要转发同学的个人信息。' : (hints[project.contactVisibility] || '联系方式暂不可见。'),
+        contactHint: contactVisible ? '点击下方按钮即可复制联系方式' : (hints[project.contactVisibility] || '联系方式暂不可见。'),
         comments: (Array.isArray(comments.items) ? comments.items : []).filter(item => item.status === 'VISIBLE').map(item => ({
           id: item.id, userNickname: item.userNickname || '同学', content: String(item.content || ''),
           dateLabel: display.dateText(item.createdAt), reply: !!item.parentId,
@@ -138,10 +138,10 @@ ui.definePage({
   copyContact(event) {
     if (!this.data.project || this._detailToken !== getApp().auth.token || this.data.project.contactVisible !== true) return;
     const contact = this.data.contacts[Number(event.currentTarget.dataset.index)];
-    if (contact) copyText(contact.value, '已复制，请礼貌联系同学');
+    if (contact) copyText(contact.value, '联系方式已复制');
   },
   copyLink() {
-    if (this.data.project) copyText(httpsUrl(this.data.project.linkUrl), '链接已复制，请在外部自行核验');
+    if (this.data.project) copyText(httpsUrl(this.data.project.linkUrl), '链接已复制');
   },
   edit() { if (this.data.canEdit) ui.open('/pages/showcase/publish?id=' + this._id); },
 });

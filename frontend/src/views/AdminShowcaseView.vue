@@ -13,7 +13,8 @@
       <el-tab-pane label="项目展示审核">
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="projectAds" stripe class="data-table">
-            <el-table-column prop="title" label="项目标题" min-width="180" />
+            <el-table-column label="宣传图片" min-width="160"><template #default="{row}"><CatalogPhotos kind="PROJECT_AD" :object-id="row.id"/></template></el-table-column>
+          <el-table-column prop="title" label="项目标题" min-width="180" />
             <el-table-column prop="publisherNickname" label="发起人" width="120" />
             <el-table-column prop="status" label="状态" width="130">
               <template #default="{ row }">
@@ -104,6 +105,7 @@
 </template>
 
 <script setup lang="ts">
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {

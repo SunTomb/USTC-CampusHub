@@ -3,7 +3,7 @@
     <div v-if="!auth.token || !auth.sessionError" class="auth-copy">
       <p class="eyebrow">蜗壳同路 CampusHub · 校园邮箱准入</p>
       <h2>凭校园邮箱，走进同窗互助的校园集市</h2>
-      <p>支持使用蜗壳同路用户名或校园邮箱直接登录；首次加入需验证 edu.cn 校园邮箱（如 @mail.ustc.edu.cn / @ustc.edu.cn），并填写至少一种常用联络方式。</p>
+      <p>支持使用蜗壳同路用户名或校园邮箱直接登录；首次注册需验证 edu.cn 校园邮箱，并填写微信或 QQ。</p>
       <ul class="auth-feature-list">
         <li>
           <strong>一处连通全校生活</strong>
@@ -14,8 +14,8 @@
           <span>你的微信号或 QQ 不会公开在列表页，仅在接单、预约或提交购买意向后向交易对方开放。</span>
         </li>
         <li>
-          <strong>校园邮箱验证</strong>
-          <span>邮箱验证用于确认邮箱可用性，不代表学校认证或交易担保。</span>
+          <strong>校园邮箱准入</strong>
+          <span>支持 @mail.ustc.edu.cn 与 @ustc.edu.cn 邮箱收码注册。</span>
         </li>
       </ul>
     </div>

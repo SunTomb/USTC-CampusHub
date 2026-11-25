@@ -24,7 +24,7 @@ public record GoodsIntentSummary(
                 intent.getSeller().getId(),
                 intent.getSeller().getNickname(),
                 intent.getMessage(),
-                intent.getContactSnapshot(),
+                intent.contactAvailable() ? intent.getContactSnapshot() : null,
                 intent.getStatus(),
                 intent.getServiceFee() == null ? null : intent.getServiceFee().getId(),
                 intent.getCreatedAt());

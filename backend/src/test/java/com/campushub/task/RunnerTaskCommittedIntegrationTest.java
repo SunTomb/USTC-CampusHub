@@ -30,6 +30,7 @@ class RunnerTaskCommittedIntegrationTest {
     @Autowired UserRoleService roles;
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper json;
     @Autowired JwtTokenService tokens;
     @Autowired RewardTaskRepository taskRepository;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -87,6 +88,74 @@ class RunnerTaskCommittedIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from reward_tasks where id=? and completion_code_hash is null", Integer.class, id)).isEqualTo(1);
     }
 
+    private CreateRunnerTaskRequest edited(String mode) {
+        return new CreateRunnerTaskRequest("新委托", "公开说明", new BigDecimal("7.25"), BigDecimal.ZERO, mode,
+                "EAST", "NORTH", "图书馆", "北门", LocalDateTime.now().plusDays(1).withNano(0),
+                "PHOTO_AND_CONFIRMATION", 1234, "公开备注", "private-replacement");
+    }
+
+    @Test
+    void publisherCanEditEveryFieldButOnlyWorkspaceReceivesPickupCode() throws Exception {
+        Long id = task("GRAB"); var request = edited("APPLICATION");
+        var initial = service.workspace(id, 1L); assertThat(initial.canEdit()).isTrue(); assertThat(initial.canWithdraw()).isTrue();
+        String body=json.writeValueAsString(request);
+        mvc.perform(put("/api/tasks/{id}?publisherId=1",id).header("Authorization",auth(2L))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mvc.perform(put("/api/tasks/{id}",id).header("Authorization",auth(1L)).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true)).andExpect(jsonPath("$.data.pickupCode").doesNotExist());
+        var updated = service.workspace(id,1L).task();
+        assertThat(updated.title()).isEqualTo(request.title()); assertThat(updated.description()).isEqualTo(request.description());
+        assertThat(updated.rewardAmount()).isEqualByComparingTo(request.rewardAmount()); assertThat(updated.deadline()).isEqualTo(request.deadline());
+        assertThat(updated.acceptanceMode()).isEqualTo("APPLICATION"); assertThat(updated.verificationMode()).isEqualTo("PHOTO_AND_CONFIRMATION");
+        assertThat(updated.weightGrams()).isEqualTo(1234); assertThat(updated.notes()).isEqualTo("公开备注");
+        assertThat(updated.originZone()).isEqualTo("EAST"); assertThat(updated.destinationZone()).isEqualTo("NORTH");
+        assertThat(updated.originDetail()).isEqualTo("图书馆"); assertThat(updated.destinationDetail()).isEqualTo("北门");
+        assertThat(service.workspace(id, 1L).privateDetails().pickupCode()).isEqualTo("private-replacement");
+        for (String path : new String[]{"/api/tasks/" + id, "/api/tasks"}) {
+            mvc.perform(get(path)).andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private-replacement"))));
+        }
+        mvc.perform(delete("/api/tasks/{id}?publisherId=1", id).header("Authorization", auth(4L))).andExpect(status().isForbidden());
+        assertThatThrownBy(() -> service.update(id, 2L, request)).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        assertThat(service.workspace(id,1L).events()).anyMatch(e -> "TASK_UPDATED".equals(e.eventType()));
+    }
+
+    @Test
+    void pendingApplicantsPreventEditingButWithdrawalClosesAndNotifiesEachOnce() throws Exception {
+        Long id = task("APPLICATION"); service.apply(id,2L,new ApplyTaskRequest("申请一")); service.apply(id,3L,new ApplyTaskRequest("申请二"));
+        assertThat(service.workspace(id,1L).canEdit()).isFalse();
+        assertThatThrownBy(() -> service.update(id,1L,edited("GRAB"))).isInstanceOf(BusinessException.class);
+        assertThat(service.withdraw(id,1L).workflowStatus()).isEqualTo("CANCELLED");
+        assertThat(service.workspace(id,1L).canWithdraw()).isFalse();
+        assertThatThrownBy(() -> service.withdraw(id,1L)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> service.apply(id,2L,new ApplyTaskRequest("再报名"))).isInstanceOf(BusinessException.class);
+        assertThat(service.listByPublisher(1L)).anyMatch(t -> t.id().equals(id) && "CANCELLED".equals(t.status()));
+        assertThat(jdbc.queryForObject("select count(*) from task_applications where task_id=? and status='CLOSED'",Integer.class,id)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from station_notifications where target_type='TASK' and target_id=? and title='跑腿任务已撤下' and recipient_id in (2,3)",Integer.class,id)).isEqualTo(2);
+        mvc.perform(get("/api/tasks/{id}",id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/tasks/{id}/workspace",id).header("Authorization",auth(2L))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void editsAndWithdrawalsWaitForAnInFlightAssignment() throws Exception {
+        Long id = task("GRAB"); var pool=Executors.newFixedThreadPool(2); var started=new CountDownLatch(2);
+        var futures=new java.util.ArrayList<java.util.concurrent.Future<Boolean>>();
+        try {
+            new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                taskRepository.findByIdForUpdate(id).orElseThrow();
+                for(boolean edit:new boolean[]{true,false}) futures.add(pool.submit(()->{
+                    started.countDown(); try {if(edit)service.update(id,1L,edited("GRAB"));else service.withdraw(id,1L);return true;}
+                    catch (BusinessException rejected) { return false; }
+                }));
+                try { assertThat(started.await(5,TimeUnit.SECONDS)).isTrue(); } catch(InterruptedException e){throw new AssertionError(e);}
+                for(var f:futures) assertThatThrownBy(()->f.get(150,TimeUnit.MILLISECONDS)).isInstanceOf(java.util.concurrent.TimeoutException.class);
+                service.grab(id,2L);
+            });
+            for(var f:futures) assertThat(f.get(10,TimeUnit.SECONDS)).isFalse();
+            var assigned=service.workspace(id,1L); assertThat(assigned.task().status()).isEqualTo("ACCEPTED");
+            assertThat(assigned.canEdit()).isFalse(); assertThat(assigned.canWithdraw()).isFalse();
+        } finally { pool.shutdownNow(); }
+    }
+
     @Test
     void simultaneousGrabsHaveExactlyOneWinner() throws Exception {
         Long id = task("GRAB");
@@ -116,6 +185,26 @@ class RunnerTaskCommittedIntegrationTest {
         assertThatThrownBy(() -> service.grab(grab, 2L)).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.apply(application, 3L, new ApplyTaskRequest("申请"))).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.acceptApplication(application, applicantId, 1L)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void expiredUnassignedOwnerCanRenewOrWithdrawButExpiredTasksAreNotClaimable() throws Exception {
+        Long renewable = task("GRAB"), pending = task("APPLICATION"), removable = task("GRAB");
+        Long application = service.apply(pending,2L,new ApplyTaskRequest("尚未处理")).id();
+        jdbc.update("update reward_tasks set deadline=? where id in (?,?,?)",LocalDateTime.now().minusHours(1),renewable,pending,removable);
+        mvc.perform(get("/api/tasks")).andExpect(jsonPath("$.data[?(@.id == "+renewable+")]").isEmpty());
+        assertThatThrownBy(()->service.grab(renewable,2L)).isInstanceOf(BusinessException.class);
+        var owner=service.workspace(renewable,1L);assertThat(owner.canEdit()).isTrue();assertThat(owner.canWithdraw()).isTrue();
+        service.update(renewable,1L,edited("GRAB"));
+        assertThat(service.grab(renewable,2L).workflowStatus()).isEqualTo("ACCEPTED");
+        assertThat(service.workspace(pending,1L).canEdit()).isFalse();assertThat(service.workspace(pending,1L).canWithdraw()).isTrue();
+        assertThatThrownBy(()->service.apply(pending,3L,new ApplyTaskRequest("过期报名"))).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(()->service.acceptApplication(pending,application,1L)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(()->service.update(pending,1L,edited("APPLICATION"))).isInstanceOf(BusinessException.class);
+        service.withdraw(pending,1L); service.withdraw(removable,1L);
+        assertThat(service.workspace(removable,1L).task().status()).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select status from task_applications where id=?",String.class,application)).isEqualTo("CLOSED");
+        assertThat(jdbc.queryForObject("select count(*) from station_notifications where target_type='TASK' and target_id=? and recipient_id=2 and title='跑腿任务已撤下'",Integer.class,pending)).isOne();
     }
 
     @Test

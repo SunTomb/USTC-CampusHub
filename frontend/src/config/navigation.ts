@@ -85,8 +85,8 @@ export const navItems: NavItem[] = [
   },
   {
     path: '/policy',
-    label: '协议与风险',
-    description: '社区公约、联系方式保护与交易安全须知',
+    label: '服务协议',
+    description: '用户服务协议与社区公约',
     group: 'public',
     audiences: ['guest', 'student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin', 'tradeAdmin', 'showcaseAdmin', 'masterAdmin'],
     icon: 'DocumentChecked',
@@ -101,6 +101,7 @@ export const navItems: NavItem[] = [
     icon: 'UserFilled',
     mobileTab: 'guest',
   },
+  { path:'/orders', label:'我的订单', description:'跑腿、二手、预约和宣传记录', group:'account', audiences:['student','runner','goodsPublisher','shopMerchant','admin','tradeAdmin','showcaseAdmin','masterAdmin'], icon:'Tickets', requiresAuth:true },
   {
     path: '/profile',
     label: '个人信息',

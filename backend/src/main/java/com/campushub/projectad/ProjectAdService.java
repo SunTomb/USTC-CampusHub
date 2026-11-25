@@ -54,7 +54,7 @@ public class ProjectAdService {
                 .filter(ad -> matches(ad.getCampusZone(), campusZone))
                 .filter(ad -> featured == null || featured.equals(ad.getFeatured()))
                 .filter(ad -> matchesKeyword(ad, keyword))
-                .map(ProjectAdSummary::from)
+                .map(ProjectAdSummary::publicCard)
                 .toList();
     }
 
@@ -63,7 +63,7 @@ public class ProjectAdService {
         LocalDateTime now = LocalDateTime.now();
         return projectAdRepository.findByFeaturedTrueAndStatusOrderByFeaturedPriorityDescCreatedAtDesc("APPROVED").stream()
                 .filter(ad -> ad.isPubliclyVisible(now))
-                .map(ProjectAdSummary::from)
+                .map(ProjectAdSummary::publicCard)
                 .toList();
     }
 
@@ -199,7 +199,7 @@ public class ProjectAdService {
     }
 
     private ProjectAd getProjectAd(Long id) {
-        return projectAdRepository.findById(id)
+        return projectAdRepository.lockById(id)
                 .orElseThrow(() -> new BusinessException("项目广告不存在"));
     }
 

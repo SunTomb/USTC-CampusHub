@@ -43,7 +43,7 @@ test('clears only matching 401 session, and rejects absolute/administrative/fina
   h.pending.shift().success({ statusCode: 401, data: {} });
   await assert.rejects(p, e => e.status === 401);
   assert.equal(h.token(), 'session-b');
-  for (const path of ['https://evil.example/', '//evil.example/', '/admin/ops', '/wallet/users/1', '/payment/orders/1', '/goods']) {
+  for (const path of ['https://evil.example/', '//evil.example/', '/admin/ops', '/wallet/users/1', '/payment/orders/1', '/goods/1/orders/escrow', '/goods/orders/2/escrow/freeze']) {
     await assert.rejects(h.client.get(path), /不支持|请求路径/);
   }
   assert.equal(h.pending.length, 0);

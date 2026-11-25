@@ -4,11 +4,10 @@
       <div>
         <p class="eyebrow">蜗壳同路 CampusHub · 服务协议与隐私说明</p>
         <h2>协议与交易规则</h2>
-        <p>独立学生项目，不代表任何学校或机构。当前不提供充值、提现、收款或线上担保。</p>
+        <p>查看蜗壳同路 CampusHub 的用户服务协议及各身份使用规范。</p>
       </div>
       <el-button :loading="loading" @click="load">重新加载</el-button>
     </div>
-    <el-alert title="请重点阅读交易责任、必要信息核查与个人信息权利条款。阅读页面本身不会替你提交协议同意。" type="info" show-icon :closable="false" />
     <el-tabs v-model="selected" class="premium-panel" @tab-change="load">
       <el-tab-pane v-for="item in agreements" :key="item.key" :label="item.label" :name="item.key" />
     </el-tabs>
@@ -18,7 +17,7 @@
         <p class="hint">版本 {{ protocol.version }} · 生效时间 {{ protocol.effectiveAt.slice(0, 10) }}</p>
         <div class="protocol-text">{{ protocol.content }}</div>
       </template>
-      <EmptyState v-else-if="!loading" title="协议暂时无法加载" description="请稍后重试；协议未加载时不能提交身份申请。" />
+      <EmptyState v-else-if="!loading" title="协议暂时无法加载" description="请稍后重试" />
     </el-card>
     <el-button @click="router.push('/roles')">前往身份解锁</el-button>
   </section>

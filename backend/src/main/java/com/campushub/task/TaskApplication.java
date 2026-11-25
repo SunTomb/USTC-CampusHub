@@ -93,6 +93,10 @@ public class TaskApplication {
         this.status = "REJECTED";
     }
 
+    public void markClosed() {
+        this.status = "CLOSED";
+    }
+
     public void markCompleted() {
         this.status = "COMPLETED";
         this.completedAt = LocalDateTime.now();

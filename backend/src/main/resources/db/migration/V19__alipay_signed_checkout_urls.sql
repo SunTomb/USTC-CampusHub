@@ -1,0 +1,2 @@
+ALTER TABLE payment_orders MODIFY COLUMN pay_url VARCHAR(4096) NULL;
+ALTER TABLE service_fee_records MODIFY COLUMN pay_url VARCHAR(4096) NULL;

@@ -1,0 +1,1 @@
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18rpx}.form-row .field{min-width:0}.field{margin-top:24rpx}

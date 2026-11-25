@@ -393,6 +393,26 @@ public class PaymentService {
         roleApplicationRepository.save(application);
     }
 
+    /** Called only after verifying the independent application's RSA2 notification. */
+    @Transactional
+    public void settleAlipay(java.util.Map<String,String> fields) {
+        String trade=fields.getOrDefault("trade_no", ""), no=fields.getOrDefault("out_trade_no", "");
+        String state=fields.getOrDefault("trade_status", "");
+        if (!trade.matches("[0-9]{1,64}") || no.isBlank()) throw new BusinessException("支付宝订单参数无效");
+        var order=paymentOrderRepository.lockByOrderNo(no).orElseThrow(()->new BusinessException("未知支付订单"));
+        if (!AlipayPageProvider.PROVIDER.equals(order.getProvider()) || order.getAmount().compareTo(new BigDecimal(fields.get("total_amount")))!=0)
+            throw new BusinessException("支付宝订单不匹配");
+        if (!"TRADE_SUCCESS".equals(state) && !"TRADE_FINISHED".equals(state)) throw new BusinessException("非成功支付通知");
+        if ("PAID".equals(order.getStatus()) && trade.equals(order.getProviderOrderNo())) return;
+        if (!"PENDING".equals(order.getStatus())) throw new BusinessException("当前订单状态不允许入账");
+        String event="ali:"+trade;
+        if (paymentCallbackEventRepository.findByEventId(event).isPresent()) throw new BusinessException("支付宝交易号已使用");
+        var paid=LocalDateTime.parse(fields.get("gmt_payment"),AlipayPageProvider.TIME);
+        order.attachProviderOrder(trade, null);
+        applyBusinessPaymentResult(order,new PaymentCenterCallbackRequest(event,no,trade,order.getBusinessType(),order.getBusinessId(),order.getAmount(),"PAID",paid,null));
+        paymentCallbackEventRepository.save(new PaymentCallbackEvent(event,no,trade,"PAID",order.getAmount(),true,true,null));
+    }
+
     private String nextOrderNo(String prefix, Long id) {
         return "CHP-" + prefix + "-" + id + "-" + System.currentTimeMillis();
     }
