@@ -1,0 +1,126 @@
+name: campushub-hz-prod
+
+services:
+  campushub-mysql:
+    image: campushub-rehearsal/mysql:8.4-source-20261111
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 768m
+    cpus: 0.75
+    pids_limit: 200
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PROD_MYSQL_ROOT_PASSWORD:?required}
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: campushub
+      MYSQL_USER: campushub
+      MYSQL_PASSWORD: ${PROD_MYSQL_PASSWORD:?required}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=40
+      - --table-open-cache=400
+      - --table-definition-cache=400
+      - --performance-schema=OFF
+      - --event-scheduler=OFF
+    volumes:
+      - production-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql --protocol=TCP -h127.0.0.1 -uroot --database=$$MYSQL_DATABASE --batch --skip-column-names -e 'SELECT 1' >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+    networks: [production-private]
+
+  campushub-backend:
+    image: campushub-hz/backend:20261125-orders-a01f01e4d3b5
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 640m
+    memswap_limit: 896m
+    cpus: 1.0
+    pids_limit: 200
+    depends_on:
+      campushub-mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Shanghai
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx384m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -Xss512k -XX:+ExitOnOutOfMemoryError
+      SPRING_DATASOURCE_URL: jdbc:mysql://campushub-mysql:3306/campushub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: campushub
+      SPRING_DATASOURCE_PASSWORD: ${PROD_MYSQL_PASSWORD:?required}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      CAMPUSHUB_JWT_SECRET: ${PROD_JWT_SECRET:?required}
+      CAMPUSHUB_JWT_ISSUER: campushub-hangzhou-production
+      CAMPUSHUB_FILE_ROOT: /app/uploads
+      CAMPUSHUB_FINANCIAL_FEATURES_ENABLED: "false"
+      CAMPUSHUB_SECONDHAND_SERVICE_FEE_ENABLED: "false"
+      CAMPUSHUB_BETA_DEMO_RESET_ENABLED: "false"
+      CAMPUSHUB_PAYMENT_PROVIDER: alipay-page
+      CAMPUSHUB_ALIPAY_APP_ID: "2021007124661040"
+      CAMPUSHUB_ALIPAY_ENABLED: "false"
+      CAMPUSHUB_PAYMENT_MOCK_ENABLED: "false"
+      CAMPUSHUB_PAYMENT_CENTER_BASE_URL: ""
+      CAMPUSHUB_PAYMENT_CENTER_CREATE_PATH: ""
+      CAMPUSHUB_PAYMENT_CENTER_CALLBACK_URL: ""
+      CAMPUSHUB_PAYMENT_CENTER_CALLBACK_TOKEN: ""
+      CAMPUSHUB_PAYMENT_CENTER_SIGNING_SECRET: ""
+      CAMPUSHUB_MAIL_ENABLED: "true"
+      CAMPUSHUB_MAIL_PROVIDER: brevo
+      CAMPUSHUB_MAIL_SMTP_HOST: smtp-relay.brevo.com
+      CAMPUSHUB_MAIL_SMTP_PORT: "1588"
+      CAMPUSHUB_MAIL_SMTP_USERNAME: ${REHEARSAL_MAIL_SMTP_USERNAME:?missing mail login}
+      CAMPUSHUB_MAIL_SMTP_PASSWORD: ${REHEARSAL_MAIL_SMTP_PASSWORD:?missing mail credential}
+      CAMPUSHUB_MAIL_FROM: ${PROD_MAIL_FROM:?verified sender required}
+      CAMPUSHUB_MAIL_FROM_NAME: 蜗壳同路 CampusHub
+      SPRING_MAIL_TEST_CONNECTION: "true"
+      SPRING_APPLICATION_JSON: '{"spring":{"mail":{"properties":{"mail.smtp.ssl.checkserveridentity":"true","mail.smtp.starttls.required":"true"}}}}'
+      CAMPUSHUB_WECHAT_MANUAL_QR_URL: ""
+    volumes:
+      - ./uploads:/app/uploads
+    extra_hosts:
+      - smtp-relay.brevo.com:10.240.3.1
+    security_opt: [no-new-privileges:true]
+    networks: [production-private]
+
+  campushub-web:
+    image: campushub-rehearsal/web:971adab
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 64m
+    memswap_limit: 96m
+    cpus: 0.25
+    pids_limit: 50
+    depends_on: [campushub-backend]
+    ports:
+      - 127.0.0.1:18180:80
+    volumes:
+      - ./inner.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
+    security_opt: [no-new-privileges:true]
+    networks:
+      production-private: {}
+      entry:
+        aliases: [campushub-production-web]
+
+volumes:
+  production-mysql-data:
+    name: campushub-prod-20261124-mysql
+
+networks:
+  entry:
+    external: true
+    name: campushub-domain-entry_default
+  production-private:
+    name: campushub-production-private
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.240.3.0/24
+          gateway: 10.240.3.1

@@ -17,6 +17,9 @@ public record ShopSummary(
         BigDecimal rating) {
 
     public static ShopSummary from(Shop shop) {
+        return from(shop,null);
+    }
+    public static ShopSummary from(Shop shop, BigDecimal score) {
         return new ShopSummary(
                 shop.getId(),
                 shop.getName(),
@@ -29,6 +32,6 @@ public record ShopSummary(
                 shop.getOpeningHours(),
                 shop.getCoverFileId(),
                 shop.getStatus(),
-                shop.getRating());
+                score);
     }
 }

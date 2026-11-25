@@ -1,61 +1,78 @@
 <template>
   <section class="page-stack">
-    <div class="page-heading">
+    <div class="page-heading admin-page-heading">
       <div>
-        <p class="eyebrow">Trade Admin</p>
-        <h2>交易管理后台</h2>
-        <p>管理悬赏跑腿、二手商品和跑腿商品售后纠纷。</p>
+        <p class="eyebrow">站务中枢 · 跑腿与二手交易巡查</p>
+        <h2>交易管理工作台</h2>
+        <p>巡查跑腿大厅悬赏单、二手市集商品状态，并协调处理同窗交接过程中的异常与争议。</p>
       </div>
-      <el-button :loading="loading" @click="loadAll">刷新</el-button>
+      <el-button :loading="loading" @click="loadAll">刷新数据</el-button>
     </div>
 
-    <el-tabs>
-      <el-tab-pane label="跑腿管理">
+    <el-tabs class="tabs-surface premium-panel">
+      <el-tab-pane label="跑腿悬赏管理">
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="tasks" stripe class="data-table">
-            <el-table-column prop="title" label="任务" min-width="180" />
-            <el-table-column prop="publisherNickname" label="发布者" width="120" />
-            <el-table-column prop="rewardAmount" label="赏金" width="100" />
-            <el-table-column prop="workflowStatus" label="状态" width="150" />
+            <el-table-column prop="title" label="任务标题" min-width="180" />
+            <el-table-column prop="publisherNickname" label="委托同学" width="120" />
+            <el-table-column prop="rewardAmount" label="酬金" width="100">
+              <template #default="{ row }"><span class="mono-num">¥{{ row.rewardAmount }}</span></template>
+            </el-table-column>
+            <el-table-column prop="workflowStatus" label="当前状态" width="140">
+              <template #default="{ row }">
+                <el-tag :type="statusTone(row.workflowStatus)" size="small">{{ formatStatus(row.workflowStatus) }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button size="small" type="danger" @click="closeTask(row.id)">关闭</el-button>
+                <el-button size="small" type="danger" plain @click="closeTask(row.id)">关闭任务</el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="商品管理">
+      <el-tab-pane label="二手闲置管理">
         <div class="mobile-table-wrapper">
           <el-table v-loading="loading" :data="goods" stripe class="data-table">
-            <el-table-column prop="title" label="商品" min-width="180" />
+            <el-table-column prop="title" label="商品名称" min-width="180" />
             <el-table-column prop="sellerNickname" label="卖家" width="120" />
-            <el-table-column prop="price" label="价格" width="100" />
-            <el-table-column prop="status" label="状态" width="120" />
+            <el-table-column prop="price" label="转让价" width="100">
+              <template #default="{ row }"><span class="mono-num">¥{{ row.price }}</span></template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="130">
+              <template #default="{ row }">
+                <el-tag :type="statusTone(row.status)" size="small">{{ formatStatus(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button size="small" type="danger" @click="offShelfGoods(row.id)">下架</el-button>
+                <el-button size="small" type="danger" plain @click="offShelfGoods(row.id)">下架商品</el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="跑腿商品售后纠纷">
+      <el-tab-pane label="异常与交接争议">
         <div class="responsive-card-grid">
           <article v-for="issue in taskIssues" :key="issue.id" class="info-card">
-            <strong>{{ issue.taskTitle }}</strong>
-            <p>问题类型：{{ issue.issueType }}</p>
-            <p>状态：{{ issue.status }}</p>
+            <div class="panel-topline">
+              <strong>跑腿异常 · {{ issue.taskTitle }}</strong>
+              <el-tag :type="statusTone(issue.status)" size="small">{{ formatStatus(issue.status) }}</el-tag>
+            </div>
+            <p>异常原因：{{ formatIssueType(issue.issueType) }}</p>
             <p>{{ issue.description }}</p>
           </article>
           <article v-for="order in goodsOrders" :key="order.id" class="info-card">
-            <strong>{{ order.goodsTitle }}</strong>
-            <p>订单：{{ order.orderNo }} · {{ order.status }}</p>
-            <p>托管：{{ order.escrowStatus }} · ¥{{ order.amount }}</p>
-            <p v-if="order.disputeReason">纠纷：{{ order.disputeReason }}</p>
-            <p v-if="order.cancelReason">取消：{{ order.cancelReason }}</p>
+            <div class="panel-topline">
+              <strong>二手订单 · {{ order.goodsTitle }}</strong>
+              <el-tag :type="statusTone(order.status)" size="small">{{ formatStatus(order.status) }}</el-tag>
+            </div>
+            <p>订单号：<span class="mono-num">{{ order.orderNo }}</span></p>
+            <p>担保状态：{{ formatStatus(order.escrowStatus) }} · 金额 <span class="mono-num">¥{{ order.amount }}</span></p>
+            <p v-if="order.disputeReason">争议说明：{{ order.disputeReason }}</p>
+            <p v-if="order.cancelReason">取消说明：{{ order.cancelReason }}</p>
           </article>
         </div>
       </el-tab-pane>
@@ -78,6 +95,7 @@ import {
   type RewardTaskSummary,
   type TaskIssueSummary,
 } from '@/api/campushub'
+import { formatIssueType, formatStatus, statusTone } from '@/utils/display'
 
 const loading = ref(false)
 const tasks = ref<RewardTaskSummary[]>([])
@@ -107,7 +125,7 @@ async function loadAll() {
 
 async function closeTask(taskId: number) {
   try {
-    await closeAdminTradeTask(taskId, '管理员关闭')
+    await closeAdminTradeTask(taskId, '交易管理员巡查关闭')
     ElMessage.success('任务已关闭')
     await loadAll()
   } catch (error) {
@@ -117,7 +135,7 @@ async function closeTask(taskId: number) {
 
 async function offShelfGoods(goodsId: number) {
   try {
-    await offShelfAdminTradeGoods(goodsId, '管理员下架')
+    await offShelfAdminTradeGoods(goodsId, '交易管理员巡查下架')
     ElMessage.success('商品已下架')
     await loadAll()
   } catch (error) {

@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+cd /opt/campushub/domain-entry
+name=ustc.suntomb.cn
+lineage=/etc/letsencrypt/live/$name
+[ "${RENEWED_LINEAGE:-$lineage}" = "$lineage" ] || exit 0
+[ -s "$lineage/fullchain.pem" ] && [ -s "$lineage/privkey.pem" ] || { echo 'Issued certificate files required.' >&2; exit 1; }
+openssl x509 -checkhost "$name" -checkend 0 -noout -in "$lineage/fullchain.pem" >/dev/null
+docker compose --profile tls run --rm --no-deps https -c /srv/entry/nginx/https.conf -t
+docker compose --profile tls up -d --no-deps https
+docker compose exec -T https nginx -c /srv/entry/nginx/https.conf -s reload
+# Filing is rendered by Vue on the live SPA. Probe site identity independently of JS.
+page=$(curl --retry 5 --retry-connrefused --noproxy '*' -fsS --resolve "$name:443:127.0.0.1" "https://$name/")
+printf '%s
+' "$page" | grep -F '<title>蜗壳同路 CampusHub' >/dev/null
+printf 'location / { return 301 https://ustc.suntomb.cn$request_uri; }\n' > nginx/http-mode.inc.new
+mv nginx/http-mode.inc.new nginx/http-mode.inc
+docker compose exec -T http nginx -c /srv/entry/nginx/http.conf -t
+docker compose exec -T http nginx -c /srv/entry/nginx/http.conf -s reload

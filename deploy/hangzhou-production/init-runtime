@@ -1,0 +1,15 @@
+#!/usr/bin/python3 -I
+"""Initialize target-only DB/JWT configuration. Never overwrite existing credentials."""
+import os
+from pathlib import Path
+import secrets
+os.umask(0o077)
+if os.geteuid() != 0 or not Path('/opt/campushub/production/compose.yml').is_file():
+    raise SystemExit('Expected the Hangzhou production host and root privileges')
+root = Path('/etc/campushub/production')
+root.mkdir(mode=0o700, parents=True, exist_ok=True)
+with (root / 'runtime.env').open('x', encoding='ascii') as f:
+    for name in ('PROD_MYSQL_ROOT_PASSWORD', 'PROD_MYSQL_PASSWORD', 'PROD_JWT_SECRET'):
+        f.write(name + '=' + secrets.token_hex(48) + '\n')
+    f.write('PROD_MAIL_FROM=suntomb@suntomb.cn\n')
+    f.flush(); os.fsync(f.fileno())

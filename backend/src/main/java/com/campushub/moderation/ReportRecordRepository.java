@@ -19,5 +19,10 @@ public interface ReportRecordRepository extends JpaRepository<ReportRecord, Long
     @EntityGraph(attributePaths = {"reporter", "handler"})
     List<ReportRecord> findByReporterIdOrderByCreatedAtDesc(Long reporterId);
 
+    java.util.Optional<ReportRecord> findFirstByReporterIdAndTargetTypeAndTargetIdOrderByIdDesc(Long reporterId,String targetType,Long targetId);
+
+    @EntityGraph(attributePaths = {"reporter", "handler"})
+    List<ReportRecord> findByStatusAndTargetTypeOrderByCreatedAtAsc(String status,String targetType);
+
     long countByStatus(String status);
 }

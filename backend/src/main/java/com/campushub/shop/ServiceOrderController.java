@@ -24,8 +24,15 @@ public class ServiceOrderController {
 
     @GetMapping
     public ApiResponse<List<ServiceOrderSummary>> listOrders() {
+        currentUserService.requireUserId();
+        if (!currentUserService.isShowcaseReader()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
         return ApiResponse.ok(shopService.listAllOrders());
     }
+
+    @GetMapping("/{id}")
+    public ApiResponse<ServiceOrderSummary> detail(@PathVariable Long id) {return ApiResponse.ok(shopService.participantOrder(id,currentUserService.requireUserId()));}
 
     @GetMapping("/customer/{customerId}")
     public ApiResponse<List<ServiceOrderSummary>> listCustomerOrders(@PathVariable Long customerId) {

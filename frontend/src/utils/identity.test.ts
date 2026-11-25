@@ -18,7 +18,7 @@ describe('identity utilities', () => {
     expect(profile.primaryIdentity).toBe('student')
     expect(profile.displayName).toBe('Alice')
     expect(profile.identities.map((item) => item.key)).toEqual(['student'])
-    expect(profile.capabilities).toContain('钱包、通知与信用中心')
+    expect(profile.capabilities).toContain('通知与信用中心')
   })
 
   it('builds multi-role profiles in stable display order', () => {
@@ -31,7 +31,7 @@ describe('identity utilities', () => {
 
     expect(profile.primaryIdentity).toBe('admin')
     expect(profile.identities.map((item) => item.key)).toEqual(['student', 'runner', 'goodsPublisher', 'shopMerchant', 'admin'])
-    expect(profile.capabilities).toContain('治理、支付、钱包与运营后台')
+    expect(profile.capabilities).toContain('治理、运营与历史账本后台')
   })
 
   it('recognizes domain admin roles without generic admin visibility', () => {

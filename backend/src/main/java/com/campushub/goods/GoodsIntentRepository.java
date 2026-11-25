@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface GoodsIntentRepository extends JpaRepository<GoodsIntent, Long> {
 
+    boolean existsByGoodsIdAndBuyerId(Long goodsId, Long buyerId);
+
+    boolean existsByGoodsIdAndStatus(Long goodsId, String status);
+
     @Override
     @EntityGraph(attributePaths = {"goods", "buyer", "seller", "serviceFee"})
     Optional<GoodsIntent> findById(Long id);

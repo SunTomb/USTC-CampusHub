@@ -37,6 +37,13 @@ public class RewardTask {
     @Column(name = "deposit_amount", nullable = false)
     private BigDecimal depositAmount;
 
+    @Column(name = "weight_grams")
+    private Integer weightGrams;
+    @Column(length = 1000)
+    private String notes;
+    @Column(name = "pickup_code", length = 120)
+    private String pickupCode;
+
     @Column(name = "task_location", nullable = false)
     private String taskLocation;
 
@@ -69,6 +76,12 @@ public class RewardTask {
 
     @Column(name = "completion_code_hash")
     private String completionCodeHash;
+
+    @Column(name = "completion_code_attempts", nullable = false)
+    private Integer completionCodeAttempts = 0;
+
+    @Column(name = "completion_code_issued_at")
+    private LocalDateTime completionCodeIssuedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "accepted_application_id")
@@ -120,6 +133,16 @@ public class RewardTask {
         return depositAmount;
     }
 
+    void setParcelDetails(Integer weightGrams, String notes, String pickupCode) {
+        this.weightGrams = weightGrams;
+        this.notes = notes;
+        this.pickupCode = pickupCode;
+    }
+
+    public Integer getWeightGrams() { return weightGrams; }
+    public String getNotes() { return notes; }
+    public String getPickupCode() { return pickupCode; }
+
     public String getTaskLocation() {
         return taskLocation;
     }
@@ -164,6 +187,14 @@ public class RewardTask {
         return completionCodeHash;
     }
 
+    public Integer getCompletionCodeAttempts() {
+        return completionCodeAttempts == null ? 0 : completionCodeAttempts;
+    }
+
+    public LocalDateTime getCompletionCodeIssuedAt() {
+        return completionCodeIssuedAt;
+    }
+
     public TaskApplication getAcceptedApplication() {
         return acceptedApplication;
     }
@@ -183,6 +214,39 @@ public class RewardTask {
         this.status = "PUBLISHED";
     }
 
+    public void updateListing(
+            String title,
+            String description,
+            BigDecimal rewardAmount,
+            BigDecimal depositAmount,
+            String taskLocation,
+            LocalDateTime deadline,
+            String acceptanceMode,
+            String originZone,
+            String destinationZone,
+            String originDetail,
+            String destinationDetail,
+            String verificationMode,
+            Integer weightGrams,
+            String notes,
+            String pickupCode) {
+        this.title = title;
+        this.description = description;
+        this.rewardAmount = rewardAmount;
+        this.depositAmount = depositAmount;
+        this.taskLocation = taskLocation;
+        this.deadline = deadline;
+        this.acceptanceMode = acceptanceMode;
+        this.originZone = originZone;
+        this.destinationZone = destinationZone;
+        this.originDetail = originDetail;
+        this.destinationDetail = destinationDetail;
+        this.verificationMode = verificationMode;
+        this.weightGrams = weightGrams;
+        this.notes = notes;
+        this.pickupCode = pickupCode;
+    }
+
     public void markAccepted(TaskApplication application) {
         this.acceptedApplication = application;
         this.workflowStatus = TaskWorkflowStatus.ACCEPTED.name();
@@ -192,5 +256,22 @@ public class RewardTask {
     public void moveTo(String workflowStatus) {
         this.workflowStatus = workflowStatus;
         this.status = workflowStatus;
+    }
+
+    public void issueCompletionCode(String completionCodeHash, LocalDateTime issuedAt) {
+        this.completionCodeHash = completionCodeHash;
+        this.completionCodeIssuedAt = issuedAt;
+        this.completionCodeAttempts = 0;
+    }
+
+    public int registerCompletionCodeAttempt() {
+        this.completionCodeAttempts = getCompletionCodeAttempts() + 1;
+        return this.completionCodeAttempts;
+    }
+
+    public void clearCompletionCode() {
+        this.completionCodeHash = null;
+        this.completionCodeIssuedAt = null;
+        this.completionCodeAttempts = 0;
     }
 }

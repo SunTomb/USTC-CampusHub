@@ -1,0 +1,9 @@
+<template><section class="item-ratings"><button type="button" :aria-expanded="open" @click="toggle">{{count ? `${Number(score).toFixed(1)} 分 · ${count} 条评价` : '暂无评价'}}<span v-if="count"> {{open?'收起':'查看'}}</span></button><template v-if="open"><p v-if="err" role="alert">{{err}} <el-button text @click="more">重试</el-button></p><p v-if="loading">加载中…</p><div v-for="(r,i) in entries" :key="i" class="item-comment"><small>{{r.nickname}} · {{r.rating}} 星 · {{r.createdAt.slice(0,10)}}</small><p v-if="r.content">{{r.content}}</p></div><el-button v-if="!loading && !err && entries.length<total" text @click="more">更多评价</el-button></template></section></template>
+<script setup lang="ts">
+import {ref,watch,onBeforeUnmount} from 'vue'
+import {itemRatings,type ItemRatings} from '@/api/orderDesk'
+const props=defineProps<{id:number;score?:number|null;count?:number}>();const entries=ref<ItemRatings['entries']>([]),open=ref(false),loading=ref(false),err=ref(''),total=ref(0);let page=0,seq=0
+async function more(){if(loading.value)return;const v=seq;loading.value=true;err.value='';try{const result=await itemRatings(props.id,page);if(v===seq){entries.value.push(...result.entries);total.value=result.count;page++}}catch(e){if(v===seq)err.value=e instanceof Error?e.message:'评价加载失败'}finally{if(v===seq)loading.value=false}}
+function toggle(){if(!props.count)return;open.value=!open.value;if(open.value&&!entries.value.length)void more()}
+watch(()=>props.id,()=>{seq++;page=0;entries.value=[];open.value=false;loading.value=false;err.value=''});onBeforeUnmount(()=>{seq++})
+</script><style scoped>.item-ratings{margin-block:.7rem}.item-ratings button{border:0;background:transparent;color:#70541b;padding:.35rem 0;cursor:pointer}.item-comment{border-top:1px solid #ddd;padding:.55rem 0;overflow-wrap:anywhere}.item-comment p{margin:4px 0}</style>

@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "campushub.financial.enabled=true")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Transactional
@@ -79,8 +79,8 @@ class WalletServiceIntegrationTest {
 
     @Test
     void walletServiceCreditsFreezesUnfreezesAndTransfersFrozenFundsIdempotently() {
-        User buyer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
-        User seller = userRepository.findByEmail("student2@mail.ustc.edu.cn").orElseThrow();
+        User buyer = userRepository.findById(1L).orElseThrow();
+        User seller = userRepository.findById(2L).orElseThrow();
 
         walletService.credit(buyer.getId(), new BigDecimal("100.00"), "TEST", 1L, "credit-1", "SYSTEM", null, "测试入账");
         walletService.credit(buyer.getId(), new BigDecimal("100.00"), "TEST", 1L, "credit-1", "SYSTEM", null, "测试入账");
@@ -91,15 +91,15 @@ class WalletServiceIntegrationTest {
         WalletAccount buyerWallet = walletAccountRepository.findByUserId(buyer.getId()).orElseThrow();
         WalletAccount sellerWallet = walletAccountRepository.findByUserId(seller.getId()).orElseThrow();
 
-        assertThat(buyerWallet.getBalance()).isEqualByComparingTo("290.00");
+        assertThat(buyerWallet.getBalance()).isEqualByComparingTo("280.00");
         assertThat(buyerWallet.getFrozenBalance()).isEqualByComparingTo("0.00");
-        assertThat(sellerWallet.getBalance()).isEqualByComparingTo("220.00");
+        assertThat(sellerWallet.getBalance()).isEqualByComparingTo("140.00");
         assertThat(walletFlowRepository.findByIdempotencyKey("credit-1")).isPresent();
     }
 
     @Test
     void alipayRechargeCreatesPaymentOrderAndCreditsBalanceAfterCallback() {
-        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User user = userRepository.findById(1L).orElseThrow();
         WalletRechargeSummary summary = walletOperationService.createRecharge(user.getId(), new WalletRechargeRequest("ALIPAY", new BigDecimal("100.00"), "支付宝充值"));
 
         assertThat(summary.channelFee()).isEqualByComparingTo("0.60");
@@ -110,8 +110,8 @@ class WalletServiceIntegrationTest {
 
     @Test
     void wechatRechargeWaitsForAdminApprovalAndThenCreditsBalance() {
-        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
-        User admin = userRepository.findByEmail("admin@mail.ustc.edu.cn").orElseThrow();
+        User user = userRepository.findById(1L).orElseThrow();
+        User admin = userRepository.findById(4L).orElseThrow();
         WalletRechargeSummary summary = walletOperationService.createRecharge(user.getId(), new WalletRechargeRequest("WECHAT", new BigDecimal("30.00"), "微信人工充值"));
 
         assertThat(summary.status()).isEqualTo("PENDING_REVIEW");
@@ -125,8 +125,8 @@ class WalletServiceIntegrationTest {
 
     @Test
     void withdrawalFreezesBalanceThenRejectUnfreezesAndCompleteDeductsFrozenBalance() {
-        User user = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
-        User admin = userRepository.findByEmail("admin@mail.ustc.edu.cn").orElseThrow();
+        User user = userRepository.findById(1L).orElseThrow();
+        User admin = userRepository.findById(4L).orElseThrow();
         walletService.credit(user.getId(), new BigDecimal("100.00"), "TEST", 10L, "withdraw-credit", "SYSTEM", null, "提现测试入账");
 
         WalletWithdrawalSummary rejected = walletOperationService.createWithdrawal(user.getId(), new CreateWithdrawalRequest(new BigDecimal("30.00"), "WECHAT", "微信昵称：同学A"));
@@ -140,7 +140,7 @@ class WalletServiceIntegrationTest {
         walletOperationService.completeWithdrawal(approved.id(), admin.getId(), "已人工打款");
         WalletAccount afterComplete = walletAccountRepository.findByUserId(user.getId()).orElseThrow();
         WalletWithdrawalRequest completed = walletWithdrawalRequestRepository.findById(approved.id()).orElseThrow();
-        assertThat(afterComplete.getBalance()).isEqualByComparingTo("220.00");
+        assertThat(afterComplete.getBalance()).isEqualByComparingTo("260.00");
         assertThat(afterComplete.getFrozenBalance()).isEqualByComparingTo("0.00");
         assertThat(completed.getStatus()).isEqualTo("COMPLETED");
     }

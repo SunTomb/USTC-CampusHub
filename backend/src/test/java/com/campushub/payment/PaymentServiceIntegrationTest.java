@@ -1,8 +1,8 @@
 package com.campushub.payment;
 
-import com.campushub.identity.ApplyRoleRequest;
-import com.campushub.identity.IdentityService;
 import com.campushub.identity.RoleApplicationRepository;
+import com.campushub.identity.PlatformRoleType;
+import com.campushub.identity.RoleApplication;
 import com.campushub.identity.RoleApplicationSummary;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
@@ -21,7 +21,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "campushub.payment.provider=mock")
+@SpringBootTest(properties = {"campushub.payment.provider=mock", "campushub.financial.enabled=true"})
+@org.springframework.transaction.annotation.Transactional
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
@@ -31,6 +32,9 @@ class PaymentServiceIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
+    private com.campushub.auth.JwtTokenService tokens;
+
+    @Autowired
     private ServiceFeeRecordRepository serviceFeeRecordRepository;
 
     @Autowired
@@ -38,9 +42,6 @@ class PaymentServiceIntegrationTest {
 
     @Autowired
     private PaymentService paymentService;
-
-    @Autowired
-    private IdentityService identityService;
 
     @Autowired
     private RoleApplicationRepository roleApplicationRepository;
@@ -53,14 +54,14 @@ class PaymentServiceIntegrationTest {
         ServiceFeeRecord fee = serviceFeeRecordRepository.findById(3L).orElseThrow();
         assertThat(fee.getStatus()).isEqualTo("PENDING");
 
-        mockMvc.perform(post("/api/payment/service-fees/3/mock-pay"))
+        mockMvc.perform(post("/api/payment/service-fees/3/mock-pay").header("Authorization", "Bearer " + tokens.issueToken(2L, "bob")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.provider").value("MOCK"))
                 .andExpect(jsonPath("$.data.orderNo").exists())
                 .andExpect(jsonPath("$.data.payUrl").exists());
 
-        mockMvc.perform(post("/api/payment/service-fees/3/mock-success"))
+        mockMvc.perform(post("/api/payment/service-fees/3/mock-success").header("Authorization", "Bearer " + tokens.issueToken(2L, "bob")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("PAID"));
@@ -75,7 +76,7 @@ class PaymentServiceIntegrationTest {
     @Test
     void roleDepositFailedCallbackKeepsApplicationRecoverableForRetry() {
         Long userId = createPaymentRetryUser("failed");
-        RoleApplicationSummary application = identityService.apply(userId, new ApplyRoleRequest("RUNNER", "申请跑腿保证金失败重试"));
+        RoleApplicationSummary application = createLegacyRoleApplication(userId, PlatformRoleType.RUNNER, "历史跑腿保证金申请");
         PaymentCreation firstPayment = paymentService.createRoleDepositPayment(application.id());
 
         PaymentStatus failed = paymentService.handlePaymentCenterCallback(
@@ -99,7 +100,8 @@ class PaymentServiceIntegrationTest {
         assertThat(failedApplication.getReviewStatus()).isEqualTo("PENDING_PAYMENT");
         assertThat(failedApplication.isRecoverableUnpaid()).isTrue();
 
-        RoleApplicationSummary retryApplication = identityService.apply(3L, new ApplyRoleRequest("RUNNER", "重新支付保证金"));
+        failedApplication.resetForPayment("重新支付保证金");
+        RoleApplicationSummary retryApplication = RoleApplicationSummary.from(roleApplicationRepository.saveAndFlush(failedApplication));
         PaymentCreation retryPayment = paymentService.createRoleDepositPayment(retryApplication.id());
 
         assertThat(retryApplication.id()).isEqualTo(application.id());
@@ -111,7 +113,7 @@ class PaymentServiceIntegrationTest {
     @Test
     void staleRoleDepositCallbackDoesNotMutateNewerRetryApplication() {
         Long userId = createPaymentRetryUser("stale");
-        RoleApplicationSummary application = identityService.apply(userId, new ApplyRoleRequest("GOODS_PUBLISHER", "申请二手发布保证金重试"));
+        RoleApplicationSummary application = createLegacyRoleApplication(userId, PlatformRoleType.GOODS_PUBLISHER, "历史二手发布保证金申请");
         PaymentCreation firstPayment = paymentService.createRoleDepositPayment(application.id());
         var roleApplication = roleApplicationRepository.findById(application.id()).orElseThrow();
         roleApplication.attachDepositPaymentOrder("CHP-RD-newer-retry");
@@ -138,8 +140,14 @@ class PaymentServiceIntegrationTest {
         assertThat(unchangedApplication.getDepositPaymentOrderNo()).isEqualTo("CHP-RD-newer-retry");
     }
 
+    private RoleApplicationSummary createLegacyRoleApplication(Long userId, PlatformRoleType roleType, String note) {
+        RoleApplication application = roleApplicationRepository.saveAndFlush(new RoleApplication(
+                userRepository.findById(userId).orElseThrow(), roleType, note));
+        return RoleApplicationSummary.from(application);
+    }
+
     private Long createPaymentRetryUser(String suffix) {
-        String unique = suffix + "-" + UUID.randomUUID();
+        String unique = suffix + "-" + UUID.randomUUID().toString().substring(0, 12);
         String digits = String.format("%08d", Math.floorMod(unique.hashCode(), 100_000_000));
         User user = new User(
                 "PB-RD-" + unique,

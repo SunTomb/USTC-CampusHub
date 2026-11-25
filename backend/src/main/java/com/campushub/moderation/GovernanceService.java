@@ -49,6 +49,7 @@ public class GovernanceService {
 
     @Transactional(readOnly = true)
     public List<ReportRecordSummary> listReports(String status, String targetType) {
+        if(status!=null&&!status.isBlank()&&targetType!=null&&!targetType.isBlank())return reportRecordRepository.findByStatusAndTargetTypeOrderByCreatedAtAsc(status,targetType).stream().map(ReportRecordSummary::from).toList();
         if (status != null && !status.isBlank()) {
             return reportRecordRepository.findByStatusOrderByCreatedAtAsc(status).stream().map(ReportRecordSummary::from).toList();
         }

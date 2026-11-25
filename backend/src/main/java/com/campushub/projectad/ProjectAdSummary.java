@@ -25,6 +25,10 @@ public record ProjectAdSummary(
         LocalDateTime createdAt) {
 
     public static ProjectAdSummary from(ProjectAd projectAd) {
+        return from(projectAd,true);
+    }
+    public static ProjectAdSummary publicCard(ProjectAd projectAd) {return from(projectAd,"PUBLIC".equals(projectAd.getContactVisibility()));}
+    private static ProjectAdSummary from(ProjectAd projectAd,boolean reveal) {
         return new ProjectAdSummary(
                 projectAd.getId(),
                 projectAd.getTitle(),
@@ -37,7 +41,7 @@ public record ProjectAdSummary(
                 projectAd.getPublisher().getId(),
                 projectAd.getPublisher().getNickname(),
                 projectAd.getLinkUrl(),
-                projectAd.getContactInfo(),
+                reveal ? projectAd.getContactInfo() : null,
                 projectAd.getContactVisibility(),
                 projectAd.getStatus(),
                 projectAd.getViewCount(),

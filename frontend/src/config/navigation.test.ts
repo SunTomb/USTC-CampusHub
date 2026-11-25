@@ -24,9 +24,9 @@ describe('navigation config', () => {
     expect(labels).not.toContain('运营数据')
   })
 
-  it('shows student account entries after login', () => {
+  it('hides closed financial center from ordinary students', () => {
     const labels = getVisibleNavGroups(studentProfile).flatMap((group) => group.items.map((item) => item.label))
-    expect(labels).toContain('钱包中心')
+    expect(labels).not.toContain('钱包中心')
     expect(labels).toContain('站内通知')
     expect(labels).toContain('身份解锁')
     expect(labels).not.toContain('运营数据')
@@ -62,6 +62,12 @@ describe('navigation config', () => {
     expect(showcaseLabels).not.toContain('治理台')
     expect(showcaseLabels).not.toContain('支付监控')
     expect(showcaseLabels).not.toContain('钱包运营')
+  })
+
+  it('hides the wallet route for every identity while finances are closed', () => {
+    for (const profile of [guestProfile, studentProfile, adminProfile, masterAdminProfile, tradeAdminProfile, showcaseAdminProfile]) {
+      expect(getVisibleNavGroups(profile, false).flatMap(group => group.items.map(item => item.path))).not.toContain('/wallet')
+    }
   })
 
   it('changes mobile tabs by authentication state', () => {

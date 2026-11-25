@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+cd /opt/campushub/production
+exec docker compose --env-file /opt/campushub-backups/rehearsal-20261111/mail.env --env-file /etc/campushub/production/runtime.env "$@"

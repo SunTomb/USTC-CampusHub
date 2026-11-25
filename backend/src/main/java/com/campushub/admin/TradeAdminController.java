@@ -2,16 +2,16 @@ package com.campushub.admin;
 
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
-import com.campushub.goods.Goods;
+import com.campushub.goods.GoodsService;
 import com.campushub.goods.GoodsOrderRepository;
 import com.campushub.goods.GoodsOrderSummary;
 import com.campushub.goods.GoodsRepository;
 import com.campushub.goods.GoodsSummary;
-import com.campushub.task.RewardTask;
 import com.campushub.task.RewardTaskRepository;
 import com.campushub.task.RewardTaskSummary;
 import com.campushub.task.TaskIssueRepository;
 import com.campushub.task.TaskIssueSummary;
+import com.campushub.task.RunnerTaskService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,19 +26,24 @@ public class TradeAdminController {
 
     private final CurrentUserService currentUserService;
     private final RewardTaskRepository rewardTaskRepository;
+    private final RunnerTaskService runnerTaskService;
     private final TaskIssueRepository taskIssueRepository;
+    private final GoodsService goodsService;
     private final GoodsRepository goodsRepository;
     private final GoodsOrderRepository goodsOrderRepository;
 
     public TradeAdminController(
             CurrentUserService currentUserService,
             RewardTaskRepository rewardTaskRepository,
+            RunnerTaskService runnerTaskService,
             TaskIssueRepository taskIssueRepository,
-            GoodsRepository goodsRepository,
+            GoodsService goodsService, GoodsRepository goodsRepository,
             GoodsOrderRepository goodsOrderRepository) {
         this.currentUserService = currentUserService;
         this.rewardTaskRepository = rewardTaskRepository;
+        this.runnerTaskService = runnerTaskService;
         this.taskIssueRepository = taskIssueRepository;
+        this.goodsService=goodsService;
         this.goodsRepository = goodsRepository;
         this.goodsOrderRepository = goodsOrderRepository;
     }
@@ -51,10 +56,8 @@ public class TradeAdminController {
 
     @PostMapping("/tasks/{taskId}/close")
     public ApiResponse<RewardTaskSummary> closeTask(@PathVariable Long taskId, @RequestBody(required = false) AdminActionRequest request) {
-        currentUserService.requireTradeAdminId();
-        RewardTask task = rewardTaskRepository.findById(taskId).orElseThrow();
-        task.moveTo("CANCELLED");
-        return ApiResponse.ok(RewardTaskSummary.from(rewardTaskRepository.save(task)));
+        Long adminId = currentUserService.requireTradeAdminId();
+        return ApiResponse.ok(runnerTaskService.cancelByAdmin(taskId, adminId, request == null ? null : request.note()));
     }
 
     @GetMapping("/goods")
@@ -66,9 +69,7 @@ public class TradeAdminController {
     @PostMapping("/goods/{goodsId}/off-shelf")
     public ApiResponse<GoodsSummary> offShelfGoods(@PathVariable Long goodsId, @RequestBody(required = false) AdminActionRequest request) {
         currentUserService.requireTradeAdminId();
-        Goods goods = goodsRepository.findById(goodsId).orElseThrow();
-        goods.offShelf();
-        return ApiResponse.ok(GoodsSummary.from(goodsRepository.save(goods)));
+        return ApiResponse.ok(goodsService.offShelfByAdmin(goodsId));
     }
 
     @GetMapping("/goods-orders")

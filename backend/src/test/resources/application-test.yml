@@ -11,6 +11,10 @@ spring:
       ddl-auto: validate
     show-sql: false
 
+campushub:
+  financial:
+    enabled: false
+
 logging:
   level:
     com.campushub: info

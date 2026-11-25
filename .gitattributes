@@ -1,0 +1,3 @@
+# Linux release configurations must keep LF on Windows workstations.
+deploy/domain-entry/** text eol=lf
+deploy/hangzhou-production/** text eol=lf

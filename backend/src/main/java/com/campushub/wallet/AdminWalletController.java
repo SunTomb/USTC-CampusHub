@@ -24,6 +24,7 @@ public class AdminWalletController {
 
     @GetMapping("/recharges")
     public ApiResponse<List<WalletRechargeSummary>> listRecharges(@RequestParam(required = false) String status) {
+        currentUserService.requireAdminId();
         return ApiResponse.ok(walletOperationService.listAdminRecharges(status));
     }
 
@@ -39,6 +40,7 @@ public class AdminWalletController {
 
     @GetMapping("/withdrawals")
     public ApiResponse<List<WalletWithdrawalSummary>> listWithdrawals(@RequestParam(required = false) String status) {
+        currentUserService.requireAdminId();
         return ApiResponse.ok(walletOperationService.listAdminWithdrawals(status));
     }
 
@@ -59,11 +61,13 @@ public class AdminWalletController {
 
     @GetMapping("/flows")
     public ApiResponse<List<WalletFlowSummary>> listFlows() {
+        currentUserService.requireAdminId();
         return ApiResponse.ok(walletOperationService.listAdminFlows());
     }
 
     @GetMapping("/frozen-records")
     public ApiResponse<List<WalletFrozenRecordSummary>> listFrozenRecords() {
+        currentUserService.requireAdminId();
         return ApiResponse.ok(walletOperationService.listAdminFrozenRecords());
     }
 }

@@ -21,7 +21,9 @@ public record RewardTaskSummary(
         String verificationMode,
         Long acceptedApplicationId,
         Long publisherId,
-        String publisherNickname) {
+        String publisherNickname,
+        Integer weightGrams,
+        String notes) {
 
     public static RewardTaskSummary from(RewardTask task) {
         return new RewardTaskSummary(
@@ -42,6 +44,8 @@ public record RewardTaskSummary(
                 task.getVerificationMode(),
                 task.getAcceptedApplication() == null ? null : task.getAcceptedApplication().getId(),
                 task.getPublisher().getId(),
-                task.getPublisher().getNickname());
+                task.getPublisher().getNickname(),
+                task.getWeightGrams(),
+                task.getNotes());
     }
 }

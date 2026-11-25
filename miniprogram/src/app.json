@@ -1,0 +1,82 @@
+{
+  "pages": [
+    "pages/tasks/index",
+    "pages/tasks/detail",
+    "pages/tasks/publish",
+    "pages/shops/index",
+    "pages/shops/detail",
+    "pages/showcase/index",
+    "pages/showcase/detail",
+    "pages/showcase/publish",
+    "pages/pass/index",
+    "pages/pass/auth",
+    "pages/goods/index",
+    "pages/goods/detail",
+    "pages/goods/publish",
+    "pages/orders/index",
+    "pages/shops/item"
+  ],
+  "window": {
+    "navigationBarTitleText": "蜗壳同路",
+    "navigationBarBackgroundColor": "#F7F5F0",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F7F5F0",
+    "backgroundTextStyle": "dark",
+    "enablePullDownRefresh": true
+  },
+  "tabBar": {
+    "color": "#526075",
+    "selectedColor": "#16325B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/tasks/index",
+        "text": "跑腿",
+        "iconPath": "assets/tab-tasks.png",
+        "selectedIconPath": "assets/tab-tasks-active.png"
+      },
+      {
+        "pagePath": "pages/goods/index",
+        "text": "二手",
+        "iconPath": "assets/tab-goods.png",
+        "selectedIconPath": "assets/tab-goods-active.png"
+      },
+      {
+        "pagePath": "pages/shops/index",
+        "text": "小店",
+        "iconPath": "assets/tab-shops.png",
+        "selectedIconPath": "assets/tab-shops-active.png"
+      },
+      {
+        "pagePath": "pages/showcase/index",
+        "text": "宣传",
+        "iconPath": "assets/tab-showcase.png",
+        "selectedIconPath": "assets/tab-showcase-active.png"
+      },
+      {
+        "pagePath": "pages/pass/index",
+        "text": "个人",
+        "iconPath": "assets/tab-pass.png",
+        "selectedIconPath": "assets/tab-pass-active.png"
+      }
+    ]
+  },
+  "usingComponents": {
+    "launch-intro": "/components/launch-intro/index",
+    "bottom-sheet": "/components/bottom-sheet/index",
+    "state-view": "/components/state-view/index",
+    "zone-bar": "/components/zone-bar/index",
+    "role-unlock": "/components/role-unlock/index",
+    "catalog-photos": "/components/catalog-photos/index",
+    "content-report": "/components/content-report/index",
+    "item-ratings": "/components/item-ratings/index"
+  },
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 15000
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

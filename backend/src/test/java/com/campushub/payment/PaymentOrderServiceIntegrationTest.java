@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 @Transactional
 class PaymentOrderServiceIntegrationTest {
 
@@ -19,9 +20,22 @@ class PaymentOrderServiceIntegrationTest {
     @Autowired PaymentOrderRepository paymentOrderRepository;
     @Autowired PaymentCallbackEventRepository paymentCallbackEventRepository;
 
+    @Autowired PaymentService paymentService;
+
+    @Test void independentAlipaySettlesOnlyMatchingOrderOnce() {
+        var payer=userRepository.findById(1L).orElseThrow();
+        var amount=new BigDecimal("1.23");
+        var fee=serviceFeeRecordRepository.saveAndFlush(new ServiceFeeRecord("SF-ALI-TEST",payer,"GOODS_INTENT",1L,amount));
+        var order=paymentOrderRepository.saveAndFlush(new PaymentOrder("ALI-TEST-1","SERVICE_FEE",fee.getId(),payer,amount,"ALIPAY_PAGE",java.time.LocalDateTime.now().plusMinutes(15)));
+        var fields=new java.util.HashMap<>(java.util.Map.of("trade_no","1231231","out_trade_no",order.getOrderNo(),"trade_status","TRADE_SUCCESS","total_amount","1.23","gmt_payment","2026-11-24 16:00:00"));
+        fields.put("total_amount","2.00"); org.assertj.core.api.Assertions.assertThatThrownBy(()->paymentService.settleAlipay(fields)).hasMessageContaining("不匹配");
+        fields.put("total_amount","1.23");paymentService.settleAlipay(fields);paymentService.settleAlipay(fields);
+        assertThat(order.getStatus()).isEqualTo("PAID");assertThat(fee.getStatus()).isEqualTo("PAID");assertThat(paymentCallbackEventRepository.findByEventId("ali:1231231")).isPresent();
+    }
+
     @Test
     void serviceFeeRecordStoresPaymentCenterMappingFields() {
-        User payer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User payer = userRepository.findById(1L).orElseThrow();
         ServiceFeeRecord fee = new ServiceFeeRecord("SF-PHASE8-001", payer, "GOODS_INTENT", 1L, new BigDecimal("1.00"));
 
         fee.attachPaymentOrder("CHP-PHASE8-001", "PAYMENT_CENTER", "ATS-PHASE8-001", "https://pay.example/phase8", java.time.LocalDateTime.now().plusMinutes(30));
@@ -36,7 +50,7 @@ class PaymentOrderServiceIntegrationTest {
 
     @Test
     void paymentOrderAndCallbackEventPersistForIdempotency() {
-        User payer = userRepository.findByEmail("student1@mail.ustc.edu.cn").orElseThrow();
+        User payer = userRepository.findById(1L).orElseThrow();
         PaymentOrder order = new PaymentOrder(
                 "CHP-PHASE8-002",
                 "SERVICE_FEE",

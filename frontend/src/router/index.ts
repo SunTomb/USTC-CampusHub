@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '@/stores/auth'
+import { usePlatformStore } from '@/stores/platform'
 import { canBypassRequiredRole, hasAnyRole, type IdentityKey } from '@/utils/identity'
 
 declare module 'vue-router' {
@@ -58,14 +59,16 @@ const router = createRouter({
         { path: 'goods/publish', name: 'goods-publish', component: GoodsPublishView, meta: { requiresAuth: true, requiredRole: 'goodsPublisher', unlockRoute: '/roles', lockedTitle: '需要二手发布者身份' } },
         { path: 'goods/:id', name: 'goods-detail', component: GoodsDetailView },
         { path: 'tasks', name: 'tasks', component: TasksView },
-        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true, requiredRole: 'runner', unlockRoute: '/roles', lockedTitle: '需要跑腿接单者身份' } },
+        { path: 'tasks/:id/workspace', name: 'task-workspace', component: TaskWorkspaceView, meta: { requiresAuth: true } },
         { path: 'shops', name: 'shops', component: ShopsView },
         { path: 'shops/merchant', name: 'shop-merchant', component: ShopMerchantView, meta: { requiresAuth: true, requiredRole: 'shopMerchant', unlockRoute: '/roles', lockedTitle: '需要店铺商家身份' } },
+        { path: 'shops/:shopId/items/:itemId', name: 'shop-item', component: () => import('@/views/ShopItemView.vue') },
         { path: 'shops/:id', name: 'shop-detail', component: ShopDetailView },
         { path: 'project-ads', name: 'project-ads', component: ProjectAdsView },
         { path: 'project-ads/manage', name: 'project-ad-manage', component: ProjectAdManageView, meta: { requiresAuth: true } },
         { path: 'project-ads/:id', name: 'project-ad-detail', component: ProjectAdDetailView },
         { path: 'wallet', name: 'wallet', component: WalletView, meta: { requiresAuth: true } },
+        { path: 'orders', name: 'orders', component: () => import('@/views/OrdersView.vue'), meta: { requiresAuth: true } },
         { path: 'profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
         { path: 'credit', name: 'credit-center', component: CreditCenterView, meta: { requiresAuth: true } },
         { path: 'roles', name: 'roles', component: RoleApplicationsView, meta: { requiresAuth: true } },
@@ -85,8 +88,9 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  await usePlatformStore().load()
   const auth = useAuthStore()
-  if (auth.token && !auth.currentUser && !auth.sessionLoaded) {
+  if (auth.token && !auth.currentUser && !auth.sessionLoaded && !(to.name === 'auth' && auth.sessionError)) {
     await auth.loadCurrentUser()
   }
 
@@ -94,7 +98,7 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAdmin) {
     if (!auth.isAuthenticated) {
-      ElMessage.warning('请先登录')
+      if (!auth.sessionError) ElMessage.warning('请先登录')
       return { name: 'auth', query: { redirect } }
     }
     if (!hasAnyRole(auth.currentUser?.roles, ['admin'])) {
@@ -104,7 +108,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    ElMessage.warning('请先登录')
+    if (!auth.sessionError) ElMessage.warning('请先登录')
     return { name: 'auth', query: { redirect } }
   }
 

@@ -27,6 +27,14 @@ public enum PlatformRoleType {
         return manualReviewRequired;
     }
 
+    public boolean requiresAgreement() {
+        return this == RUNNER || this == GOODS_PUBLISHER || this == SHOP_MERCHANT;
+    }
+
+    public boolean requiresDeposit() {
+        return depositAmount.compareTo(BigDecimal.ZERO) > 0;
+    }
+
     public String grantedRoleCode() {
         return grantedRoleCode;
     }

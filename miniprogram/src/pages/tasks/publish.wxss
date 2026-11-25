@@ -1,0 +1,3 @@
+.step-bar{display:flex;gap:12rpx;margin:28rpx 0}.step-bar>view{flex:1;background:var(--bg-subtle);color:var(--secondary);border-radius:999rpx;padding:12rpx;text-align:center;font-size:25rpx}.step-bar .selected{color:#fff;background:var(--navy)}.choice{padding:24rpx;border:1rpx solid var(--border);border-radius:20rpx;margin:18rpx 0;background:#fff}.choice.chosen{border-color:var(--runner);background:#ecfdf5}.recap{display:flex;flex-direction:column;gap:12rpx;margin:26rpx 0}
+
+.private-help{margin-bottom:24rpx}.media-list{display:flex;gap:16rpx;flex-wrap:wrap}.media-item{width:140rpx;margin-bottom:12rpx}.media-item image{width:140rpx;height:140rpx;border-radius:14rpx}

@@ -148,6 +148,17 @@ public class Goods {
         this.updatedAt = this.soldAt;
     }
 
+    /** Keep the ID, parties and settlement links; do not retain another copy of the listing. */
+    public void deleteListing() {
+        this.status = GoodsListingAccess.DELETED;
+        this.title = GoodsListingAccess.DELETED_MESSAGE;
+        this.description = "";
+        this.tradeLocation = "";
+        this.conditionLevel = "";
+        this.originalPrice = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void offShelf() {
         this.status = "OFF_SHELF";
         this.updatedAt = LocalDateTime.now();

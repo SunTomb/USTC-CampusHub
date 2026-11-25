@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+cd /opt/campushub/production
+b=$1; [[ $b == /opt/campushub-backups/cutover.* ]]; (cd "$b"; sha256sum -c SHA256SUMS); [[ -z $(ls -A uploads) ]]; db=campushub-hz-prod-campushub-mysql-1
+sql(){ docker exec -i "$db" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -NB -uroot campushub'; }
+[[ $(echo 'select count(*) from information_schema.tables where table_schema=database()' | sql) == 0 ]]; gzip -dc "$b/database.sql.gz" | sql >/dev/null
+[[ $(echo 'select max(cast(version as unsigned)) from flyway_schema_history where success=1' | sql) == 16 ]]; echo 'select table_name from information_schema.tables where table_schema=database() and table_type="BASE TABLE" order by table_name' | sql > "$b/restored-tables"; cmp "$b/tables" "$b/restored-tables"
+while IFS= read -r t; do [[ $t =~ ^[a-zA-Z0-9_]+$ ]]; printf '%s\t%s\n' "$t" "$(printf 'select count(*) from `%s`\n' "$t" | sql)"; done < "$b/tables" > "$b/restored-counts"; cmp "$b/counts.tsv" "$b/restored-counts"
+tar --no-same-owner -xzf "$b/uploads.tar.gz" -C uploads; (cd uploads; find . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum -z) > "$b/restored-upload-hashes"; cmp "$b/uploads.sha256z" "$b/restored-upload-hashes"; awk '{s+=$2} END{print "V16 exact restore:",NR,"tables,",s,"rows"}' "$b/counts.tsv"; echo "Upload manifest matches"

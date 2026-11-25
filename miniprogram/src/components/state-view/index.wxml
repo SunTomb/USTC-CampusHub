@@ -1,0 +1,3 @@
+<view wx:if="{{loading}}" class="state-panel"><view class="loading-dot"></view><text class="caption">正在加载</text></view>
+<view wx:elif="{{error}}" class="state-panel"><text class="heading">暂时无法加载</text><text class="caption">{{error}}</text><button class="small plain" bindtap="retry">重新加载</button></view>
+<view wx:elif="{{empty}}" class="state-panel"><view class="paper-mark">同</view><text class="heading">{{title}}</text><text class="caption">{{description}}</text></view>

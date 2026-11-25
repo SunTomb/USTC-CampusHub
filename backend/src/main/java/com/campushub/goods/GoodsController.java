@@ -4,6 +4,9 @@ import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,14 +39,21 @@ public class GoodsController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<GoodsDetailSummary> getGoods(@PathVariable Long id, @RequestParam(required = false) Long viewerId) {
-        Long effectiveViewerId = currentUserService.optionalUserId().orElse(viewerId);
+    public ApiResponse<GoodsDetailSummary> getGoods(@PathVariable Long id, @RequestParam(required = false) Long viewerId, HttpServletResponse response) {
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "private, no-store");
+        Long effectiveViewerId = currentUserService.optionalUserId().orElse(null);
         return ApiResponse.ok(goodsService.getDetail(id, effectiveViewerId));
     }
 
     @PutMapping("/{id}")
     public ApiResponse<GoodsDetailSummary> update(@PathVariable Long id, @Valid @RequestBody UpdateGoodsRequest request) {
         return ApiResponse.ok(goodsService.update(id, currentUserService.requireUserId(), request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteListing(@PathVariable Long id) {
+        goodsService.deleteListing(id, currentUserService.requireUserId());
+        return ApiResponse.ok(null);
     }
 
     @PostMapping("/{id}/off-shelf")
@@ -57,9 +67,8 @@ public class GoodsController {
     }
 
     @GetMapping("/{id}/intents")
-    public ApiResponse<List<GoodsIntentSummary>> listIntents(@PathVariable Long id, @RequestParam(required = false) Long sellerId) {
-        Long effectiveSellerId = sellerId == null ? currentUserService.requireUserId() : currentUserService.requireSameUser(sellerId);
-        return ApiResponse.ok(goodsService.listIntents(id, effectiveSellerId));
+    public ApiResponse<List<GoodsIntentSummary>> listIntents(@PathVariable Long id) {
+        return ApiResponse.ok(goodsService.listIntents(id, currentUserService.requireUserId()));
     }
 
     @PostMapping("/{id}/mark-sold")

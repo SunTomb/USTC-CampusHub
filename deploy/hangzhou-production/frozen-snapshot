@@ -1,0 +1,21 @@
+#!/bin/bash
+# Run on HK *after* the cutover operator has drained/stopped only the source backend
+# and enabled super_read_only on the dedicated CampusHub DB. Never freezes services itself.
+set -euo pipefail
+umask 077
+app=campushub-campushub-backend-1; db=campushub-campushub-mysql-1
+project() { docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$1"; }
+[[ $(project "$db") == campushub && $(project "$app") == campushub ]]
+[[ $(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Source}}{{end}}{{end}}' "$app") == /opt/campushub/uploads ]]
+sql() { docker exec -i "$db" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot -NB campushub'; }
+frozen() { [[ $(docker inspect -f '{{.State.Running}}' "$app") == false && $(echo 'select @@global.super_read_only' | sql) == 1 ]]; }
+frozen || { echo 'Source not frozen; refusing snapshot' >&2; exit 1; }
+root=/opt/campushub-backups/final-snapshots; mkdir -p "$root"; d=$(mktemp -d "$root/incomplete.XXXXXXXX"); cd "$d"
+[[ $(echo 'select max(cast(version as unsigned)) from flyway_schema_history where success=1' | sql) == 16 ]]
+docker exec "$db" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysqldump -uroot --single-transaction --quick --hex-blob --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF campushub' | gzip -1 > database.sql.gz
+echo 'select table_name from information_schema.tables where table_schema=database() and table_type="BASE TABLE" order by table_name' | sql > tables
+while IFS= read -r table; do [[ $table =~ ^[A-Za-z0-9_]+$ ]]; printf '%s\t%s\n' "$table" "$(printf 'select count(*) from `%s`\n' "$table" | sql)"; done < tables > counts.tsv
+[[ -s counts.tsv && -d /opt/campushub/uploads ]]; (
+cd /opt/campushub/uploads; [[ -z $(find . ! -type d ! -type f -print -quit) ]]; find . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum -z > "$d/uploads.sha256z"; tar -czf "$d/uploads.tar.gz" . )
+frozen; gzip -t database.sql.gz; tar -tzf uploads.tar.gz >/dev/null; sha256sum database.sql.gz uploads.tar.gz counts.tsv uploads.sha256z tables > SHA256SUMS
+final="$root/frozen-$(date -u +%Y%m%dT%H%M%SZ)-${d##*.}"; mv -T "$d" "$final"; echo "Snapshot: $final ($(wc -l < counts.tsv) tables). Source remains frozen."

@@ -1,238 +1,85 @@
 <template>
   <section class="page-stack" v-loading="loading">
-    <div class="page-heading">
-      <div>
-        <p class="eyebrow">Goods Detail</p>
-        <h2>{{ detail?.title || '商品详情' }}</h2>
-        <p>商品联系方式按购买意向展示，交易本金由买卖双方线下自行协商。</p>
-      </div>
-      <el-button @click="router.push('/goods')">返回市场</el-button>
-    </div>
-
-    <EmptyState
-      v-if="!loading && !detail"
-      eyebrow="Goods Detail"
-      title="商品详情暂不可用"
-      description="商品可能已下架、售出或被平台处理。你可以返回二手市场继续浏览。"
-      action-text="返回二手市场"
-      @action="router.push('/goods')"
-    />
-
+    <header class="page-heading"><div><p class="eyebrow">校园二手市集</p><h2>{{ detail?.title || '闲置详情' }}</h2></div>
+      <div class="heading-actions"><el-button @click="router.push('/goods')">返回市集</el-button><el-button v-if="auth.currentUser" @click="router.push('/orders?type=GOODS')">我的订单</el-button></div>
+    </header>
+    <section v-if="deleted" role="status" class="state-card"><h3>该商品已删除</h3><el-button text @click="router.push('/goods')">返回二手市集</el-button></section>
+    <el-alert v-else-if="error" :title="error" type="warning" :closable="false"><el-button text @click="load">重新加载</el-button></el-alert>
     <div v-if="detail" class="goods-detail">
-      <div class="goods-gallery">
-        <div v-if="detail.images.length === 0" class="goods-cover goods-cover-large">CampusHub</div>
-        <img v-else :src="detail.images[0].file.storagePath" :alt="detail.title" />
-      </div>
-
-      <el-card class="goods-main-panel">
-        <div class="goods-price-row goods-price-large">
-          <strong>¥{{ detail.price }}</strong>
-          <span v-if="detail.originalPrice">原价 ¥{{ detail.originalPrice }}</span>
-        </div>
-        <p>{{ detail.description }}</p>
-        <div class="goods-meta detail-meta">
-          <span>{{ detail.conditionLevel }}</span>
-          <span>{{ zoneLabel(detail.campusZone) }}</span>
-          <span>{{ detail.tradeLocation }}</span>
-          <span>{{ detail.deliveryMethod }}</span>
-        </div>
-        <div class="detail-actions">
-          <el-button type="primary" :disabled="isOwner" @click="intentDialog = true">我想要</el-button>
-          <el-button :disabled="isOwner" @click="startEscrowTrade">创建线上托管订单</el-button>
-          <el-button @click="favorite">收藏 {{ detail.favoriteCount }}</el-button>
-          <el-button @click="reportDialog = true">举报</el-button>
-          <el-button v-if="isOwner && detail.status === 'PUBLISHED'" type="warning" @click="markSold">标记售出</el-button>
-        </div>
-        <el-alert type="info" show-icon title="线上托管交易会从买方余额冻结商品金额和平台服务费，确认交易成功后划转给卖方。" />
-        <div v-if="currentEscrowOrder" class="info-card escrow-card">
-          <strong>托管订单 {{ currentEscrowOrder.orderNo }}</strong>
-          <p>状态：{{ currentEscrowOrder.escrowStatus }}；本金 ¥{{ currentEscrowOrder.escrowAmount }}；服务费 ¥{{ currentEscrowOrder.platformServiceFee }}</p>
-          <div class="payment-actions">
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'PENDING_FREEZE'" @click="freezeEscrowTrade">冻结余额</el-button>
-            <el-button v-if="currentEscrowOrder.escrowStatus === 'FROZEN'" type="success" @click="confirmEscrowTrade">确认完成</el-button>
-          </div>
-        </div>
+      <el-card class="goods-main-panel" shadow="never">
+        <CatalogPhotos kind="GOODS" :object-id="detail.id" />
+        <div class="goods-price-row goods-price-large"><strong>¥{{ detail.price }}</strong><span v-if="detail.originalPrice">原价 ¥{{ detail.originalPrice }}</span><el-tag>{{ statusLabel(detail.status) }}</el-tag></div>
+        <p class="preserve-lines">{{ detail.description }}</p><div class="goods-meta detail-meta"><span class="meta-pill">{{ detail.categoryName || '其他闲置' }}</span><span>{{ detail.conditionLevel }} · {{ formatCampusZone(detail.campusZone) }}</span><span>{{ detail.tradeLocation }} · {{ formatDeliveryMethod(detail.deliveryMethod) }}</span></div>
+        <div class="detail-actions"><el-button v-if="!owner && detail.status === 'PUBLISHED' && !detail.myIntentStatus" type="primary" @click="openIntent">我想要</el-button><el-tag v-if="detail.myIntentStatus">{{ statusLabel(detail.myIntentStatus) }}</el-tag>
+          <el-button v-if="detail.status === 'PUBLISHED'" :disabled="busy" @click="favorite">收藏（{{ detail.favoriteCount }}）</el-button></div>
+        <GoodsEscrowDetail v-if="platform.financialEnabled" :key="detail.id + ':' + viewerId" :goods-id="detail.id" :owner="owner" :available="detail.status === 'PUBLISHED'" @changed="load" />
       </el-card>
-
-      <el-card class="seller-panel">
-        <template #header>卖家与联系方式</template>
-        <p>{{ detail.sellerNickname }} · 信用 {{ detail.sellerCreditScore }}</p>
-        <p class="hint">CampusHub 只提供可信展示、联系意向和治理记录，不托管线下交易本金。</p>
-        <el-alert v-if="!detail.contactVisible" title="提交购买意向后可查看微信/QQ 联系方式" type="info" show-icon />
-        <el-alert v-else :title="detail.contactSnapshot || '联系方式已开放'" type="success" show-icon />
+      <el-card class="seller-panel" shadow="never"><template #header>卖家与交接方式</template><p>{{ detail.sellerNickname }} · {{ formatCampusZone(detail.campusZone) }}</p>
+        <p v-if="detail.contactVisible && detail.contactSnapshot">卖家联系方式：{{ detail.contactSnapshot }}</p>
+        <p v-else-if="detail.status === 'PUBLISHED'">提交购买意向后，可联系卖家约定当面交接。</p><p v-else>这件物品已结束交易。</p>
       </el-card>
-
-      <el-card class="interaction-panel">
-        <template #header>留言评论</template>
-        <div class="comment-form">
-          <el-input v-model="commentText" placeholder="询问成色、交易时间等" />
-          <el-button type="primary" @click="submitComment">发送</el-button>
-        </div>
-        <el-empty v-if="detail.comments.length === 0" description="暂无评论" />
-        <div v-for="comment in detail.comments" :key="comment.id" class="comment-item">
-          <strong>{{ comment.userNickname }}</strong>
-          <span>{{ comment.content }}</span>
-        </div>
+      <el-card v-if="owner" class="interaction-panel" shadow="never"><template #header>我收到的购买意向</template>
+        <p v-if="detail.status==='PUBLISHED'">实际交接后再选择买家。确认后无法换人，其他购买意向会关闭。</p>
+        <div v-if="detail.canEdit || detail.canOffShelf || detail.canDelete" class="detail-actions"><el-button v-if="detail.canEdit" :disabled="busy" @click="router.push(`/goods/publish?edit=${detail.id}`)">编辑闲置</el-button><el-button v-if="detail.canOffShelf" :disabled="busy" @click="removeListing">下架闲置</el-button><el-button v-if="detail.canDelete" :disabled="busy" plain type="danger" @click="deleteListing">删除商品</el-button></div>
+        <p v-if="!intents.length && !error" class="hint">还没有收到购买意向。</p>
+        <div v-for="item in intents" :key="item.id" class="intent-row"><div><strong>{{ item.buyerNickname }}</strong> · {{ statusLabel(item.status) }}<p v-if="item.message">{{ item.message }}</p></div>
+          <el-button v-if="detail.canMarkSold && item.status === 'OPEN'" type="primary" plain :disabled="busy" @click="chooseBuyer(item)">与此买家确认成交</el-button></div>
       </el-card>
-
-      <el-card class="review-list">
-        <template #header>卖家评价</template>
-        <div class="comment-form">
-          <el-rate v-model="reviewRating" />
-          <el-input v-model="reviewText" placeholder="交易后评价卖家" />
-          <el-button @click="submitReview">评价</el-button>
-        </div>
-        <el-empty v-if="detail.sellerReviews.length === 0" description="暂无评价" />
-        <div v-for="review in detail.sellerReviews" :key="review.id" class="comment-item">
-          <strong>{{ review.reviewerNickname }} · {{ review.rating }} 星</strong>
-          <span>{{ review.content }}</span>
-        </div>
+      <el-card class="interaction-panel" shadow="never"><template #header>关于这件闲置的留言</template>
+        <div v-if="detail.status === 'PUBLISHED'" class="comment-form"><el-input v-model="commentText" maxlength="500" placeholder="询问成色、配件或交接地点"/><el-button :disabled="busy || !commentText.trim()" @click="comment">留言</el-button></div>
+        <p v-if="!detail.comments.length" class="hint">还没有留言。</p><div v-for="c in detail.comments" :key="c.id" class="comment-item"><strong>{{ c.userNickname }}</strong><span>{{ c.content }}</span></div>
       </el-card>
     </div>
-
-    <el-dialog v-model="intentDialog" title="提交购买意向" width="420px">
-      <el-input v-model="intentMessage" type="textarea" :rows="3" placeholder="说明想交易的时间或问题" />
-      <template #footer>
-        <el-button @click="intentDialog = false">取消</el-button>
-        <el-button type="primary" @click="createIntent">提交</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="reportDialog" title="举报商品" width="420px">
-      <el-input v-model="reportReason" placeholder="举报原因" />
-      <el-input v-model="reportDescription" type="textarea" :rows="3" placeholder="补充说明" class="dialog-field" />
-      <template #footer>
-        <el-button @click="reportDialog = false">取消</el-button>
-        <el-button type="danger" @click="submitReport">举报</el-button>
-      </template>
-    </el-dialog>
+    <el-dialog v-model="intentDialog" append-to-body title="提交购买意向" width="min(420px, 92vw)"><p>这不是成交确认。先与卖家约定交接时间和地点。</p><el-input v-model="message" maxlength="500" type="textarea" placeholder="给卖家留言（选填）"/><template #footer><el-button @click="intentDialog = false">取消</el-button><el-button type="primary" :loading="busy" @click="sendIntent">发送意向</el-button></template></el-dialog>
   </section>
 </template>
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import {
-  commentTarget,
-  confirmGoodsEscrow,
-  createGoodsEscrowOrder,
-  createGoodsIntent,
-  createReview,
-  favoriteTarget,
-  freezeGoodsEscrow,
-  getGoodsDetail,
-  markGoodsSold,
-  reportTarget,
-  type GoodsDetailSummary,
-  type GoodsOrderSummary,
-} from '@/api/campushub'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { commentTarget, createGoodsIntent, deleteGoods, favoriteTarget, getGoodsDetail, listGoodsIntents, markGoodsSold, offShelfGoods, type GoodsDetailSummary, type GoodsIntentSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
-import EmptyState from '@/components/common/EmptyState.vue'
-
-const route = useRoute()
-const router = useRouter()
-const auth = useAuthStore()
-const detail = ref<GoodsDetailSummary | null>(null)
-const loading = ref(false)
-const intentDialog = ref(false)
-const reportDialog = ref(false)
-const intentMessage = ref('')
-const commentText = ref('')
-const reportReason = ref('虚假信息')
-const reportDescription = ref('')
-const reviewRating = ref(5)
-const reviewText = ref('交易顺利')
-const currentEscrowOrder = ref<GoodsOrderSummary | null>(null)
-
-const goodsId = computed(() => Number(route.params.id))
-const viewerId = computed(() => auth.currentUser?.id)
-const isOwner = computed(() => Boolean(detail.value && viewerId.value && detail.value.sellerId === viewerId.value))
-
-const zoneMap: Record<string, string> = { CENTRAL: '中校区', WEST: '西校区', EAST: '东校区', NORTH: '北校区', SOUTH: '南校区', HIGH_TECH: '高新校区', ADVANCED_RESEARCH_INSTITUTE: '先研院', SCIENCE_ISLAND: '科学岛', OTHER: '其他' }
-function zoneLabel(zone: string) { return zoneMap[zone] ?? zone }
-
-async function loadDetail() {
-  loading.value = true
+import { usePlatformStore } from '@/stores/platform'
+import CatalogPhotos from '@/components/CatalogPhotos.vue'
+import { formatCampusZone, formatDeliveryMethod } from '@/utils/display'
+const GoodsEscrowDetail = defineAsyncComponent(() => import('./legacy/GoodsEscrowDetail.vue'))
+const auth = useAuthStore(), platform = usePlatformStore(), route = useRoute(), router = useRouter()
+const id = computed(() => Number(route.params.id)), viewerId = computed(() => auth.currentUser?.id)
+const detail = ref<GoodsDetailSummary|null>(null), intents = ref<GoodsIntentSummary[]>([]), owner = computed(() => !!detail.value && detail.value.sellerId === viewerId.value)
+const deleted=ref(false), error=ref(''), busy=ref(false), loading=ref(false), intentDialog=ref(false), message=ref(''), commentText=ref('')
+const labels:Record<string,string>={PUBLISHED:'在售',ON_SALE:'历史在售',SOLD:'已售出',OFF_SHELF:'已下架',OPEN:'已提交意向',COMPLETED:'已成交',CLOSED:'意向已结束'}
+const statusLabel=(s:string)=>labels[s] || '暂不可交易'
+let context=0, sequence=0
+async function load() {
+  const n=++sequence, target=id.value, user=viewerId.value
+  deleted.value=false; loading.value=true; error.value=''; detail.value=null; intents.value=[]
   try {
-    detail.value = await getGoodsDetail(goodsId.value, viewerId.value)
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '商品详情加载失败')
-  } finally {
-    loading.value = false
-  }
+    let item:GoodsDetailSummary
+    try {item=await getGoodsDetail(target)} catch(e) {
+      if(n!==sequence)return
+      const status=(e as {response?:{status?:number};status?:number})?.response?.status ?? (e as {status?:number})?.status
+      if(status===410){deleted.value=true;return}
+      throw e
+    }
+    if(n!==sequence)return
+    detail.value=item
+    if(item.sellerId===user){const rows=await listGoodsIntents(target);if(n===sequence)intents.value=rows}
+  } catch(e) {if(n===sequence)error.value=e instanceof Error?e.message:'无法加载闲置详情'} finally {if(n===sequence)loading.value=false}
 }
-
-function requireLogin() {
-  if (!viewerId.value) {
-    ElMessage.error('请先登录')
-    router.push('/auth')
-    return false
-  }
-  return true
-}
-
-async function createIntent() {
-  if (!requireLogin()) return
-  await createGoodsIntent(goodsId.value, viewerId.value!, intentMessage.value)
-  intentDialog.value = false
-  ElMessage.success('已提交购买意向，联系方式已开放')
-  await loadDetail()
-}
-
-async function favorite() {
-  if (!requireLogin()) return
-  await favoriteTarget(viewerId.value!, { targetType: 'GOODS', targetId: goodsId.value })
-  ElMessage.success('已收藏')
-  await loadDetail()
-}
-
-async function submitComment() {
-  if (!requireLogin() || !commentText.value.trim()) return
-  await commentTarget(viewerId.value!, { targetType: 'GOODS', targetId: goodsId.value, content: commentText.value })
-  commentText.value = ''
-  await loadDetail()
-}
-
-async function submitReport() {
-  if (!requireLogin()) return
-  await reportTarget(viewerId.value!, { targetType: 'GOODS', targetId: goodsId.value, reason: reportReason.value, description: reportDescription.value })
-  reportDialog.value = false
-  ElMessage.success('举报已提交')
-}
-
-async function submitReview() {
-  if (!requireLogin() || !detail.value) return
-  await createReview(viewerId.value!, { targetUserId: detail.value.sellerId, targetType: 'GOODS', targetId: goodsId.value, rating: reviewRating.value, content: reviewText.value })
-  ElMessage.success('评价已提交')
-  await loadDetail()
-}
-
-async function markSold() {
-  if (!requireLogin()) return
-  await markGoodsSold(goodsId.value, viewerId.value!)
-  ElMessage.success('已标记售出')
-  await loadDetail()
-}
-
-async function startEscrowTrade() {
-  if (!requireLogin()) return
-  currentEscrowOrder.value = await createGoodsEscrowOrder(goodsId.value, viewerId.value!)
-  ElMessage.success('线上托管订单已创建')
-}
-
-async function freezeEscrowTrade() {
-  if (!requireLogin() || !currentEscrowOrder.value) return
-  currentEscrowOrder.value = await freezeGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('托管金额已冻结')
-}
-
-async function confirmEscrowTrade() {
-  if (!requireLogin() || !currentEscrowOrder.value) return
-  currentEscrowOrder.value = await confirmGoodsEscrow(currentEscrowOrder.value.id, viewerId.value!)
-  ElMessage.success('交易已确认完成，托管金额已划转')
-  await loadDetail()
-}
-
-onMounted(loadDetail)
+function reset(){context++;sequence++;deleted.value=false;detail.value=null;intents.value=[];message.value=commentText.value=error.value='';intentDialog.value=busy.value=loading.value=false}
+watch([id,viewerId,()=>auth.token],()=>{reset();void load()},{immediate:true,flush:'sync'}); onBeforeUnmount(reset)
+function login(){if(auth.currentUser && auth.token)return true;void router.push({path:'/auth',query:{redirect:route.fullPath}});return false}
+function openIntent(){if(login()){message.value='';intentDialog.value=true}}
+async function perform(work:(n:number)=>Promise<void>){if(busy.value || !login())return;const n=context; busy.value=true;try{await work(n);if(n===context)await load()}catch(e){if(n===context && e instanceof Error){ElMessage.error(e.message);await load()}}finally{if(n===context)busy.value=false}}
+function sendIntent(){return perform(async n=>{await createGoodsIntent(id.value,viewerId.value!,message.value.trim());if(n===context){intentDialog.value=false;ElMessage.success('购买意向已发送')}})}
+function favorite(){return perform(async()=>{await favoriteTarget(viewerId.value!,{targetType:'GOODS',targetId:id.value})})}
+function comment(){if(commentText.value.trim())return perform(async n=>{await commentTarget(viewerId.value!,{targetType:'GOODS',targetId:id.value,content:commentText.value.trim()});if(n===context)commentText.value=''})}
+function chooseBuyer(item:GoodsIntentSummary){if(!owner.value || !detail.value?.canMarkSold || item.status!=='OPEN')return
+  return perform(async n=>{await ElMessageBox.confirm(`确认已经与「${item.buyerNickname}」完成线下交接？其他意向将结束。`,'确认实际买家',{type:'warning'});if(n!==context)return;await markGoodsSold(id.value,viewerId.value!,item.buyerId);if(n===context)ElMessage.success('已记录成交')})}
+function removeListing(){if(!owner.value||!detail.value?.canOffShelf)return;return perform(async n=>{await ElMessageBox.confirm('下架后不再展示，已有购买意向将关闭。','下架闲置',{type:'warning'});if(n===context)await offShelfGoods(id.value)})}
+function deleteListing(){if(!owner.value||!detail.value?.canDelete)return;return perform(async n=>{
+  await ElMessageBox.confirm('删除后，订单仍可查看，但不能再打开商品内容或照片。','删除商品？',{type:'warning',confirmButtonText:'删除',cancelButtonText:'取消'})
+  if(n===context)await deleteGoods(id.value)
+})}
 </script>
+<style scoped>.intent-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--el-border-color-light);padding:1rem 0}.intent-row p{margin:.3rem 0;overflow-wrap:anywhere}</style>

@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi, type ApiRequestOptions } from './client'
+import { apiClient, getApi, postApi, putApi, type ApiRequestOptions, type ApiResponse, unwrapApiResponse } from './client'
 
 export interface LoginPayload {
   username: string
@@ -102,6 +102,8 @@ export interface ReviewSummary {
 }
 
 export interface GoodsDetailSummary extends GoodsSummary {
+  categoryId: number; categoryName: string|null; soldAt:string|null; myIntentStatus:string|null
+  canEdit:boolean; canDelete:boolean; canOffShelf:boolean; canMarkSold:boolean
   deliveryMethod: string
   contactVisibility: string
   publishedAt: string | null
@@ -136,7 +138,7 @@ export interface GoodsIntentSummary {
   sellerId: number
   sellerNickname: string
   message: string | null
-  contactSnapshot: string
+  contactSnapshot: string | null
   status: string
   serviceFeeId: number | null
   createdAt: string
@@ -202,6 +204,8 @@ export interface RewardTaskSummary {
   id: number
   title: string
   description: string
+  weightGrams: number | null
+  notes: string | null
   rewardAmount: number
   depositAmount: number
   taskLocation: string
@@ -222,6 +226,9 @@ export interface RewardTaskSummary {
 export interface CreateRunnerTaskPayload {
   title: string
   description: string
+  weightGrams: number
+  notes?: string
+  pickupCode?: string
   rewardAmount: number
   depositAmount?: number
   acceptanceMode: TaskAcceptanceMode
@@ -241,6 +248,20 @@ export interface TaskActionPayload {
   note?: string
   completionCode?: string
 }
+
+export interface TaskWorkspaceSummary {
+  canEdit?:boolean; canWithdraw?:boolean
+  task: RewardTaskSummary
+  publisherContact: TaskParticipantContact
+  runnerContact: TaskParticipantContact | null
+  events: TaskEventSummary[]
+  privateDetails?: { pickupCode: string | null }
+  evidence?: TaskEvidenceSummary[]
+}
+export interface TaskParticipantContact { userId: number; nickname: string; wechatContact: string | null; qqContact: string | null }
+export interface TaskEventSummary { id: number; eventType: string; actorNickname: string | null; note: string | null; createdAt: string }
+export type TaskEvidenceType = 'REQUEST_IMAGE' | 'DELIVERY_PHOTO'
+export interface TaskEvidenceSummary { id: number; evidenceType: TaskEvidenceType; contentType: string; sizeBytes: number; clientRequestId?: string; createdAt: string }
 
 export interface TaskIssuePayload {
   issueType: string
@@ -269,15 +290,31 @@ export interface RoleApplicationSummary {
   depositStatus: string
   depositPaymentOrderNo: string | null
   reviewStatus: string
+  depositPolicy: string
+  agreementStatus: string
+  agreementVersion: string | null
+  agreementConsentedAt: string | null
+  activationMode: string
   applyNote: string | null
   reviewerNickname: string | null
   createdAt: string
   reviewedAt: string | null
 }
 
+export interface PlatformProtocolSummary {
+  agreementCode: string
+  version: string
+  title: string
+  content: string
+  effectiveAt: string
+  acceptedAt: string | null
+}
+
 export interface ApplyRolePayload {
   roleType: string
   applyNote?: string
+  agreementVersion?: string
+  agreementAccepted?: boolean
 }
 
 export interface StationNotificationSummary {
@@ -401,7 +438,7 @@ export interface ShopSummary {
   openingHours: string | null
   coverFileId: number | null
   status: string
-  rating: number
+  rating: number | null
 }
 
 export interface ServiceItemSummary {
@@ -416,6 +453,8 @@ export interface ServiceItemSummary {
   maxPrice: number | null
   priceUnit: string
   coverFileId: number | null
+  rating: number | null
+  reviewCount: number
   durationMinutes: number
   status: string
   createdAt: string
@@ -906,36 +945,77 @@ export function listTasks() {
   return getApi<RewardTaskSummary[]>('/tasks')
 }
 
-export function publishRunnerTask(payload: CreateRunnerTaskPayload, _publisherId?: number) {
-  return postApi<RewardTaskSummary>('/tasks', payload)
+export function listMyPublishedTasks(options?: ApiRequestOptions) {
+  return getApi<RewardTaskSummary[]>('/tasks/mine', options)
 }
 
-export function grabRunnerTask(taskId: number, _userId?: number) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/grab`, {})
+export function listMyTaskApplications(userId: number, options?: ApiRequestOptions) {
+  return getApi<TaskApplicationSummary[]>(`/task-applications/applicant/${userId}`, options)
 }
 
-export function applyRunnerTask(taskId: number, _userId: number, payload: ApplyTaskPayload) {
-  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications`, payload)
+export function publishRunnerTask(payload: CreateRunnerTaskPayload, _publisherId?: number, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>('/tasks', payload, options)
 }
 
-export function acceptRunnerTaskApplication(taskId: number, applicationId: number, _publisherId?: number) {
-  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications/${applicationId}/accept`, {})
+export function grabRunnerTask(taskId: number, _userId?: number, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/grab`, {}, options)
 }
 
-export function advanceRunnerTask(taskId: number, _userId: number, nextStatus: string, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}`, payload)
+export function applyRunnerTask(taskId: number, _userId: number, payload: ApplyTaskPayload, options?: ApiRequestOptions) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications`, payload, options)
 }
 
-export function completeRunnerTaskWithCode(taskId: number, _userId: number, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/complete-code`, payload)
+export function acceptRunnerTaskApplication(taskId: number, applicationId: number, _publisherId?: number, options?: ApiRequestOptions) {
+  return postApi<TaskApplicationSummary>(`/tasks/${taskId}/applications/${applicationId}/accept`, {}, options)
 }
 
-export function confirmRunnerTask(taskId: number, _publisherId: number, payload: TaskActionPayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/confirm`, payload)
+export function advanceRunnerTask(taskId: number, _userId: number, nextStatus: string, payload: TaskActionPayload, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/workflow/${nextStatus}`, payload, options)
 }
 
-export function reportRunnerTaskIssue(taskId: number, _userId: number, payload: TaskIssuePayload) {
-  return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues`, payload)
+export function issueRunnerCompletionCode(taskId: number, options?: ApiRequestOptions) {
+  return postApi<{ completionCode: string; expiresAt: string }>(`/tasks/${taskId}/completion-code`, {}, options)
+}
+
+export function completeRunnerTaskWithCode(taskId: number, _userId: number, payload: TaskActionPayload, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/complete-code`, payload, options)
+}
+
+export function confirmRunnerTask(taskId: number, _publisherId: number, payload: TaskActionPayload, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/confirm`, payload, options)
+}
+
+export function reportRunnerTaskIssue(taskId: number, _userId: number, payload: TaskIssuePayload, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/issues`, payload, options)
+}
+
+export function getTaskWorkspace(taskId: number, options?: ApiRequestOptions) {
+  return getApi<TaskWorkspaceSummary>(`/tasks/${taskId}/workspace`, options)
+}
+
+export function submitTaskDelivery(taskId: number, options?: ApiRequestOptions) {
+  return postApi<RewardTaskSummary>(`/tasks/${taskId}/evidence/submit`, { }, options)
+}
+
+export async function uploadTaskEvidence(taskId: number, evidenceType: TaskEvidenceType, file: File, clientRequestId: string, options?: ApiRequestOptions) {
+  const body = new FormData()
+  body.append('file', file)
+  body.append('clientRequestId', clientRequestId)
+  const response = await apiClient.post<ApiResponse<TaskEvidenceSummary>>(`/tasks/${taskId}/${evidenceType === 'REQUEST_IMAGE' ? 'request-images' : 'evidence'}`, body, options)
+  return unwrapApiResponse(response.data)
+}
+
+export async function getTaskEvidenceBlob(taskId: number, photoId: number, options?: ApiRequestOptions) {
+  const response = await apiClient.get<Blob>(`/tasks/${taskId}/evidence/${photoId}`, { ...options, responseType: 'blob' })
+  return response.data
+}
+
+export async function deleteTaskEvidence(taskId: number, photoId: number, options?: ApiRequestOptions) {
+  await apiClient.delete(`/tasks/${taskId}/evidence/${photoId}`, options)
+}
+
+export function getCurrentRoleAgreement(roleType: string) {
+  return getApi<PlatformProtocolSummary>(`/platform/protocols/${encodeURIComponent(roleType)}`)
 }
 
 export function applyRole(userId: number, payload: ApplyRolePayload) {
@@ -1370,3 +1450,11 @@ export function listReviewRecords() {
 export function listReportRecords() {
   return getApi<ReportRecordSummary[]>('/moderation/reports')
 }
+
+export const listGoodsIntents=(id:number)=>getApi<GoodsIntentSummary[]>(`/goods/${id}/intents`)
+export const updateGoods=(id:number,payload:CreateGoodsPayload)=>putApi<GoodsDetailSummary>(`/goods/${id}`,payload)
+export const deleteGoods=async (id:number)=>unwrapApiResponse((await apiClient.delete<ApiResponse<void>>(`/goods/${id}`)).data)
+export const offShelfGoods=(id:number)=>postApi<GoodsDetailSummary>(`/goods/${id}/off-shelf`,{})
+export const listGoodsCategories=()=>getApi<{id:number;name:string;enabled:boolean;parentId:number|null}[]>('/categories')
+export const updateRunnerTask=(id:number,payload:CreateRunnerTaskPayload,options?:ApiRequestOptions)=>putApi<RewardTaskSummary>(`/tasks/${id}`,payload,options)
+export const withdrawRunnerTask=async(id:number,options?:ApiRequestOptions)=>unwrapApiResponse((await apiClient.delete<ApiResponse<RewardTaskSummary>>(`/tasks/${id}`,options)).data)

@@ -1,0 +1,23 @@
+<view wx:if="{{showing}}" class="intro-layer" catchtouchmove="noop">
+  <view class="intro-top">
+    <text class="intro-label">{{mode === 'about' ? '关于与备案' : '欢迎来到'}}</text>
+    <button class="intro-dismiss" bindtap="dismiss" aria-label="{{mode === 'about' ? '关闭关于与备案' : '跳过启动展示，进入小程序'}}">{{mode === 'about' ? '关闭' : '进入'}}<text class="intro-arrow">→</text></button>
+  </view>
+  <view class="intro-main">
+    <image class="intro-logo" src="/assets/brand.png" mode="aspectFit" aria-label="蜗壳同路图标" />
+    <view class="intro-title">蜗壳同路</view>
+    <view class="intro-english">CampusHub</view>
+    <view class="intro-rule"></view>
+    <view class="intro-tagline">校园里的顺路相助</view>
+  </view>
+  <view class="intro-footer">
+    <button class="intro-filing" bindtap="showAbout" aria-label="查看备案信息">{{filing.number}}</button>
+    <block wx:if="{{mode === 'about'}}">
+      <text class="intro-query-label">工信部备案查询</text>
+      <text class="intro-query-url" selectable>{{filing.queryUrl}}</text>
+      <button class="intro-query-button" bindtap="copyQuery">复制查询网址</button>
+      <text class="intro-query-help">在浏览器打开网址，输入备案号查询</text>
+    </block>
+    <text wx:else class="intro-hint">即将进入 · 点击备案号可查看详情</text>
+  </view>
+</view>

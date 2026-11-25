@@ -32,12 +32,14 @@ public class ServiceItemController {
 
     @GetMapping("/{id}")
     public ApiResponse<ServiceItemSummary> getItem(@PathVariable Long id) {
-        return ApiResponse.ok(shopService.getItem(id));
+        return ApiResponse.ok(shopService.getItem(id,currentUserService.optionalUserId().orElse(null)));
     }
 
     @GetMapping("/shop/{shopId}")
     public ApiResponse<List<ServiceItemSummary>> listShopItems(@PathVariable Long shopId, @RequestParam(defaultValue = "false") boolean includeAll) {
-        return ApiResponse.ok(shopService.listShopItems(shopId, includeAll));
+        var detail=shopService.getShop(shopId,currentUserService.optionalUserId().orElse(null));
+        if(includeAll&&!detail.ownerId().equals(currentUserService.optionalUserId().orElse(null)))throw new com.campushub.common.BusinessException("只能查看自己店内的未上架服务");
+        return ApiResponse.ok(detail.serviceItems().stream().filter(i->includeAll||"PUBLISHED".equals(i.status())).toList());
     }
 
     @PostMapping("/shop/{shopId}")

@@ -2,31 +2,31 @@
   <section class="page-stack">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">Message Center</p>
+        <p class="eyebrow">我的书院 · 站内信箱</p>
         <h2>站内通知</h2>
-        <p>接单申请、任务状态、异常处理和身份保证金结果都会沉淀在站内通知。</p>
+        <p>跑腿接单进展、买家购买意向、小店预约提醒与身份核验通知都会汇集在这里。</p>
       </div>
-      <el-button :loading="loading" @click="load">刷新</el-button>
+      <el-button :loading="loading" @click="load">刷新信箱</el-button>
     </div>
 
     <div class="list-surface premium-panel">
       <EmptyState
         v-if="!loading && notifications.length === 0"
-        eyebrow="Notifications"
-        title="暂时没有站内通知"
-        description="任务状态、身份审核、预约处理和治理结果会在这里提醒你。"
-        action-text="刷新通知"
+        eyebrow="站内信箱"
+        title="信箱里暂时没有新消息"
+        description="当有同学接下你的跑腿单、预约你的小店或发送购买意向时，系统会第一时间在这里提醒你。"
+        action-text="刷新看看"
         @action="load"
       />
       <div v-for="item in notifications" :key="item.id" class="list-row notification-row">
         <div>
           <h3>{{ item.title }}</h3>
           <p>{{ item.content }}</p>
-          <span>{{ item.targetType || '平台通知' }} · {{ formatTime(item.createdAt) }}</span>
+          <span>{{ formatTargetType(item.targetType) }} · {{ formatTime(item.createdAt) }}</span>
         </div>
         <div class="metric-column">
-          <el-tag :type="item.readAt ? 'info' : 'primary'">{{ item.readAt ? '已读' : '未读' }}</el-tag>
-          <el-button v-if="!item.readAt" size="small" plain @click="markRead(item.id)">标记已读</el-button>
+          <el-tag :type="item.readAt ? 'info' : 'primary'">{{ item.readAt ? '已读' : '新提醒' }}</el-tag>
+          <el-button v-if="!item.readAt" size="small" plain @click="markRead(item.id)">标为已读</el-button>
         </div>
       </div>
     </div>
@@ -38,6 +38,7 @@ import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listNotifications, markNotificationRead, type StationNotificationSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import { formatTargetType } from '@/utils/display'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const auth = useAuthStore()
@@ -59,12 +60,12 @@ async function load() {
 
 async function markRead(id: number) {
   await markNotificationRead(id)
-  ElMessage.success('已标记为已读')
+  ElMessage.success('已标为已读')
   await load()
 }
 
 function formatTime(value: string) {
-  return new Date(value).toLocaleString()
+  return new Date(value).toLocaleString('zh-CN')
 }
 
 onMounted(load)

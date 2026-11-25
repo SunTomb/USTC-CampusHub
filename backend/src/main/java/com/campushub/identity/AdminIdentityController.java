@@ -24,6 +24,10 @@ public class AdminIdentityController {
 
     @GetMapping("/shop-merchant-applications/pending")
     public ApiResponse<List<RoleApplicationSummary>> listPendingShopMerchantApplications() {
+        currentUserService.requireUserId();
+        if (!currentUserService.isShowcaseReader()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
+        }
         return ApiResponse.ok(identityService.listPendingShopMerchantApplications());
     }
 

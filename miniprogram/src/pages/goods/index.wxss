@@ -1,0 +1,1 @@
+.listing{padding:24rpx;display:grid;gap:12rpx}.listing .heading{flex:1;min-width:0}.listing .price{flex:none}

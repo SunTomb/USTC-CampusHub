@@ -49,7 +49,7 @@ public class ServiceFeeRecord {
     @Column(name = "payment_center_order_no")
     private String paymentCenterOrderNo;
 
-    @Column(name = "pay_url")
+    @Column(name = "pay_url", length = 4096)
     private String payUrl;
 
     @Column(name = "created_at", insertable = false, updatable = false)

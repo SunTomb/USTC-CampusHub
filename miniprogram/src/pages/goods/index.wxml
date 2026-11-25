@@ -1,0 +1,14 @@
+<launch-intro id="launch-intro" />
+<view class="page">
+  <zone-bar value="{{zone}}" bind:change="changeZone" />
+  <view class="page-top"><view><view class="title">二手市集</view><view class="caption">先聊细节，再约地点交接。</view></view><button class="small primary" bindtap="publish">上架闲置</button></view>
+  <input class="input" value="{{query}}" bindinput="search" maxlength="80" placeholder="搜索物品或分类" />
+  <view class="between"><text class="section-title">正在转让</text><button wx:if="{{user}}" class="small ghost" data-url="/pages/orders/index?type=GOODS" bindtap="go">我的订单 ›</button></view>
+  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" title="没有找到在售闲置" description="试试其他关键词或校区。" bind:retry="reload" />
+  <view class="stack" wx:if="{{!loading && !error}}"><view class="surface listing" wx:for="{{items}}" wx:key="id" data-url="/pages/goods/detail?id={{item.id}}" bindtap="go" hover-class="pressed">
+    <catalog-photos kind="GOODS" object-id="{{item.id}}" compact="{{true}}" />
+    <view class="between"><text class="heading clamp">{{item.title}}</text><text class="price">¥{{item.priceLabel}}</text></view>
+    <view class="caption">{{item.zoneLabel}} · {{item.conditionLevel}} · {{item.categoryName || '其他闲置'}}</view><view class="caption">{{item.sellerNickname}} · {{item.tradeLocation}}</view>
+  </view></view>
+</view>
+<role-unlock visible="{{unlock}}" role="GOODS_PUBLISHER" bind:close="closeUnlock" bind:opened="opened" />

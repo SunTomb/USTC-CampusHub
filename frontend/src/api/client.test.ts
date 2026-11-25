@@ -52,6 +52,7 @@ describe('apiClient auth expiration handling', () => {
     const handler = apiClient.interceptors.response.handlers?.[0].rejected
 
     await expect(handler?.(error)).rejects.toThrow('请先登录')
+    await expect(handler?.(error)).rejects.toMatchObject({ status: 401 })
     expect(clearSession).not.toHaveBeenCalled()
   })
 })

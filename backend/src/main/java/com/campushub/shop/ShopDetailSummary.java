@@ -24,7 +24,7 @@ public record ShopDetailSummary(
         String contactSnapshot,
         List<ServiceItemSummary> serviceItems) {
 
-    public static ShopDetailSummary from(Shop shop, boolean contactVisible, String contactSnapshot, List<ServiceItemSummary> serviceItems) {
+    public static ShopDetailSummary from(Shop shop, boolean contactVisible, String contactSnapshot, List<ServiceItemSummary> serviceItems, BigDecimal score) {
         return new ShopDetailSummary(
                 shop.getId(),
                 shop.getName(),
@@ -38,7 +38,7 @@ public record ShopDetailSummary(
                 shop.getOpeningHours(),
                 shop.getCoverFileId(),
                 shop.getStatus(),
-                shop.getRating(),
+                score,
                 shop.getCreatedAt(),
                 shop.getUpdatedAt(),
                 contactVisible,

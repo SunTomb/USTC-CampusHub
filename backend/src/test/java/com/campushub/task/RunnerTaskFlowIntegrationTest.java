@@ -20,6 +20,14 @@ class RunnerTaskFlowIntegrationTest {
     @Autowired
     private RunnerTaskService runnerTaskService;
 
+    @Autowired
+    private com.campushub.auth.UserRoleService roles;
+
+    @org.junit.jupiter.api.BeforeEach
+    void enableRunnerForWorkflowTests() {
+        roles.assignRole(2L, "ROLE_RUNNER");
+    }
+
     @Test
     void grabTaskImmediatelyAcceptsRunnerForGrabMode() {
         RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
@@ -33,7 +41,7 @@ class RunnerTaskFlowIntegrationTest {
                 "西区快递点",
                 "中区宿舍",
                 LocalDateTime.now().plusHours(3),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
 
         RewardTaskSummary accepted = runnerTaskService.grab(published.id(), 2L);
 
@@ -54,7 +62,7 @@ class RunnerTaskFlowIntegrationTest {
                 "东区打印店",
                 "西区宿舍",
                 LocalDateTime.now().plusHours(4),
-                "PHOTO_AND_CONFIRMATION"));
+                "PHOTO_AND_CONFIRMATION", 500, null, null));
 
         TaskApplicationSummary application = runnerTaskService.apply(published.id(), 2L, new ApplyTaskRequest("我现在在东区"));
 
@@ -76,14 +84,39 @@ class RunnerTaskFlowIntegrationTest {
                 "校门",
                 "宿舍",
                 LocalDateTime.now().plusHours(2),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
         runnerTaskService.grab(published.id(), 2L);
+        CompletionCodeResponse issued = runnerTaskService.issueCompletionCode(published.id(), 1L);
+        runnerTaskService.advance(published.id(), 2L, "HEADING_TO_PICKUP", null);
+        runnerTaskService.advance(published.id(), 2L, "PICKED_UP", null);
+        runnerTaskService.advance(published.id(), 2L, "DELIVERING", null);
+        runnerTaskService.advance(published.id(), 2L, "PENDING_CONFIRMATION", null);
 
-        RewardTaskSummary completed = runnerTaskService.completeWithCode(published.id(), 2L, new TaskActionRequest("已送达", "123456"));
+        RewardTaskSummary completed = runnerTaskService.completeWithCode(
+                published.id(), 2L, new TaskActionRequest("已送达", issued.completionCode()));
 
         assertThat(completed.workflowStatus()).isEqualTo("COMPLETED");
     }
 
+    @Test
+    void publisherCanReadOwnTaskHistoryAcrossStatuses() {
+        RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
+                "跨设备查看任务",
+                "用于验证发布历史接口",
+                new BigDecimal("4.00"),
+                BigDecimal.ZERO,
+                "GRAB",
+                "CENTRAL",
+                "WEST",
+                "中区驿站",
+                "西区宿舍",
+                LocalDateTime.now().plusHours(2),
+                "PHOTO_AND_CONFIRMATION", 500, null, null));
+
+        assertThat(runnerTaskService.listByPublisher(1L))
+                .extracting(RewardTaskSummary::id)
+                .contains(published.id());
+    }
     @Test
     void reportingIssueMovesTaskToIssueHandling() {
         RewardTaskSummary published = runnerTaskService.publish(1L, new CreateRunnerTaskRequest(
@@ -97,7 +130,7 @@ class RunnerTaskFlowIntegrationTest {
                 "西区",
                 "东区",
                 LocalDateTime.now().plusHours(5),
-                "COMPLETION_CODE"));
+                "COMPLETION_CODE", 500, null, null));
         runnerTaskService.grab(published.id(), 2L);
 
         RewardTaskSummary issue = runnerTaskService.reportIssue(published.id(), 2L, new ReportTaskIssueRequest("LOCATION_ERROR", "地点描述不清"));

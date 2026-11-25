@@ -1,0 +1,19 @@
+<launch-intro id="launch-intro" />
+<view class="page with-dock">
+  <view wx:if="{{deleted}}" class="sheet"><view class="heading">该商品已删除</view><button class="small plain" data-url="/pages/goods/index" bindtap="go">返回二手市集</button></view>
+  <state-view wx:else loading="{{loading}}" error="{{error && !want ? error : ''}}" bind:retry="reload" />
+  <block wx:if="{{item && !loading}}">
+    <view class="between"><text class="pill gold">{{item.statusLabel}}</text><text class="caption">{{item.categoryName || '其他闲置'}}</text></view>
+    <view class="title">{{item.title}}</view><view class="price">¥{{item.priceLabel}} <text wx:if="{{item.originalPrice}}" class="caption">原价 ¥{{item.originalPrice}}</text></view>
+    <catalog-photos kind="GOODS" object-id="{{item.id}}" />
+    <view class="section-title">物品说明</view><view class="content">{{item.description}}</view>
+    <view class="surface sheet"><view class="heading">约在这里交接</view><view>{{item.zoneLabel}} · {{item.tradeLocation}}</view><view class="caption">{{item.conditionLevel}} · 卖家 {{item.sellerNickname}}</view></view>
+    <view class="section-title">卖家联系方式</view><view wx:if="{{contacts.length}}" class="chips"><button wx:for="{{contacts}}" wx:key="value" class="small plain" data-value="{{item.value}}" bindtap="copy">{{item.label}}：{{item.value}}</button></view><view wx:else class="caption">{{item.status === 'PUBLISHED' ? '提交购买意向后，可联系卖家约定交接。' : '这件物品已结束交易。'}}</view>
+    <view wx:if="{{item.intentLabel}}" class="notice">我的购买意向：{{item.intentLabel}}</view>
+    <view wx:if="{{owner}}" class="section-title">出售管理</view><view wx:if="{{owner}}" class="chips"><button wx:if="{{item.canEdit}}" class="small plain" data-url="/pages/goods/publish?edit={{item.id}}" bindtap="go">编辑闲置</button><button wx:if="{{item.canOffShelf}}" class="small plain" bindtap="offShelf" disabled="{{busy}}">下架闲置</button><button wx:if="{{item.canDelete}}" class="small plain" disabled="{{busy}}" bindtap="deleteListing">删除商品</button></view>
+    <block wx:if="{{owner}}"><view class="section-title">收到的意向</view><view wx:if="{{!intents.length}}" class="caption">暂时没有同学提交购买意向。</view><view wx:for="{{intents}}" wx:key="id" wx:for-item="intent" class="surface sheet"><view class="between"><text class="heading">{{intent.buyerNickname}}</text><text class="pill">{{intent.statusLabel}}</text></view><view wx:if="{{intent.message}}" class="content">{{intent.message}}</view><button wx:if="{{item.canMarkSold && intent.status === 'OPEN'}}" class="small plain" data-buyer="{{intent.buyerId}}" bindtap="choose" disabled="{{busy}}">与此买家确认成交</button></view></block>
+    <button wx:if="{{user}}" class="plain orders" data-url="/pages/orders/index?type=GOODS" bindtap="go">查看我的二手订单</button>
+  </block>
+</view>
+<view wx:if="{{item && !owner && !item.myIntentStatus && item.status === 'PUBLISHED'}}" class="dock"><button class="primary" bindtap="openWant">我想要</button></view>
+<bottom-sheet visible="{{want}}" title="提交购买意向" busy="{{busy}}" bind:close="closeWant"><text class="caption">提交意向不会确认成交。请先与卖家沟通物品详情。</text><textarea value="{{message}}" data-field="message" bindinput="field" maxlength="500" placeholder="给卖家留言（选填）"/><view wx:if="{{error}}" class="error">{{error}}</view><view slot="footer"><button class="primary" disabled="{{busy}}" loading="{{busy}}" bindtap="send">发送意向</button></view></bottom-sheet>

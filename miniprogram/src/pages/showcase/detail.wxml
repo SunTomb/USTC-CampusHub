@@ -1,0 +1,58 @@
+<launch-intro id="launch-intro" />
+<view class="page with-dock detail-page">
+  <state-view loading="{{loading}}" error="{{project ? '' : error}}" bind:retry="reload" />
+  <view wx:if="{{project}}">
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view class="chips"><text class="pill purple">{{project.typeLabel}}</text><text class="pill">{{project.zoneLabel}}</text><text wx:if="{{project.status !== 'APPROVED'}}" class="pill gold">{{project.statusLabel}}</text></view>
+    <catalog-photos kind="PROJECT_AD" object-id="{{project.id}}" editable="{{user && user.id===project.publisherId}}" bind:changed="reload"/><view class="detail-title">{{project.title}}</view>
+    <view class="caption">{{project.publisherNickname || '同学'}} 发布 <text wx:if="{{project.expiresLabel}}"> · 截至 {{project.expiresLabel}}</text></view>
+    <view wx:if="{{project.tagList.length}}" class="chips detail-tags"><text wx:for="{{project.tagList}}" wx:for-item="tag" wx:key="*this" class="pill">#{{tag}}</text></view>
+    <view wx:if="{{project.summary}}" class="summary-text">{{project.summary}}</view>
+    <view class="separator"></view>
+    <text class="content detail-content" selectable>{{project.description}}</text>
+    <view wx:if="{{project.linkUrl}}" class="surface link-panel">
+      <view class="field-label">发布者提供的外部链接</view>
+      <text class="caption content" selectable>{{project.linkUrl}}</text>
+      <view class="form-help">复制链接后请在浏览器中打开</view>
+      <button class="small plain" bindtap="copyLink">仅复制链接</button>
+    </view>
+    <view wx:if="{{project.attachments.length}}" class="surface attachments">
+      <view class="heading">附件</view>
+      <view wx:for="{{project.attachments}}" wx:key="id" class="attachment-name">{{item.name}}</view>
+      <view class="form-help">暂不支持直接下载，如需附件可联系发布者获取</view>
+    </view>
+    <view wx:if="{{canEdit}}" class="owner-panel">
+      <view wx:if="{{project.reviewNote}}" class="notice content">站务反馈：{{project.reviewNote}}</view>
+      <button class="small plain" bindtap="edit">继续编辑这份宣传</button>
+    </view>
+    <content-report wx:if="{{project.status==='APPROVED' && (!user || user.id!==project.publisherId)}}" kind="PROJECT_AD" object-id="{{project.id}}"/><view class="between comment-heading"><view class="section-title">公开留言</view><text class="caption">{{project.favoriteCount || 0}} 人收藏</text></view>
+    <view wx:if="{{commentsError}}" class="notice"><view>{{commentsError}}</view><button class="small ghost" bindtap="reload" disabled="{{loading}}">重新加载留言</button></view>
+    <view wx:elif="{{!comments.length}}" class="quiet-empty">还没有公开留言，来问一句吧。</view>
+    <view wx:else class="comments">
+      <view wx:for="{{comments}}" wx:key="id" class="comment-item">
+        <view class="between"><text class="comment-author">{{item.userNickname}}<text wx:if="{{item.reply}}" class="muted"> · 回复</text></text><text class="muted">{{item.dateLabel}}</text></view>
+        <text class="content comment-content" selectable>{{item.content}}</text>
+      </view>
+    </view>
+    <view class="contact-note caption">{{contactHint}}</view>
+  </view>
+</view>
+<view wx:if="{{project}}" class="dock detail-dock">
+  <button class="plain small" disabled="{{busy || loading}}" loading="{{busy && !commentSheet}}" bindtap="toggleFavorite">{{project.favorited ? '已收藏' : '收藏'}}</button>
+  <button class="plain small" disabled="{{busy || loading}}" bindtap="openComment">留言</button>
+  <button class="small" disabled="{{busy || loading}}" bindtap="openContact">{{contacts.length ? '联系方式' : '联系规则'}}</button>
+</view>
+<bottom-sheet id="comment-sheet" visible="{{commentSheet}}" title="留下公开留言" busy="{{busy}}" bind:close="closeComment">
+  <view class="notice">留言将公开展示</view>
+  <view class="field comment-field"><label class="field-label">想问发布者什么？</label><textarea value="{{commentText}}" bindinput="commentInput" maxlength="1000" disabled="{{busy}}" placeholder="说明你的问题或组队意向" cursor-spacing="120" /><view class="form-help">{{commentText.length}} / 1000</view></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view slot="footer" class="sheet-actions"><button class="primary" disabled="{{busy || !commentText}}" loading="{{busy}}" bindtap="sendComment">发布公开留言</button></view>
+</bottom-sheet>
+<bottom-sheet id="contact-sheet" visible="{{contactSheet}}" title="联系发布者" busy="{{busy}}" bind:close="closeContact">
+  <view class="notice">{{contactHint}}</view>
+  <view wx:if="{{project.contactVisible && contacts.length}}" class="contact-list">
+    <view wx:for="{{contacts}}" wx:key="value" class="contact-item"><text class="content" selectable>{{item.value}}</text><button class="small plain" data-index="{{index}}" bindtap="copyContact">{{item.label}}</button></view>
+  </view>
+  <view wx:else class="disabled-note">暂未公开联系方式</view>
+  <view slot="footer" class="sheet-actions"><button class="plain" bindtap="closeContact">知道了</button></view>
+</bottom-sheet>
