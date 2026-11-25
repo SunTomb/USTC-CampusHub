@@ -1,402 +1,94 @@
-# 蜗壳同路 CampusHub Local Implementation
+# 蜗壳同路 CampusHub
 
-“蜗壳同路 CampusHub”是校园二手交易与学生微服务平台的本地实现原型，用于数据库系统课程设计后续开发演示。蜗壳同路是独立学生项目，不代表任何学校或机构的官方立场。
+下课顺路帮同学取个快递，把用完的教材转给下一届，或给比赛找一位队友——这些事都可以在[蜗壳同路 CampusHub](https://ustc.suntomb.cn) 上办。这是面向高校同学的校园生活互助平台，把**校园跑腿、二手闲置、学生技能小店、项目与组队宣传**汇聚在一处。你可以用浏览器访问 Web 端；仓库里也有一套原生微信小程序，两端共用同一个后端。
 
-## 当前规则（2026-11-26）
+想逛一逛，直接打开线上站点就好。想知道一次抢单、一条购买意向是怎么写进数据库的，可以从下面的源码导览开始。欢迎点个 Star，提 Issue 讨论，或 Fork 一份改成自己学校的版本。
 
-杭州正式站已部署订单版（Flyway V22）。Web 在「我的书院 → 我的订单」查看记录；小程序 0.1.2 源码含跑腿、二手、小店、宣传、个人五个栏目。数据库版本、部署与微信开发版上传回执见[订单版发布记录](docs/operations/2026-11-25-order-desk-release.md)。
+## 核心功能
 
-- 用户可见品牌统一为 **蜗壳同路 CampusHub**（简称“蜗壳同路”）；邮箱域名、部署域名、数据库与接口标识保持不变。网页使用 144px 图标，favicon 为 48px，手机书签为 180px；源图和历史素材保留。更名范围、协议历史处理及验证限制见 [品牌更新记录](docs/operations/2026-11-10-woke-tonglu-branding.md)。
-- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED` 默认 `false`。钱包入口隐藏，充值、提现、服务费、保证金支付和二手线上担保写操作拒绝；管理员只读历史记录。
-- 原财务界面保存在 `frontend/src/views/legacy/`，不删除数据库历史、不自动退款或清零。
-- 顺路跑腿员和闲置发布者明确同意当前角色协议后免费开通；技能店主理人同意后由站务核验。已有角色不补签，也不伪造同意记录。
-- V15 保存协议全文、版本和同意记录；V16 为名称更新新增 v1.1，仅替换品牌名称，保留 v1.0 正文、既有同意与身份记录。V16 已于 2026-11-11 应用到生产，此后 V1–V16 不改动。当前协议可从 `/policy` 查阅。
-- 充值、提现、钱包账本和担保交易实现仍在当前源码（`backend/src/main/java/com/campushub/{wallet,payment}/`、`frontend/src/views/legacy/`），不依赖切换到历史分支。杭州网关对原支付中心回调返回 HTTP 410；独立支付宝电脑网站支付适配器已配置，但 `CAMPUSHUB_ALIPAY_ENABLED=false`，未启用真实签名收款。主干同步不会开启支付；原生小程序无充值界面。
-- 法律文字起草依据与运营前核对见 `docs/operations/woke-agreement-basis.md`。正式标题不代表已经取得法律合规认证。
+| 板块 | 你可以做什么 |
+| --- | --- |
+| **悬赏跑腿** | 填写物品重量、起终点校区、截止时间和报酬，按需附上私密取件码或物品照片。赶时间可选「即时抢单」，想自己挑人可选「报名筛选」。接单后双方可以跟进履约进度，用 6 位完成码核销，或由发单人查看送达照片后确认。尚未有人报名或接单时可修改委托，接单前可撤下。 |
+| **校园二手** | 按分类和校区找闲置；卖家可给商品配展示图。买家提交购买意向后才能查看卖家微信或 QQ，约好线下交接；卖家再从意向列表选定实际买家、确认成交。卖家可编辑、下架或删除商品，已有的成交记录不会随商品删除。 |
+| **学生技能小店** | 主理人可以开店、设置封面、管理服务项目和配图，并处理预约、接单到完成的流程。顾客完成预约后，可给这项服务评分、写评价。店铺评分先分别计算各项服务的均分，再对有评分的服务取算术平均；还没人评的服务不算零分。 |
+| **校园宣传广场** | 发布科研或竞赛组队邀请、作品集、社团纳新和校园活动，可配图展示。同学们可以从精选内容发现项目，收藏感兴趣的帖子，或在留言区交流。 |
+| **我的订单与社区管理** | Web 的「我的书院 → 我的订单」和小程序的「个人 → 我的订单」汇总跑腿、二手、预约、宣传四类记录。有交易对方的订单完成后可评价或投诉；宣传记录没有交易对方，不参与评分。平台还提供校园邮箱注册、站内通知、身份协议开通、信用分中心和按职责分权的管理后台。 |
 
-以下 Phase 章节为历史实施记录，涉及支付、保证金的旧描述不代表当前开放状态。
+**资金与支付模块的参考实现。** 日常互助不要求把钱转入平台。仓库保留了钱包账本、线下结算与在线支付的抽象，以及独立的支付宝电脑网站支付适配器；默认通过 `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false` 关闭新的资金写操作。如果你的校园项目只需要联系和交接，可以保持这个默认值；想研究账本与支付回调，也可以直接读 `wallet` 和 `payment` 包，不用发起真实交易。
 
-## 模块范围
+## 技术栈与目录结构
 
-- 二手商品交易
-- 悬赏任务与接单
-- 学生技能店铺与预约
-- 项目广告、收藏、评论、评价
-- 文件资源与业务绑定
-- 内容审核、举报、违规与信用分
-- 钱包流水与服务费记录
-- 独立支付宝电脑网站支付适配器（生产收款关闭），保留旧支付实现及历史记录
+- **后端：** Java 17、Spring Boot 3.3、Spring Security + JWT、Spring Data JPA、Flyway。应用使用 MySQL 8.4，集成测试使用 H2。
+- **Web：** Vue 3、TypeScript、Vite、Pinia、Vue Router、Element Plus，测试使用 Vitest。
+- **原生微信小程序：** WXML / WXSS / JavaScript（CommonJS），零外部运行时依赖。5 个 Tab（跑腿、二手、小店、宣传、个人），共 15 个页面。
 
-## Phase 1 真实平台升级
+```text
+backend/                  Spring Boot 应用、数据库迁移与后端测试
+frontend/                 Web 页面、路由、状态管理与前端测试
+miniprogram/              微信开发者工具的项目目录，原生客户端在 src/ 下
+docker-compose.yml       本地开发用 MySQL
+docker-compose.prod.yml  部署用 MySQL、后端和 Web 容器
+.env.prod.example         部署环境变量示例，不含你的真实凭据
+```
 
-CampusHub 当前路线从课程演示原型升级为真实校园服务平台，第一阶段优先跑通校园跑腿/代取履约闭环。
+后端业务代码集中在 [`backend/src/main/java/com/campushub/`](backend/src/main/java/com/campushub/)。找注册登录看 `auth`；四个业务入口分别在 `task`、`goods`、`shop`、`projectad`。跨业务订单查询在 `orders`，展示图在 `catalogmedia`，举报与信用治理在 `moderation`，账本与支付参考实现在 `wallet`、`payment`。
 
-已落地的 Phase 1 基础能力：
+## 本地快速启动
 
-- 注册要求提供微信或 QQ 联系方式，至少填写一种，用于交易达成后的私下沟通；
-- 身份保证金：跑腿接单者 5 元、二手发布者 10 元、店铺商家 20 元；
-- 跑腿接单者和二手发布者保证金后自动开通，店铺商家进入人工审核；
-- 跑腿任务支持发布者选择抢单模式或申请模式；
-- 位置先按校区枚举采集：中校区、西校区、东校区、北校区、南校区、高新校区、先研院、科学岛、其他；
-- 跑腿任务保存起终点校区、地点文字详情、接单模式、履约状态、完成确认方式、事件日志和异常记录；
-- 第一阶段通知只做站内通知，覆盖任务接单、申请、状态变更、异常和身份保证金结果；
-- 运营后台提供任务监控、异常任务、身份保证金和基础指标入口；
-- 前端优先做好响应式 Web，API 保持可复用，为后续微信小程序预留空间。
+准备 JDK 17、Maven 3.9+、Node.js 20+，以及带 Compose 的 Docker（也可以自备 MySQL 8.4）。下面各步都从仓库根目录开始；后端和 Web 开发服务各占一个终端。
 
-资金边界：CampusHub 只收平台服务费和身份保证金，不托管交易本金，不做逐单保证金冻结。生产支付可继续通过 API-Transfer-Station 支付中心完成，CampusHub 不读取、不复制、不保存支付宝密钥正文。
-
-## Phase 2 二手交易升级
-
-Phase 2 将二手模块从只读列表升级为校园二手信息发布与可信联系闭环。
-
-已落地能力：
-
-- 二手商品发布接口校验 `GOODS_PUBLISHER` 身份，发布者需先支付 10 元保证金并自动开通；
-- 商品市场改为卡片流，展示封面、价格、原价、成色、校区、交易地点、卖家信用和浏览数；
-- 新增商品详情页，展示图片、卖家信用、留言、评价、收藏数和联系方式提示；
-- 买家提交购买意向后，系统保存卖家微信/QQ 联系方式快照并开放给该买家查看；
-- 卖家本人始终可查看自己的联系方式，并可下架或标记商品售出；
-- 文件绑定支持 `target_type = GOODS` 的商品图片，最多 9 张；
-- 收藏、评论、举报、评价接口支持二手商品目标；
-- 二手服务费配置默认关闭，可通过 `CAMPUSHUB_SECONDHAND_SERVICE_FEE_ENABLED` 和 `CAMPUSHUB_SECONDHAND_SERVICE_FEE_INTENT_AMOUNT` 预留未来收费路径。
-
-Phase 2 仍不做购物车、平台本金托管、逐单保证金冻结或强制线上货款支付。
-
-## Phase 3 学生店铺升级
-
-Phase 3 将学生店铺从静态展示升级为校园技能服务预约闭环。
-
-已落地能力：
-
-- 店铺创建接口校验 `SHOP_MERCHANT` 身份，商家需先支付 20 元保证金并通过人工审核；
-- 店铺市场支持校区与关键词筛选，展示服务范围、校区、评分、店主和营业时间；
-- 新增店铺详情页，展示店铺资料、服务项目、预约入口和联系方式展示规则；
-- 预约服务后，系统记录商家微信/QQ 联系方式快照，并通过站内通知提醒商家；
-- 新增商家工作台，可创建/编辑店铺、维护服务项目、处理预约接受/开始/完成/取消；
-- 后端新增 V7 迁移扩展店铺、服务项目和预约字段，保留服务费记录接口；
-- Phase 3 继续不托管服务本金，不做逐单保证金冻结，不读取或保存支付宝密钥正文。
-
-## Phase 4 项目广告与校园展示升级
-
-Phase 4 将项目广告从静态时间线升级为校园展示与协作入口，覆盖项目组队、作品展示、社团招募和校园活动宣传。
-
-已落地能力：
-
-- 后端新增 V9 迁移扩展 `project_ads`，支持广告类型、摘要、标签、校区、封面文件、联系方式展示规则、过期时间、精选权重和审核记录；
-- 项目广告支持创建、编辑、提交审核、发布者下架、管理员审核通过/拒绝、精选/取消精选和平台违规下架；
-- 公开列表只展示已审核且未过期内容，支持类型、校区、关键词和精选筛选；
-- 详情页会记录浏览量，展示标签、附件、外部链接、收藏评论统计和按规则开放联系方式；
-- 文件、收藏、评论和举报继续复用通用 `target_type = PROJECT_AD` 能力；
-- 新增项目广告详情页、发布者管理页和运营后台项目广告标签页；
-- 审核通过、拒绝、精选和平台下架会发送站内通知。
-
-Phase 4 不做项目融资、交易本金托管、逐单广告保证金、平台内实时聊天或复杂推荐算法。生产支付仍通过 API-Transfer-Station 支付中心，CampusHub 不读取、不复制、不保存支付宝密钥正文。
-
-## Phase 5 治理、信用与信任运营
-
-Phase 5 将分散的举报、违规和信用分能力升级为跨业务线治理闭环，服务跑腿、二手、店铺和项目广告四条业务线的真实内测。
-
-已落地能力：
-
-- 后端新增 V10 迁移，扩展举报状态、处理说明、处理结果、违规严重程度、处罚类型、目标对象和管理员记录；
-- 新增信用调整记录、用户限制记录和管理员操作审计表，保留 `users.credit_score` 作为当前信用分；
-- 举报状态统一为 `OPEN`、`IN_REVIEW`、`RESOLVED`、`REJECTED`、`ESCALATED`；
-- 管理端新增 `/api/admin/governance` 治理接口，可查看队列、受理/解决/驳回/升级举报、创建违规、调整信用、设置限制和查看审计；
-- 用户侧新增 `/api/credit/users/{userId}` 信用中心接口，返回信用分、当前限制、违规记录、信用变化和我的举报；
-- 发布商品、发布跑腿任务、创建店铺/服务项目、提交项目广告等关键动作会检查发布冻结；跑腿接单和店铺履约动作会检查服务冻结；
-- 处理举报、创建违规、调整信用和设置限制会写入站内通知与管理员审计；
-- 前端新增 `/admin/governance` 治理工作台和 `/credit` 信用中心页面。
-
-Phase 5 不做全量 JWT/RBAC 改造、机器审核、法律级申诉、自动扣除保证金、支付中心改造、交易本金托管或短信/微信通知。生产支付边界不变：CampusHub 不读取、不复制、不保存支付宝密钥正文。
-
-## Phase 6 运营数据与导出
-
-Phase 6 将已上线的跑腿、二手、店铺、项目广告和治理数据汇总到运营后台，用于内测和 Beta 决策。后台在 `/admin/ops` 提供日期范围筛选、平台总览、业务漏斗、校区分析、服务费/身份保证金汇总和 CSV 导出。
-
-本阶段采用轻量实时聚合，不新增 Flyway 迁移，不创建分析快照表或导出日志表。CSV 只导出运营可见字段，不包含 `.env`、SMTP 密码、JWT secret、支付 token、支付宝密钥、密码哈希、邮箱验证码哈希、登录 token 或完整微信/QQ 联系方式。治理备注等自由文本仍需管理员谨慎填写，避免手动写入敏感信息。
-
-支付边界保持不变：CampusHub 只汇总本地服务费记录和角色保证金申请记录，生产支付仍由外部 API-Transfer-Station 支付中心负责，CampusHub 不读取或保存支付宝密钥正文。
-
-## Phase 7 响应式 Web 与用户体验打磨
-
-Phase 7 不新增业务闭环，而是将已上线的跑腿、二手、学生店铺、项目广告、治理信用和运营后台体验打磨到适合真实校园移动浏览器内测。
-
-已落地能力：
-
-- 移动端全局导航从完整侧边栏调整为顶部菜单入口，减少首屏占用；
-- 登录注册、通知、身份保证金、钱包、信用中心统一空状态、登录提示和说明文案；
-- 跑腿、二手、店铺和项目广告的列表、详情和发布/管理表单完成移动优先排版；
-- 发布类表单按信息、地点/范围、金额/服务费、联系方式和附件说明分区，减少手机端填写压力；
-- 后台运营、治理和审核页面保留桌面表格效率，同时在移动端避免明显横向撑破页面；
-- 基础可访问性检查覆盖按钮文本、表单标签、弹窗尺寸、提示文案和触控区域。
-
-Phase 7 仍不做微信小程序、原生 App、Element Plus 替换、支付中心强化、JWT/RBAC 全量硬化、交易本金托管或逐单保证金冻结。
-
-## Phase 8 支付中心集成强化与服务费运营
-
-Phase 8 将本地 mock 支付升级为可对接 API-Transfer-Station 支付中心的内部支付链路。CampusHub 保存本地支付订单、服务费/身份保证金状态和回调审计；API-Transfer-Station 负责真实支付宝应用配置、支付宝签名验签和外部渠道通知。
-
-已落地能力：
-
-- `mock` 与 `payment-center` provider 由环境变量选择；
-- 服务费和角色保证金创建统一支付订单；
-- 支付中心内部回调支持内部 token 配置、幂等、金额、订单号和状态校验；
-- 管理端新增 `/admin/payment` 支付订单和回调事件监控；
-- `.env.prod.example` 只记录占位符，不包含真实 token、secret 或支付宝密钥。
-
-Phase 8 仍不做交易本金托管、逐单保证金冻结、自动扣罚保证金、退款结算、发票、完整对账或 CampusHub 直连支付宝密钥。后续已规划更完整的支付方向：支付宝充值 0.6% 手续费、微信充值人工审核、线下交易服务费阈值、线上余额冻结托管和提现功能，应拆为独立 Phase 设计。
-
-## Phase 9 钱包账本、充值提现与线上托管基础
-
-Phase 9 将 CampusHub 钱包从展示型账户升级为可支撑余额充值、人工提现、冻结余额和二手线上托管交易的资金闭环。真实支付渠道仍由 API-Transfer-Station 支付中心负责；CampusHub 只保存本地钱包账本、充值/提现/托管业务记录和支付订单映射，不读取或保存支付宝密钥。
-
-已落地能力：
-
-- 钱包可用余额、冻结余额和幂等账本流水；
-- 支付宝充值收取 0.6% 渠道手续费并通过支付中心回调入账；
-- 微信充值免手续费但需要管理员人工审核；
-- 提现申请在提交时冻结余额，管理员审核、完成或拒绝；
-- 二手线上托管交易先冻结买方余额，确认完成后划转给卖方；
-- 线下交易金额小于 50 元免服务费，50 元及以上收 1% 且封顶 2 元；
-- 线上托管服务费收 1% 且封顶 3 元；
-- 新增用户钱包中心和管理端钱包运营工作台。
-
-Phase 9 不做自动提现打款、完整财务清结算、API-Transfer-Station 内部改造、跑腿/店铺全量托管深接入或 CampusHub 直连支付宝密钥。
-
-## Phase 10 认证、授权与生产安全加固
-
-Phase 10 将原路线图中的认证授权安全加固顺延落地为新的生产控制阶段，在保留公共浏览体验的前提下，收紧关键写操作和管理端接口。
-
-已落地能力：
-
-- 后端新增 JWT 请求认证过滤器，登录 token 会解析为当前用户和角色；
-- 新增 `/api/auth/me`，前端刷新后可通过 token 恢复当前用户；
-- 公共列表和详情 GET 继续允许匿名访问，发布、交易、评论、举报、钱包、角色申请等写操作要求登录；
-- `/api/admin/**` 统一要求 `ROLE_ADMIN`，管理员动作从 JWT 当前管理员获取身份，不再信任前端传入的 `adminId`；
-- 用户私有数据和关键写接口会校验路径或 query 中的 `userId` 与 JWT 当前用户一致；
-- 文件绑定要求登录，并校验文件上传者和目标业务对象归属；
-- 前端新增 401/403 处理、登录态恢复和路由权限守卫，清除生产路径中的默认演示 user/admin 身份兜底。
-
-权限矩阵摘要：
-
-- 匿名可访问：二手、跑腿、店铺、服务项目、项目广告等公开列表/详情，以及支付中心内部回调入口；
-- 登录用户可访问：发布/交易/预约/评论/收藏/举报、钱包、通知、信用中心、身份申请和本人私有记录；
-- 管理员可访问：`/api/admin/**` 下的钱包运营、支付监控、运营分析、治理、审核和导出接口；
-- 兼容保留在 URL 或 query 中的 `userId` / `adminId` 不再作为信任来源，后端会以 JWT 当前身份为准并做同用户或管理员校验。
-
-本地验证状态：前端 `npm --prefix frontend run build` 已通过，仅有既有大 chunk 与依赖 pure-comment 警告；本机缺少 Maven 和 Maven wrapper，后端完整验证应在服务器 Docker 构建或可用 Maven 环境中执行。
-
-Phase 10 不做 OAuth/SAML/SSO、refresh token、企业级细粒度权限矩阵、完整限流/WAF、完整上传系统重写或 API-Transfer-Station 支付密钥迁移。支付中心内部 callback 仍使用 Phase 8 的内部 token/signature 边界，CampusHub 不读取、不复制、不保存支付宝密钥、JWT secret、SMTP 密码、payment token 或服务器 `.env` 正文。
-
-## Phase 11 Beta readiness 与验收矩阵
-
-Phase 11 不新增业务线，而是把已部署平台推进到可控 Beta 发布状态。
-
-已落地能力：
-
-- 后端提供默认关闭的 Beta demo 账号创建/重置路径，只能作用于配置的 demo student 和 demo admin，不读取或打印现有密码哈希；
-- `scripts/beta-auth-smoke.sh` 覆盖匿名公开 200、匿名私有/写入/admin 401、普通用户 `/api/auth/me`、普通用户越权 403、普通用户 admin 403、管理员 `/api/admin/**` 代表端点 200；
-- `docs/operations/campushub-beta-runbook.md` 记录部署、回滚、健康检查、日志、API smoke 和 Playwriter 桌面/移动端验收矩阵；
-- `docs/operations/campushub-backup-restore.md` 记录 MySQL 备份和临时库恢复演练，避免打印 secrets；
-- `docs/operations/campushub-admin-playbook.md` 记录举报、违规、信用、限制、钱包充值/提现、支付回调监控和审核队列操作；
-- 前端 `/policy` 提供服务协议、隐私、交易风险、钱包边界和 Beta 数据边界说明。
-
-Phase 11 仍不做地图、小程序、推荐、实时聊天、OAuth/SSO、完整监控栈、Kubernetes、CampusHub 直连支付宝密钥或新的支付业务线。生产真实支付仍由 API-Transfer-Station 处理。
-
-## Phase 12 真实新用户生产闭环
-
-Phase 12 修复真实新用户从注册到充值的首批生产阻断点，让平台更接近可运营状态。
-
-已落地能力：
-
-- 注册验证码在生产应通过 SMTP 真实发送；若开启邮件但服务未配置或发送失败，后端会返回明确错误，不再伪装成 mock 成功；
-- 钱包支付宝充值继续通过 API-Transfer-Station 支付中心创建支付单，前端会打开返回的支付链接，并在充值记录中保留继续支付入口；
-- 钱包微信充值采用人工收款二维码模式，前端展示服务器配置的二维码和备注说明，订单进入管理端人工审核入账；
-- `.env.prod.example` 只提供 SMTP、支付中心和微信二维码占位符，不包含真实 token、密码、二维码内容或支付宝密钥正文。
-
-Phase 12 不做 CampusHub 直连支付宝密钥、直连微信支付 API v3、自动微信入账、完整财务对账、地图、小程序、推荐或实时聊天。
-
-## Phase 13 身份感知 UI / UX 终极优化
-
-Phase 13 不新增业务闭环，而是把已上线平台升级为更像真实运营产品的身份感知 Web 体验。
-
-已落地能力：
-
-- 全局视觉升级为更统一的校园服务平台品牌：高级侧栏、身份区、卡片体系、按钮层级、空状态和后台 surface；
-- 前端复用 `/api/auth/me` 返回的角色，区分游客、普通学生、跑腿接单者、二手发布者、店铺商家和管理员；
-- 桌面侧栏、移动底部 tab 和“更多”目录按身份过滤，不再让游客和普通学生看到所有后台入口；
-- 首页升级为身份感知 landing / workbench，按登录状态和角色展示下一步建议；
-- 登录注册、钱包充值、身份申请、业务列表/工作台和后台页面完成视觉与引导文案打磨；
-- 支付宝充值仍通过 API-Transfer-Station payment-center 返回真实支付链接，微信充值仍展示人工收款二维码和邮箱/用户名备注说明。
-
-Phase 13 不做后端权限模型重写、不新增数据库迁移、不替换 Element Plus、不做小程序或原生 App。生产支付边界不变：CampusHub 不读取、不复制、不保存支付宝密钥、SMTP 密码、JWT secret、payment-center token/signing secret 或服务器 `.env` 正文。
-
-## 本地运行
-
-### 依赖
-
-- JDK 17+
-- Maven 3.9+
-- Node.js 20+
-- Docker Desktop
-
-### 启动数据库
+**1. 启动数据库。** 本地 Compose 会创建 `campushub` 库并映射到 `3306` 端口。等数据库就绪后再启动后端。
 
 ```bash
 docker compose up -d mysql
 ```
 
-### 启动后端
+**2. 启动后端。** `local` 配置默认连接上述数据库，在 `8080` 端口提供 API。首次启动空库时，Flyway 自动执行 V1–V22 迁移，后续只执行尚未应用的版本。本地默认不发送真实 SMTP 邮件，不配置邮箱也能启动并浏览；要实际收取注册验证码，需要另行配置发信服务。
 
 ```bash
-cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-后端默认地址：`http://localhost:8080`。
-
-### 启动前端
+**3. 启动 Web。** 在另一个终端运行下列命令，打开 <http://localhost:5173>。Vite 会把 `/api` 请求代理到本地后端。
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
-前端默认地址：`http://localhost:5173`。
+**4. 运行原生微信小程序。** 用微信开发者工具导入 `miniprogram/`，不要选它下面的 `src/`。若要连接刚启动的本地后端，在开发版的工具控制台执行下面一行，再重新编译。这个回环地址指向开发电脑，不适用于真机。
 
-## 本地账号
-
-演示数据由 Flyway `V2__seed_demo_data.sql` 初始化。默认密码以开发环境哈希形式存储，仅用于本地演示。
-
-## 资金功能说明
-
-当前默认关闭资金写操作：
-
-- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false` 时，充值、提现、服务费支付、身份保证金支付和二手线上担保不会创建新的资金业务；
-- 历史订单、流水和支付中心回调记录仍保留，管理员页面只读查看；
-- 本地测试可以在测试 profile 中显式开启该开关，以覆盖历史支付服务；
-- CampusHub 不读取、不复制、不保存支付宝密钥，真实渠道仍由 API-Transfer-Station 负责。
-
-## 生产部署准备
-
-生产推荐目录为 `/opt/campushub`，部署文件包括：
-
-- `docker-compose.prod.yml`
-- `.env.prod.example`
-- `backend/Dockerfile`
-- `frontend/Dockerfile`
-- `frontend/nginx.conf`
-
-生产 compose 包含：
-
-- `campushub-mysql`
-- `campushub-backend`
-- `campushub-web`
-
-MySQL 不暴露公网端口；前端容器默认只绑定宿主机 `127.0.0.1:18080`，由服务器上的 Caddy/Nginx 反代到公网域名。
-
-### 生产环境变量
-
-复制 `.env.prod.example` 为服务器上的 `.env` 后，必须替换所有 `change-me` 值。不要把真实 `.env`、SMTP 密码、JWT secret、内部支付 token 或任何支付宝密钥提交到 GitHub。
-
-关键变量：
-
-```env
-MYSQL_DATABASE=campushub
-MYSQL_USER=campushub
-MYSQL_PASSWORD=强随机密码
-MYSQL_ROOT_PASSWORD=强随机密码
-CAMPUSHUB_JWT_SECRET=至少32字节强随机字符串
-CAMPUSHUB_MAIL_SMTP_HOST=smtp-relay.brevo.com
-CAMPUSHUB_MAIL_SMTP_USERNAME=Brevo SMTP 用户名
-CAMPUSHUB_MAIL_SMTP_PASSWORD=Brevo SMTP 密码
-CAMPUSHUB_MAIL_FROM=suntomb@suntomb.qzz.io
-CAMPUSHUB_MAIL_FROM_NAME=蜗壳 CampusHub
+```js
+wx.setStorageSync('woke_development_api', 'http://127.0.0.1:8080/api')
 ```
 
-### 反代建议
+只想先看界面？在仓库根目录运行 `node miniprogram/tools/make-preview.cjs`，再单独导入生成的 `.claude/verification/native-miniprogram/offline-preview/`。它使用内存样例，不需要后端，不要把样例当成正式工程上传。
 
-`campushub-web` 已经在容器内把 `/api/` 反代到 `campushub-backend:8080`。服务器公网反代可指向宿主机本地端口：
+**常用测试与检查**（每行从仓库根目录运行）：
 
-```caddyfile
-ustc.suntomb.qzz.io {
-    reverse_proxy 127.0.0.1:18080
-}
+```bash
+cd backend && mvn test
+npm --prefix frontend test
+npm --prefix frontend run build
+npm --prefix miniprogram test
+npm --prefix miniprogram run check
 ```
 
-也可以让 Caddy 接入 `campushub` Docker network 后直接反代容器服务。
+## 参考本项目开发自己的应用
 
-### GitHub 到服务器部署流程
+### 四个值得顺着读的设计
 
-建议生产部署按以下顺序执行：
+1. **同一张订单列表，不等于同一张数据库表。** 从 [`OrderDeskQuery.java`](backend/src/main/java/com/campushub/orders/OrderDeskQuery.java) 看起：每条查询先选出当前用户参与的记录，再把跑腿、闲置、预约和宣传投影成同一组列供列表读取。业务状态仍由各自的源表维护，不需要再同步一张「万能订单表」。
+2. **能看商品图，不等于能看取件凭证。** [`catalogmedia`](backend/src/main/java/com/campushub/catalogmedia/) 根据商品、店铺等父对象的可见状态判断读者权限，并在保存展示图时重新编码以移除元数据。跑腿物品和送达照片则由 [`TaskEvidenceService.java`](backend/src/main/java/com/campushub/task/TaskEvidenceService.java) 管理，通过受保护的下载接口只向任务参与方提供，不复用公开图库地址。
+3. **从一次业务变化读懂一次数据库迁移。** [MySQL 迁移目录](backend/src/main/resources/db/migration/) 保留了 V1–V22 的演进过程；例如 V22 给已成交的意向保存成交金额，以后卖家改标价也不会改写当时的交易。Flyway 应用迁移后，Hibernate 用 `ddl-auto: validate` 校验映射。[H2 同步迁移脚本](backend/src/test/resources/db/test-migration/) 让集成测试不用依赖外部数据库。
+4. **原生小程序怎样管理登录态？** 从 [`miniprogram/src/`](miniprogram/src/) 的 `lib/request.js` 和 `lib/config.js` 入手：请求路径有白名单，不同 API 环境分别保存会话，私有页面隐藏时清理敏感状态。改完页面可运行 [`miniprogram/tools/check.cjs`](miniprogram/tools/check.cjs) 检查路由、资源引用和包体积，无须引入运行时框架。
 
-1. 本地确认代码不包含真实 `.env`、SMTP 密码、JWT secret、内部支付 token 或支付宝密钥。
-2. 提交代码并推送到 GitHub 仓库。
-3. 在服务器 `/opt/campushub` 拉取仓库代码。
-4. 在服务器创建真实 `.env`，内容参考 `.env.prod.example`，并替换所有 `change-me` 占位符。
-5. 使用 `docker-compose.prod.yml` 启动 `campushub-mysql`、`campushub-backend`、`campushub-web`。
-6. 配置现有 Caddy/Nginx，把 `https://ustc.suntomb.qzz.io` 反代到 `127.0.0.1:18080` 或容器网络内的 `campushub-web:80`。
-7. 用浏览器访问域名，验证首页、注册/登录、API 反代、钱包页和本地 mock 支付演示。
+### 改成自己校园或社区的版本
 
-更多生产 Beta 操作文档：
+1. **先换名片。** 在 `frontend/index.html` 修改站点标题和图标引用，用自己的素材替换 `frontend/public/` 与 `miniprogram/src/assets/` 中的品牌图，再同步更新页面名称和适用的备案信息。
+2. **再换校园规则。** 后端校区枚举是 [`CampusZone.java`](backend/src/main/java/com/campushub/task/CampusZone.java)；同步调整 Web 各业务页的选项（例如 [`TasksView.vue`](frontend/src/views/TasksView.vue)）和小程序 [`display.js`](miniprogram/src/lib/display.js)。注册邮箱后缀由 [`RegistrationService.java`](backend/src/main/java/com/campushub/auth/RegistrationService.java) 校验；换学校时，也别忘了改两端注册提示。
+3. **配置自己的部署环境。** 复制 `.env.prod.example` 为 `.env`，设置独立的数据库密码、JWT 密钥和 SMTP 发信配置，不要提交 `.env`。配置就绪后用 `docker compose -f docker-compose.prod.yml up -d --build` 启动服务，在外层反向代理配置自己的域名和 HTTPS。支持上传图片时，外层 Nginx 也应设置 `client_max_body_size 6m;`，避免请求还没到应用就被拦下。
+4. **接入自己的小程序。** 在 `miniprogram/project.config.json` 填自己的 AppID，在 `miniprogram/src/lib/config.js` 设置自己的 HTTPS API 根地址（含 `/api`）。到微信公众平台配置请求、上传和下载所需的合法域名，再用真机检查图片与网络请求。
 
-- `docs/operations/campushub-beta-runbook.md`
-- `docs/operations/campushub-backup-restore.md`
-- `docs/operations/campushub-admin-playbook.md`
+## 交流与致谢
 
-## API-Transfer-Station 支付中心边界
-
-生产支付宝收款应由 API-Transfer-Station 作为支付中心负责，CampusHub 不直接接触支付宝私钥/公钥正文。
-
-CampusHub 负责：
-
-- 创建本地钱包充值或服务费支付订单；
-- 调用支付中心内部接口创建收款单；
-- 接收支付中心内部回调并校验内部 token；
-- 校验订单号、金额和状态，幂等更新本地订单、钱包余额和流水。
-
-API-Transfer-Station 负责：
-
-- 保存支付宝 APPID、应用私钥、支付宝公钥等敏感配置；
-- 调用支付宝官方电脑网站支付；
-- 接收支付宝异步通知、验签、校验金额和幂等；
-- 把支付结果转发给 CampusHub 内部回调。
-
-安全要求：
-
-- 不要读取、打印、复制、提交或写入 `/opt/ai-relay/secrets/alipay/` 下的密钥正文；
-- 排查时最多检查文件是否存在、权限和挂载路径，不输出文件内容；
-- 内部 token 只保存在服务器 `.env` 或 secret 管理中；
-- 日志不要打印 token、完整支付宝回调参数或用户敏感信息。
-
-
-## Phase 14 真实用户反馈修复与领域管理员后台
-
-Phase 14 基于真实使用反馈修复登录、身份申请和后台管理体验问题。
-
-已落地能力：
-
-- JWT 默认有效期延长到 30 天，前端恢复登录状态和钱包等受保护数据加载不再误触发全局“登录已过期”；
-- 身份解锁页会加载既有申请，未支付、支付失败或过期的跑腿接单者/二手发布者申请可继续支付，不再卡在“该身份已申请”；
-- 身份保证金支持支付宝支付中心支付和钱包余额支付；微信保证金支付不接入，避免人工审核复杂度；
-- 新增 V13 平台业务角色和 V14 领域管理员角色，`yeshenghao@mail.ustc.edu.cn` / `yeshenghao` 自动授予 `ROLE_MASTER_ADMIN` 与兼容 `ROLE_ADMIN`；
-- 用户可申请交易管理员和展示管理员身份，免保证金但需 master 在 `/admin/master/admin-applications` 审核；
-- 交易管理员后台 `/admin/trade` 覆盖跑腿管理、商品管理、跑腿商品售后纠纷；
-- 展示管理员后台 `/admin/showcase` 覆盖广告管理、商店管理、服务管理、商店服务售后纠纷，并包含店铺商家身份审核；
-- 前端移除可见的旧“内容审核”导航入口，管理后台改为 master、交易、展示、运营、治理、支付、钱包等分工入口。
-
-Phase 14 仍保持支付边界：真实支付宝处理在 API-Transfer-Station，CampusHub 不读取、不复制、不保存支付宝密钥正文。
-
-## 当前资金边界与协议开通
-
-当前产品暂时关闭新的资金写操作，等待课程讨论校园集市涉及的资金管理边界：
-
-- `CAMPUSHUB_FINANCIAL_FEATURES_ENABLED=false` 时，新的充值、提现、平台服务费、身份保证金和二手线上担保操作会被拒绝；历史数据保留，管理员界面只读；关闭前既存支付单的合法回调仍可幂等记账；
-- 普通用户钱包入口和线上担保操作暂不开放，管理员仅可查看历史资金记录；
-- 顺路跑腿员、闲置发布者和技能店主理人不再通过保证金开通：前两者阅读并同意当前协议后自动开通，店主理人同意协议后进入站务核验；
-- 已有角色和历史保证金记录不撤销、不重置，也不要求历史用户重新同意；
-- 协议接受记录使用 V15 版本化迁移保存，包含协议版本、角色和同意时间，不采集 IP 或设备指纹；
-- 产品可见名称为“蜗壳 CampusHub”，实际校园邮箱域名和现有部署域名保持不变；蜗壳是独立学生项目，不代表任何学校或机构的官方立场。
-
-资金功能后续是否开放、历史资金如何进一步处理，以教师讨论和后续协议版本为准。历史 Phase 文档中的支付、保证金和线上托管描述不应直接解释为当前新业务已开放。
+欢迎提 Issue 分享你在校园里遇到的场景，或用 PR 带来一个具体改进。如果这份代码帮你理清了课程设计里的某张表，或让你的第一个全栈项目更容易起步，欢迎点个 Star。谢谢！
