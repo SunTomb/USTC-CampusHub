@@ -12,3 +12,6 @@ uploads/
 /.claude/worktrees/
 /.superpowers/brainstorm/
 /output/
+
+# Local assistant instructions (keep locally, do not commit)
+CLAUDE.md
