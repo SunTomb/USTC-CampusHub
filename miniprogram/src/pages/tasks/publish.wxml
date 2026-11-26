@@ -16,7 +16,7 @@
     <view class="section-title">私密取件信息</view><view class="caption private-help">仅任务双方可见</view>
     <view class="field"><text class="field-label">取件码（选填）</text><input class="input" value="{{form.pickupCode}}" data-field="form.pickupCode" bindinput="field" maxlength="120" placeholder="驿站或柜机的取件码，不是送达完成码"/></view>
     <view wx:if="{{editing}}" class="caption">原有照片会保留，可在任务工作区管理参与方照片。</view>
-    <view wx:else class="field"><text class="field-label">物品照片（选填）</text><view class="media-list"><view wx:for="{{photos}}" wx:key="key" class="media-item"><image src="{{item.path}}" mode="aspectFill"/><button class="small plain" data-key="{{item.key}}" bindtap="removePhoto">移除</button></view></view><button class="plain" wx:if="{{photos.length < 3}}" bindtap="pickPhotos">＋ 选择照片</button><text class="form-help">最多 3 张 JPG / PNG，每张不超过 5 MiB。确认发布后才上传。</text></view>
+    <view wx:else class="field"><text class="field-label">物品照片（选填）</text><view class="media-list"><view wx:for="{{photos}}" wx:key="key" class="media-item"><image src="{{item.path}}" data-src="{{item.path}}" mode="aspectFill" catchtap="previewDraft"/><button class="small plain" data-key="{{item.key}}" bindtap="removePhoto">移除</button></view></view><button class="plain" wx:if="{{photos.length < 3}}" bindtap="pickPhotos">＋ 选择照片</button><text class="form-help">最多 3 张 JPG / PNG，每张不超过 5 MiB。确认发布后才上传。</text></view>
   </block>
   <block wx:else>
     <view class="surface recap"><text class="heading">{{form.title}}</text><view class="caption">{{zones[originIndex].label}} → {{zones[destinationIndex].label}} · {{form.weightKg}} 公斤</view><view class="caption">{{date}} {{time}} 前</view><view class="price mono-num">¥{{form.rewardAmount}}</view></view>

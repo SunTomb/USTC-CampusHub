@@ -3,9 +3,15 @@
   <view wx:if="{{deleted}}" class="sheet"><view class="heading">该商品已删除</view><button class="small plain" data-url="/pages/goods/index" bindtap="go">返回二手市集</button></view>
   <state-view wx:else loading="{{loading}}" error="{{error && !want ? error : ''}}" bind:retry="reload" />
   <block wx:if="{{item && !loading}}">
-    <view class="between"><text class="pill gold">{{item.statusLabel}}</text><text class="caption">{{item.categoryName || '其他闲置'}}</text></view>
-    <view class="title">{{item.title}}</view><view class="price">¥{{item.priceLabel}} <text wx:if="{{item.originalPrice}}" class="caption">原价 ¥{{item.originalPrice}}</text></view>
-    <catalog-photos kind="GOODS" object-id="{{item.id}}" />
+    <view class="surface catalog-head goods-head">
+      <catalog-photos class="catalog-media" id="goods-thumb" variant="thumb" kind="GOODS" object-id="{{item.id}}" fallback-char="{{item.initial}}" tone="{{item.id % 4}}" />
+      <view class="catalog-copy">
+        <view class="between"><text class="pill gold">{{item.statusLabel}}</text><view class="caption single">{{item.categoryName || '其他闲置'}}</view></view>
+        <view class="title single">{{item.title}}</view>
+        <view class="price mono-num single">¥{{item.priceLabel}} <text wx:if="{{item.originalPrice}}" class="caption">原价 ¥{{item.originalPrice}}</text></view>
+      </view>
+    </view>
+    <catalog-photos class="catalog-media" variant="detail" kind="GOODS" object-id="{{item.id}}" editable="{{owner && item.canEdit}}" bind:changed="photosChanged" />
     <view class="section-title">物品说明</view><view class="content">{{item.description}}</view>
     <view class="surface sheet"><view class="heading">约在这里交接</view><view>{{item.zoneLabel}} · {{item.tradeLocation}}</view><view class="caption">{{item.conditionLevel}} · 卖家 {{item.sellerNickname}}</view></view>
     <view class="section-title">卖家联系方式</view><view wx:if="{{contacts.length}}" class="chips"><button wx:for="{{contacts}}" wx:key="value" class="small plain" data-value="{{item.value}}" bindtap="copy">{{item.label}}：{{item.value}}</button></view><view wx:else class="caption">{{item.status === 'PUBLISHED' ? '提交购买意向后，可联系卖家约定交接。' : '这件物品已结束交易。'}}</view>

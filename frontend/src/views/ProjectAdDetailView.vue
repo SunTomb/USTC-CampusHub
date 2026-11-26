@@ -3,7 +3,7 @@
     <div class="page-heading">
       <div>
         <p class="eyebrow">项目广场 · 详情</p>
-        <h2>{{ project?.title || '项目详情' }}</h2>
+        <h2>项目详情</h2>
       </div>
       <el-button @click="router.push({ name: 'project-ads' })">返回项目广场</el-button>
     </div>
@@ -17,21 +17,21 @@
       @action="router.push('/project-ads')"
     />
 
-    <el-card v-if="project" class="detail-hero premium-panel" shadow="never">
-      <div class="detail-header">
-        <div>
+    <el-card v-if="project" class="detail-hero" shadow="never">
+      <div class="catalog-detail-header project-detail-header">
+        <div class="catalog-detail-media">
+          <CatalogPhotos kind="PROJECT_AD" :object-id="project.id" layout="detail" :fallback-char="project.title.slice(0, 1)"
+            :fallback-sub="formatAdType(project.adType)" :tone="project.id % 4" />
+        </div>
+        <div class="catalog-detail-info">
           <p class="eyebrow">{{ formatAdType(project.adType) }}</p>
-          <CatalogPhotos kind="PROJECT_AD" :object-id="project.id"/><h2>{{ project.title }}</h2>
+          <h3 :title="project.title">{{ project.title }}</h3>
           <p>{{ project.summary }}</p>
           <div class="tag-list">
             <el-tag v-if="project.featured" type="warning">站务精选</el-tag>
             <el-tag v-for="tag in splitTags(project.tags)" :key="tag" effect="plain">{{ tag }}</el-tag>
           </div>
-        </div>
-        <div class="detail-stats mono-num">
-          <span>浏览 {{ project.viewCount }}</span>
-          <span>收藏 {{ project.favoriteCount }}</span>
-          <span>留言 {{ project.commentCount }}</span>
+          <p class="catalog-meta mono-num">浏览 {{ project.viewCount }} · 收藏 {{ project.favoriteCount }} · 留言 {{ project.commentCount }}</p>
         </div>
       </div>
     </el-card>

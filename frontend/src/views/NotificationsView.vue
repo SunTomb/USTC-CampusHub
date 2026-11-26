@@ -6,7 +6,12 @@
         <h2>站内通知</h2>
         <p>跑腿接单进展、买家购买意向、小店预约提醒与身份核验通知都会汇集在这里。</p>
       </div>
-      <el-button :loading="loading" @click="load">刷新信箱</el-button>
+      <div class="heading-actions">
+        <el-button type="primary" :loading="markingAll" :disabled="loading || markingAll || unreadCount === 0" @click="markAllRead">
+          {{ unreadCount > 0 ? `一键已读（${unreadCount}）` : '一键已读' }}
+        </el-button>
+        <el-button :loading="loading" :disabled="markingAll" @click="load">刷新信箱</el-button>
+      </div>
     </div>
 
     <div class="list-surface premium-panel">
@@ -26,7 +31,7 @@
         </div>
         <div class="metric-column">
           <el-tag :type="item.readAt ? 'info' : 'primary'">{{ item.readAt ? '已读' : '新提醒' }}</el-tag>
-          <el-button v-if="!item.readAt" size="small" plain @click="markRead(item.id)">标为已读</el-button>
+          <el-button v-if="!item.readAt" size="small" plain :disabled="markingAll" @click="markRead(item.id)">标为已读</el-button>
         </div>
       </div>
     </div>
@@ -34,9 +39,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { listNotifications, markNotificationRead, type StationNotificationSummary } from '@/api/campushub'
+import { listNotifications, markAllNotificationsRead, markNotificationRead, type StationNotificationSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
 import { formatTargetType } from '@/utils/display'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -44,6 +49,23 @@ import EmptyState from '@/components/common/EmptyState.vue'
 const auth = useAuthStore()
 const loading = ref(false)
 const notifications = ref<StationNotificationSummary[]>([])
+
+const markingAll = ref(false)
+const unreadCount = computed(() => notifications.value.filter(item => !item.readAt).length)
+
+async function markAllRead() {
+  if (loading.value || markingAll.value || !unreadCount.value || !auth.currentUser) return
+  markingAll.value = true
+  try {
+    await markAllNotificationsRead()
+    await load()
+    ElMessage.success('已全部标为已读')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '操作失败，请刷新信箱后重试')
+  } finally {
+    markingAll.value = false
+  }
+}
 
 async function load() {
   loading.value = true

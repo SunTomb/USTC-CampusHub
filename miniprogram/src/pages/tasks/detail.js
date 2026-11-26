@@ -59,7 +59,7 @@ ui.definePage({
       const canConfirm = isOwner && privateTask.workflowStatus === 'PENDING_CONFIRMATION' && (completionMode || deliveryCount > 0);
       const deliveryStage = isAssigned && privateTask.verificationMode === 'PHOTO_AND_CONFIRMATION' && ['DELIVERING', 'DELIVERED'].includes(privateTask.workflowStatus);
       return {
-        task: view, workspace: privateWorkspace(workspace), photos, privateDetails: workspace && workspace.privateDetails || null, isOwner, isAssigned,
+        task: { ...view, initial: (view.title || '物').slice(0, 1) }, workspace: privateWorkspace(workspace), photos, privateDetails: workspace && workspace.privateDetails || null, isOwner, isAssigned,
         applicants: applicants.map(application => ({ ...application, statusLabel: d.status(application.status), selectable: !!user && isOwner && !view.expired && privateTask.workflowStatus === 'PUBLISHED' && ['PENDING','APPLIED'].includes(application.status) && application.applicantId !== user.id })),
         action: rules.nextTaskAction(privateTask, isAssigned && d.hasRole(user, 'RUNNER')), canConfirm,
         confirmLabel: completionMode && privateTask.workflowStatus === 'PENDING_CONFIRMATION' ? '确认完成（发布者兜底）' : '确认已收到并完成',

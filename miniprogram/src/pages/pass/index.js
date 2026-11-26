@@ -10,13 +10,18 @@ ui.definePage({
     const app = getApp(); await app.auth.restore();
     if (!app.auth.authenticated) { this.clearPrivate(); this.setData({ loading: false, error: app.auth.error }); return; }
     const user = app.auth.user;
+    const readRevision = this._readRevision;
     await ui.load(this, async () => {
       const [profile, applications, notices, desk] = await Promise.all([app.api.profile(user.id), app.api.applications(user.id), app.api.notifications(user.id),app.api.orderDesk({size:1}).catch(()=>null)]);
       return { profile, applications, notices, desk };
     }, ({ profile, applications, notices, desk }) => {
-      const unread = notices.filter(n => n.readAt == null).length;
+      // A refresh started before a successful bulk read can carry obsolete unread flags.
+      const rows = readRevision === this._readRevision
+        ? notices.map(n => ({ ...n, dateLabel: d.dateText(n.createdAt), unread: n.readAt == null }))
+        : this.data.notices;
+      const unread = rows.filter(n => n.unread).length;
       if (unread) wx.setTabBarBadge({ index: 4, text: unread > 99 ? '99+' : String(unread), fail() {} }); else wx.removeTabBarBadge({ index: 4, fail() {} });
-      return { orderCounts:desk?.counts||{}, profile, applications, notices: notices.map(n => ({ ...n, dateLabel: d.dateText(n.createdAt), unread: n.readAt == null })), unread, creditLabel: profile.creditScore == null ? '—' : String(profile.creditScore), roleCards: d.roles.map(role => { const application = applications.find(a => a.roleType === role.value); const active = d.hasRole(user, role.value); return { ...role, active, pending: !active && application && application.reviewStatus === 'PENDING_REVIEW', statusLabel: active ? '已开通' : application && application.reviewStatus === 'PENDING_REVIEW' ? '核验中' : role.review ? '协议后核验' : '同意协议开通' }; }) };
+      return { orderCounts:desk?.counts||{}, profile, applications, notices: rows, unread, creditLabel: profile.creditScore == null ? '—' : String(profile.creditScore), roleCards: d.roles.map(role => { const application = applications.find(a => a.roleType === role.value); const active = d.hasRole(user, role.value); return { ...role, active, pending: !active && application && application.reviewStatus === 'PENDING_REVIEW', statusLabel: active ? '已开通' : application && application.reviewStatus === 'PENDING_REVIEW' ? '核验中' : role.review ? '协议后核验' : '同意协议开通' }; }) };
     });
   },
   async switchSection(event) {
@@ -63,6 +68,17 @@ ui.definePage({
     await ui.load(this, () => getApp().api.protocol('USER_SERVICE'), protocol => ({ protocol }));
   },
   closeProtocol() { this.setData({ protocolOpen: false, protocol: null }); },
+  async readAllNotices() {
+    const app = getApp(), user = app.auth.user;
+    if (!user || !this.data.unread) return;
+    await ui.run(this, () => app.api.readAllNotifications(), () => {
+      if (app.auth.user?.id !== user.id) return;
+      this._readRevision = (this._readRevision || 0) + 1;
+      this.setData({ notices: this.data.notices.map(n => ({ ...n, unread: false })), unread: 0 });
+      wx.removeTabBarBadge({ index: 4, fail() {} });
+      ui.toast('已全部标为已读');
+    });
+  },
   async readNotice(event) {
     const notice = this.data.notices.find(n => n.id === Number(event.currentTarget.dataset.id));
     const user = getApp().auth.user;

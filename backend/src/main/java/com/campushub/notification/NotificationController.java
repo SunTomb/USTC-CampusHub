@@ -3,6 +3,7 @@ package com.campushub.notification;
 import com.campushub.auth.CurrentUserService;
 import com.campushub.common.ApiResponse;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,5 +30,11 @@ public class NotificationController {
     @PostMapping("/notifications/{id}/read")
     public ApiResponse<StationNotificationSummary> markRead(@PathVariable Long id) {
         return ApiResponse.ok(notificationService.markRead(id, currentUserService.requireUserId()));
+    }
+
+    @PostMapping("/notifications/read-all")
+    public ApiResponse<Map<String, Integer>> markAllRead() {
+        int updatedCount = notificationService.markAllRead(currentUserService.requireUserId());
+        return ApiResponse.ok(Map.of("updatedCount", updatedCount));
     }
 }

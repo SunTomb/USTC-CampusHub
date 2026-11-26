@@ -81,7 +81,7 @@
           <el-form-item label="招募截止时间（选填）"><el-date-picker v-model="form.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="wide" popper-class="responsive-date-popper" /></el-form-item>
         </FormSection>
 
-        <CatalogPhotos ref="media" kind="PROJECT_AD" :object-id="editingId || 0" editable/>
+        <CatalogPhotos ref="media" kind="PROJECT_AD" :fallback-char="form.title.slice(0, 1)" :object-id="editingId || 0" editable/>
         <FormSection title="详细介绍与外部链接" description="详细说明背景目标、分工需求或附上 GitHub / 飞书文档链接。">
           <el-form-item label="详细说明"><el-input v-model="form.description" type="textarea" :rows="5" /></el-form-item>
           <el-form-item label="外部链接（选填）"><el-input v-model="form.linkUrl" placeholder="https://..." /></el-form-item>

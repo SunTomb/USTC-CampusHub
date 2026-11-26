@@ -36,6 +36,12 @@ export interface CurrentUser {
   roles: string[]
 }
 
+export interface UserSummary extends Omit<CurrentUser, 'roles'> {
+  avatarUrl: string | null
+  creditScore: number
+  status: string
+}
+
 export interface GoodsSummary {
   id: number
   title: string
@@ -884,6 +890,10 @@ export function updateCurrentUserProfile(payload: { username: string; nickname: 
   return putApi<CurrentUser>('/users/me/profile', payload)
 }
 
+export function updateCurrentUserContacts(payload: { wechatContact?: string; qqContact?: string }): Promise<UserSummary> {
+  return putApi<UserSummary>('/users/me/contacts', payload)
+}
+
 export function changeCurrentUserPassword(payload: { currentPassword: string; newPassword: string }) {
   return putApi<void>('/users/me/password', payload)
 }
@@ -1040,6 +1050,10 @@ export function rejectMasterAdminApplication(applicationId: number) {
 
 export function listNotifications(userId: number) {
   return getApi<StationNotificationSummary[]>(`/users/${userId}/notifications`)
+}
+
+export function markAllNotificationsRead(): Promise<{ updatedCount: number }> {
+  return postApi<{ updatedCount: number }>('/notifications/read-all')
 }
 
 export function markNotificationRead(notificationId: number) {

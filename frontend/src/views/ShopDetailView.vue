@@ -2,9 +2,8 @@
   <section class="page-stack" v-loading="loading">
     <div class="page-heading" v-if="shop">
       <div>
-        <p class="eyebrow">同窗小店 · 价目与预约</p>
-        <h2>{{ shop.name }}</h2>
-        <p>{{ shop.serviceArea }} · 常驻{{ zoneLabel(shop.campusZone) }} · {{ shop.openingHours || '服务时间可私聊商议' }}</p>
+        <p class="eyebrow">同窗小店</p>
+        <h2>价目与预约</h2>
       </div>
       <el-button @click="router.push({ name: 'shops' })">返回店铺列表</el-button>
     </div>
@@ -19,15 +18,18 @@
     />
 
     <template v-if="shop">
-      <el-card shadow="never" class="shop-hero premium-panel">
-        <div>
-          <el-tag :type="statusTone(shop.status)">{{ shop.status === 'APPROVED' ? '营业接单中' : formatStatus(shop.status) }}</el-tag>
-          <CatalogPhotos kind="SHOP" :object-id="shop.id"/><h3>{{ shop.description }}</h3>
-          <p>主理人：<strong>{{ shop.ownerNickname }}</strong> · 校内信用分 <span class="mono-num">{{ shop.ownerCreditScore }}</span></p>
-        </div>
-        <div class="metric-column">
-          <span>店铺评分</span>
-          <strong class="mono-num">{{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1)+' 分' }}</strong>
+      <el-card shadow="never" class="shop-hero">
+        <div class="catalog-detail-header shop-detail-header">
+          <div class="catalog-detail-media">
+            <CatalogPhotos kind="SHOP" :object-id="shop.id" layout="detail" :fallback-char="shop.name.slice(0, 1)" :tone="shop.id % 4" />
+          </div>
+          <div class="catalog-detail-info">
+            <el-tag size="small" :type="statusTone(shop.status)">{{ shop.status === 'APPROVED' ? '营业接单中' : formatStatus(shop.status) }}</el-tag>
+            <h3 :title="shop.name">{{ shop.name }}</h3>
+            <p>{{ shop.description }}</p>
+            <p>主理人 {{ shop.ownerNickname }} · 信用 {{ shop.ownerCreditScore }} · {{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1) + ' 分' }}</p>
+            <p>{{ shop.serviceArea }} · {{ zoneLabel(shop.campusZone) }} · {{ shop.openingHours || '服务时间可私聊商议' }}</p>
+          </div>
         </div>
       </el-card>
 
@@ -43,20 +45,22 @@
       />
 
       <div class="shop-service-grid">
-        <el-card v-for="item in shop.serviceItems" :key="item.id" shadow="never" class="service-card spotlight-surface">
-          <div class="panel-topline">
-            <el-tag effect="plain">{{ categoryLabel(item.category) }}</el-tag>
-            <span class="mono-num">约 {{ item.durationMinutes }} 分钟</span>
+        <article v-for="item in shop.serviceItems" :key="item.id" class="service-card spotlight-surface"
+          @click="router.push(`/shops/${shop.id}/items/${item.id}`)">
+          <div class="catalog-slot">
+            <CatalogPhotos kind="SERVICE_ITEM" :object-id="item.id" compact :fallback-char="item.title.slice(0, 1)"
+              :fallback-sub="categoryLabel(item.category)" :tone="item.id % 4" />
           </div>
-          <CatalogPhotos kind="SERVICE_ITEM" :object-id="item.id"/><h3><router-link :to="`/shops/${shop.id}/items/${item.id}`">{{ item.title }}</router-link></h3>
-          <ItemRatings :id="item.id" :score="item.rating" :count="item.reviewCount" />
-          <p>{{ item.description }}</p>
-          <div class="goods-price-row">
-            <strong class="mono-num">{{ priceLabel(item) }}</strong>
-            <span>/ {{ item.priceUnit }}</span>
+          <div class="service-card-copy">
+            <h3 class="catalog-title"><router-link :to="`/shops/${shop.id}/items/${item.id}`" @click.stop>{{ item.title }}</router-link></h3>
+            <p class="catalog-summary">{{ item.description }}</p>
+            <div class="catalog-meta">{{ categoryLabel(item.category) }} · 约 {{ item.durationMinutes }} 分钟 · {{ item.reviewCount ? `${Number(item.rating).toFixed(1)} 分（${item.reviewCount}）` : '暂无评价' }}</div>
+            <div class="service-card-actions">
+              <span class="catalog-meta"><strong>{{ priceLabel(item) }}</strong> / {{ item.priceUnit }}</span>
+              <el-button type="primary" size="small" :disabled="shop.ownerId === auth.currentUser?.id" @click.stop="openBooking(item)">预约</el-button>
+            </div>
           </div>
-          <el-button type="primary"  :disabled="shop.ownerId===auth.currentUser?.id" @click="openBooking(item)">立即预约这项服务</el-button>
-        </el-card>
+        </article>
         <el-empty v-if="shop.serviceItems.length === 0" description="主理人正在整理服务价目表，请稍后再来" />
       </div>
       <ContentReport v-if="shop.status==='APPROVED' && auth.currentUser?.id!==shop.ownerId" kind="SHOP" :id="shop.id" />
@@ -85,7 +89,6 @@
 
 <script setup lang="ts">
 import CatalogPhotos from '@/components/CatalogPhotos.vue'
-import ItemRatings from '@/components/ItemRatings.vue'
 import ContentReport from '@/components/ContentReport.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

@@ -1,17 +1,33 @@
 <template>
   <section class="page-stack" v-loading="loading">
-    <header class="page-heading"><div><p class="eyebrow">校园二手市集</p><h2>{{ detail?.title || '闲置详情' }}</h2></div>
+    <header class="page-heading"><div><p class="eyebrow">校园二手市集</p><h2>闲置详情</h2></div>
       <div class="heading-actions"><el-button @click="router.push('/goods')">返回市集</el-button><el-button v-if="auth.currentUser" @click="router.push('/orders?type=GOODS')">我的订单</el-button></div>
     </header>
     <section v-if="deleted" role="status" class="state-card"><h3>该商品已删除</h3><el-button text @click="router.push('/goods')">返回二手市集</el-button></section>
     <el-alert v-else-if="error" :title="error" type="warning" :closable="false"><el-button text @click="load">重新加载</el-button></el-alert>
     <div v-if="detail" class="goods-detail">
       <el-card class="goods-main-panel" shadow="never">
-        <CatalogPhotos kind="GOODS" :object-id="detail.id" />
-        <div class="goods-price-row goods-price-large"><strong>¥{{ detail.price }}</strong><span v-if="detail.originalPrice">原价 ¥{{ detail.originalPrice }}</span><el-tag>{{ statusLabel(detail.status) }}</el-tag></div>
-        <p class="preserve-lines">{{ detail.description }}</p><div class="goods-meta detail-meta"><span class="meta-pill">{{ detail.categoryName || '其他闲置' }}</span><span>{{ detail.conditionLevel }} · {{ formatCampusZone(detail.campusZone) }}</span><span>{{ detail.tradeLocation }} · {{ formatDeliveryMethod(detail.deliveryMethod) }}</span></div>
-        <div class="detail-actions"><el-button v-if="!owner && detail.status === 'PUBLISHED' && !detail.myIntentStatus" type="primary" @click="openIntent">我想要</el-button><el-tag v-if="detail.myIntentStatus">{{ statusLabel(detail.myIntentStatus) }}</el-tag>
-          <el-button v-if="detail.status === 'PUBLISHED'" :disabled="busy" @click="favorite">收藏（{{ detail.favoriteCount }}）</el-button></div>
+        <div class="catalog-detail-header goods-detail-header">
+          <div class="catalog-detail-media">
+            <CatalogPhotos kind="GOODS" :object-id="detail.id" layout="detail" :tone="detail.id % 4"
+              :fallback-char="detail.title.slice(0, 1) || '物'" :fallback-sub="detail.conditionLevel" />
+          </div>
+          <div class="catalog-detail-info">
+            <p class="eyebrow">{{ detail.categoryName || '其他闲置' }}</p>
+            <h3 :title="detail.title">{{ detail.title }}</h3>
+            <div class="goods-price-row goods-price-large"><strong>¥{{ detail.price }}</strong><span v-if="detail.originalPrice" class="goods-origin-price">原价 ¥{{ detail.originalPrice }}</span></div>
+            <el-tag>{{ statusLabel(detail.status) }}</el-tag>
+          </div>
+          <div class="goods-detail-copy">
+            <p class="preserve-lines">{{ detail.description }}</p>
+            <p>{{ detail.conditionLevel }} · {{ formatCampusZone(detail.campusZone) }} · {{ detail.tradeLocation }} · {{ formatDeliveryMethod(detail.deliveryMethod) }}</p>
+            <div class="detail-actions">
+              <el-button v-if="!owner && detail.status === 'PUBLISHED' && !detail.myIntentStatus" type="primary" @click="openIntent">我想要</el-button>
+              <el-tag v-if="detail.myIntentStatus">{{ statusLabel(detail.myIntentStatus) }}</el-tag>
+              <el-button v-if="detail.status === 'PUBLISHED'" :disabled="busy" @click="favorite">收藏（{{ detail.favoriteCount }}）</el-button>
+            </div>
+          </div>
+        </div>
         <GoodsEscrowDetail v-if="platform.financialEnabled" :key="detail.id + ':' + viewerId" :goods-id="detail.id" :owner="owner" :available="detail.status === 'PUBLISHED'" @changed="load" />
       </el-card>
       <el-card class="seller-panel" shadow="never"><template #header>卖家与交接方式</template><p>{{ detail.sellerNickname }} · {{ formatCampusZone(detail.campusZone) }}</p>

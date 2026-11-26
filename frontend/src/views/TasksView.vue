@@ -80,7 +80,6 @@
           </div>
         </div>
 
-        <div class="ticket- perforation" aria-hidden="true"></div>
 
         <div class="ticket-stub">
           <div class="ticket-reward">
@@ -150,8 +149,12 @@
           <p v-if="editId" class="hint">原有照片会保留；可在履约台管理参与方照片。</p>
           <el-form-item v-else label="物品照片（可选，最多 3 张）">
             <input type="file" accept="image/jpeg,image/png" multiple :disabled="publishing" @change="onPublishPhotos" />
-            <div class="photo-previews" v-if="publishPhotos.length">
-              <figure v-for="photo in publishPhotos" :key="photo.clientRequestId"><img :src="photo.url" alt="待上传物品照片" /><button type="button" :disabled="publishing" @click="removePublishPhoto(photo.clientRequestId)">移除</button></figure>
+            <div class="photo-previews">
+              <span v-if="!publishPhotos.length" class="draft-photo-fallback cover-tone-0" aria-label="暂无物品照片">物</span>
+              <figure v-for="photo in publishPhotos" :key="photo.clientRequestId">
+                <button type="button" class="task-photo-button" @click="previewDraftPhoto = photo.url"><img :src="photo.url" alt="预览待上传物品照片" /></button>
+                <button type="button" :disabled="publishing" @click="removePublishPhoto(photo.clientRequestId)">移除</button>
+              </figure>
             </div>
             <small class="hint">照片仅供参与者查看；每张不超过 5 MiB。</small>
           </el-form-item>
@@ -183,6 +186,7 @@
       <div v-else><p>未收到发布结果。请先在“我的订单”核对任务，再决定是否重新张贴。</p><el-button @click="acknowledgeUncertain">查看我的订单</el-button></div>
     </el-drawer>
 
+    <TaskPhotoPreview :src="previewDraftPhoto" alt="待上传物品照片" @close="previewDraftPhoto = ''" />
     <el-dialog v-model="applyOpen" append-to-body title="报名承接跑腿" width="420px">
       <el-input v-model="applyMessage" type="textarea" :rows="4" placeholder="向委托人说明你目前所在校区、预计送达时间或顺路情况" />
       <template #footer>
@@ -212,6 +216,7 @@ import { weightGrams, weightLabel, photoProblem, taskError, draftPhoto, discardP
 import { useAuthStore } from '@/stores/auth'
 import EmptyState from '@/components/common/EmptyState.vue'
 import FormSection from '@/components/common/FormSection.vue'
+import TaskPhotoPreview from '@/components/TaskPhotoPreview.vue'
 
 const router = useRouter(), route = useRoute()
 const auth = useAuthStore()
@@ -224,6 +229,7 @@ const applyTaskId = ref<number | null>(null)
 const applyMessage = ref('')
 const publishFormRef = ref<FormInstance>()
 const deadlineDate = ref<Date>(new Date(Date.now() + 2 * 60 * 60 * 1000))
+const previewDraftPhoto = ref('')
 const publishPhotos = ref<DraftPhoto[]>([])
 const editId=ref<number|null>(null), editLoading=ref(false), editError=ref('')
 const pendingTaskId = ref<number | null>(null), uncertain = ref(false)
@@ -244,6 +250,7 @@ let controller = new AbortController(), creating = false
 function clearDraft() {
   controller.abort(); controller = new AbortController(); publishing.value = creating = false
   Object.assign(publishForm, initialForm()); deadlineDate.value = new Date(Date.now() + 2 * 60 * 60 * 1000)
+  previewDraftPhoto.value = ''
   discardPhotos(publishPhotos.value)
   editId.value=null; editLoading.value=false; editError.value=''
 }
@@ -282,6 +289,7 @@ function onPublishPhotos(event: Event) {
 function removePublishPhoto(clientRequestId: string) {
   const index = publishPhotos.value.findIndex(photo => photo.clientRequestId === clientRequestId)
   if (index >= 0) {
+    if (previewDraftPhoto.value === publishPhotos.value[index].url) previewDraftPhoto.value = ''
     URL.revokeObjectURL(publishPhotos.value[index].url)
     publishPhotos.value.splice(index, 1)
   }
@@ -501,5 +509,6 @@ onBeforeUnmount(() => { document.removeEventListener('visibilitychange', hideDra
 <style scoped>
 .photo-previews { display:flex; flex-wrap:wrap; gap:.75rem }
 .photo-previews figure { margin:0; display:grid; gap:.25rem }
-.photo-previews img { width:6rem; height:6rem; object-fit:cover; border-radius:.5rem }
+.photo-previews img, .draft-photo-fallback { width:96px; height:96px; object-fit:cover; border-radius:.5rem }
+.draft-photo-fallback { display:grid; place-items:center; font:600 2rem var(--font-display); }
 </style>

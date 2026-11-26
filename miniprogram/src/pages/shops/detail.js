@@ -5,7 +5,8 @@ ui.definePage({
   data: { shop: null, services: [], contacts: [], booking: false, serviceIndex: 0, date: '', time: '', note: '', bookingDone: false },
   onLoad(query) { this.shopId = Number(query.id); this._bookItem=Number(query.item)||null;this._bookOnLoad = query.book === '1'; this.setData(d.dateParts(86400000)); },
   async onShow() { await this.reload(); if (this._bookOnLoad && this.data.services.length) { this._bookOnLoad = false; await this.openBooking({ currentTarget: { dataset: { id: this._bookItem || this.data.services[0].id } } }); } },
-  async reload() { await getApp().auth.restore(); return ui.load(this, () => getApp().api.shop(this.shopId), shop => ({ shop: { ...shop, zoneLabel: d.zone(shop.campusZone) }, services: (shop.serviceItems || []).map(d.serviceView), contacts: d.contacts(shop.contactSnapshot, shop.contactVisible === true) })); },
+  async reload() { await getApp().auth.restore(); return ui.load(this, () => getApp().api.shop(this.shopId), shop => ({ shop: { ...shop, initial: (shop.name || '店').slice(0, 1), zoneLabel: d.zone(shop.campusZone) }, services: (shop.serviceItems || []).map(item => ({ ...d.serviceView(item), initial: (item.title || '服').slice(0, 1) })), contacts: d.contacts(shop.contactSnapshot, shop.contactVisible === true) })); },
+  photosChanged() { this.selectComponent('#shop-thumb')?.load(); },
   async openBooking(event) {
     const user = await ui.requireUser('/pages/shops/detail?id=' + this.shopId + '&book=1&item='+Number(event.currentTarget.dataset.id));
     if (!user || !this.data.shop) return;

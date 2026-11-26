@@ -76,6 +76,7 @@ function createApi(client) {
       return client.post('/identity/users/' + id(userId) + '/roles', { roleType: role, agreementVersion: version, agreementAccepted: true });
     },
     notifications: userId => client.get('/users/' + id(userId) + '/notifications'),
+    readAllNotifications: () => client.post('/notifications/read-all'),
     readNotification: notificationId => client.post('/notifications/' + id(notificationId) + '/read'),
   };
 }

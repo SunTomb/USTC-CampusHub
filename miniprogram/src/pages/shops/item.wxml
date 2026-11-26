@@ -1,1 +1,12 @@
-<launch-intro id="launch-intro"/><view class="page with-dock"><state-view loading="{{loading}}" error="{{error}}" bind:retry="reload"/><block wx:if="{{item}}"><text class="eyebrow">{{item.shopName}} · {{item.categoryLabel}}</text><view class="title">{{item.title}}</view><view class="price">¥{{item.priceLabel}} / {{item.priceUnit}}</view><view class="caption">约 {{item.durationMinutes}} 分钟</view><catalog-photos kind="SERVICE_ITEM" object-id="{{item.id}}" editable="{{owner}}"/><view class="content">{{item.description}}</view><view class="section-title">顾客评价</view><item-ratings item-id="{{item.id}}" score="{{item.rating}}" count="{{item.reviewCount}}"/></block></view><view wx:if="{{item && !owner && item.status==='PUBLISHED'}}" class="dock"><button class="primary" bindtap="book">预约这项服务</button></view>
+<launch-intro id="launch-intro"/><view class="page with-dock"><state-view loading="{{loading}}" error="{{error}}" bind:retry="reload"/><block wx:if="{{item}}">
+  <view class="surface catalog-head item-head">
+    <catalog-photos class="catalog-media" id="service-thumb" variant="thumb" kind="SERVICE_ITEM" object-id="{{item.id}}" fallback-char="{{item.initial}}" tone="{{item.id % 4}}" />
+    <view class="catalog-copy">
+      <view class="eyebrow single">{{item.shopName}} · {{item.categoryLabel}}</view>
+      <view class="title single">{{item.title}}</view>
+      <view class="price mono-num single">¥{{item.priceLabel}} / {{item.priceUnit}}</view>
+      <view class="caption single">约 {{item.durationMinutes}} 分钟</view>
+    </view>
+  </view>
+  <catalog-photos class="catalog-media" variant="detail" kind="SERVICE_ITEM" object-id="{{item.id}}" editable="{{owner}}" bind:changed="photosChanged" />
+  <view class="content">{{item.description}}</view><view class="section-title">顾客评价</view><item-ratings item-id="{{item.id}}" score="{{item.rating}}" count="{{item.reviewCount}}"/></block></view><view wx:if="{{item && !owner && item.status==='PUBLISHED'}}" class="dock"><button class="primary" bindtap="book">预约这项服务</button></view>

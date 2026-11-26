@@ -1,1 +1,1 @@
-.price{font-size:38rpx;margin-block:16rpx;color:var(--navy)}.content{margin-block:24rpx}
+.item-head{padding:22rpx;align-items:center}.item-head .catalog-copy{min-height:184rpx;gap:4rpx}.item-head .title{font-size:34rpx}.price{font-size:32rpx;color:var(--navy)}.content{margin-block:24rpx}

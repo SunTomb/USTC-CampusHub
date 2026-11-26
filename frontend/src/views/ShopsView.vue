@@ -20,7 +20,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="搜索服务">
-          <el-input v-model="filters.keyword" clearable placeholder="搜店铺名、摄影、清灰、排版..." style="width: 240px" />
+          <el-input v-model="filters.keyword" clearable placeholder="搜店铺名、摄影、清灰、排版..." />
         </el-form-item>
       </el-form>
     </el-card>
@@ -32,19 +32,17 @@
         class="shop-card spotlight-surface"
         @click="router.push(`/shops/${shop.id}`)"
       >
-        <div class="panel-topline">
-          <span class="meta-pill">{{ zoneLabel(shop.campusZone) }}</span>
-          <span>{{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1)+' 分' }}</span>
+        <div class="catalog-slot">
+          <CatalogPhotos kind="SHOP" :object-id="shop.id" compact :fallback-char="shop.name.slice(0, 1)" :tone="shop.id % 4" />
         </div>
-        <CatalogPhotos kind="SHOP" :object-id="shop.id" compact /><h3>{{ shop.name }}</h3>
-        <p>{{ shop.description }}</p>
-        <div class="shop-meta">
-          <span>🎯 擅长领域：{{ shop.serviceArea }}</span>
-          <span>👤 主理人：{{ shop.ownerNickname }}</span>
-          <span>🕒 可约时间：{{ shop.openingHours || '课余时间皆可协商' }}</span>
-        </div>
-        <div class="shop-card-footer">
-          <span class="shop-enter-link">进店查看价目与预约 →</span>
+        <div class="shop-card-copy">
+          <div class="catalog-title-row">
+            <h3 class="catalog-title">{{ shop.name }}</h3>
+            <small class="shop-score">{{ shop.rating == null ? '暂无评分' : Number(shop.rating).toFixed(1) + ' 分' }}</small>
+          </div>
+          <p class="catalog-summary">{{ shop.description }}</p>
+          <div class="catalog-meta">{{ zoneLabel(shop.campusZone) }} · {{ shop.ownerNickname }} · {{ shop.serviceArea }}</div>
+          <router-link class="shop-enter-link" :to="`/shops/${shop.id}`" @click.stop>进店查看价目与预约 →</router-link>
         </div>
       </article>
 

@@ -5,9 +5,13 @@ const STATUS={PUBLISHED:'在售',ON_SALE:'历史在售',SOLD:'已售出',OFF_SHE
 ui.definePage({
   data:emptyDetail(),
   onLoad(q){this.id=Number(q.id);this._epoch=0;},
-  onShow(){this._visible=true;return this.reload();},
-  onHide(){this._visible=false;this.clearPrivate();},
-  clearPrivate(){this._epoch++;this._loadSequence++;this.setData({...emptyDetail(),error:''});},
+  onShow(){this._visible=true;
+    if (this._returningFromMedia) { this._returningFromMedia=false; return; }
+    return this.reload();},
+  onHide(){this._visible=false;
+    if (ui.catalogMediaOpen(this)) { this._returningFromMedia=true; return; }
+    this.clearPrivate();},
+  clearPrivate(){this._returningFromMedia=false;this._epoch++;this._loadSequence++;this.setData({...emptyDetail(),error:''});},
   async reload(){
     const v=this._epoch;await getApp().auth.restore();if(v!==this._epoch||!this._visible)return;
     this.setData(emptyDetail());
@@ -20,10 +24,11 @@ ui.definePage({
     },result=>{
       if(result.deleted)return {...emptyDetail(),deleted:true};
       const {item,owner,intents}=result;
-      return {item:{...item,zoneLabel:d.zone(item.campusZone),priceLabel:d.money(item.price),statusLabel:STATUS[item.status]||'暂不可交易',intentLabel:STATUS[item.myIntentStatus]||''},owner,
+      return {item:{...item,initial:(item.title || '物').slice(0, 1),zoneLabel:d.zone(item.campusZone),priceLabel:d.money(item.price),statusLabel:STATUS[item.status]||'暂不可交易',intentLabel:STATUS[item.myIntentStatus]||''},owner,
         contacts:d.contacts(item.contactSnapshot,item.contactVisible),intents:intents.map(i=>({...i,statusLabel:STATUS[i.status]||'已结束'}))};
     });
   },
+  photosChanged(){this.selectComponent('#goods-thumb')?.load();},
   async openWant(){const u=await ui.requireUser('/pages/goods/detail?id='+this.id);const i=this.data.item;if(u&&i&&i.sellerId!==u.id&&i.status==='PUBLISHED'&&!i.myIntentStatus)this.setData({want:true,message:''});},
   closeWant(){if(!this.data.busy)this.setData({want:false});},
   async send(){if(!this.data.want||!this.data.item||this.data.owner||!getApp().auth.authenticated)return;const epoch=this._epoch;

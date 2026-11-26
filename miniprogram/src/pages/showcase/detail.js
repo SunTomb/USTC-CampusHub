@@ -29,16 +29,23 @@ ui.definePage({
     });
   },
   async onShow() {
-    this._visible = true; this._restoring = true;
+    this._visible = true;
+    if (this._returningFromMedia) { this._returningFromMedia=false; return; }
+    this._restoring = true;
     try { await getApp().auth.restore(); }
     finally {
       this._restoring = false;
       if (this._alive && this._visible) this.reload();
     }
   },
-  onHide() { this._visible = false; this._loadSequence++; this.clearPrivate(); },
+  onHide() {
+    this._visible = false;
+    if (ui.catalogMediaOpen(this)) { this._returningFromMedia=true; return; }
+    this._loadSequence++; this.clearPrivate();
+  },
   onUnload() { if (this._authRefresh) this._authRefresh(); },
   clearPrivate() {
+    this._returningFromMedia = false;
     this._detailToken = null;
     this.setData({ project: null, comments: [], contacts: [], commentText: '', commentSheet: false,
       contactSheet: false, contactHint: '', canEdit: false, loading: false, commentsError: '', error: '' });
@@ -81,6 +88,10 @@ ui.definePage({
         canEdit: !!userId && String(project.publisherId) === String(userId) && ['DRAFT', 'REJECTED'].includes(project.status),
       };
     });
+  },
+  photosChanged() {
+    this.selectComponent('#project-thumb')?.load();
+    return this.reload();
   },
   async authorize() {
     if (this._authorizing || this.data.busy) return null;

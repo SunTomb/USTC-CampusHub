@@ -23,8 +23,8 @@ const appPath = path.join(destination, 'src/app.js');
 let app = fs.readFileSync(appPath, 'utf8');
 const original = 'request: options => wx.request(options)';
 if (!app.includes(original)) throw new Error('Request injection anchor changed; preview not safe to generate');
-app = app.replace(original, "request: require('./offline-fixture').request");
-app = app.replace('this.config = configFor(wx);', "this.config = configFor(wx); this.config.baseUrl = 'https://offline-preview.invalid/api'; this.config.tokenKey = 'woke_offline_preview_token'; this.resetOfflineSample = require('./offline-fixture').reset;");
+app = ["const offline = require('./offline-fixture');", app.replace(original, 'request: offline.request')].join('\n');
+app = app.replace('this.config = configFor(wx);', "this.config = configFor(wx); this.config.baseUrl = 'https://offline-preview.invalid/api'; this.config.tokenKey = 'woke_offline_preview_token'; this.resetOfflineSample = offline.reset;");
 fs.writeFileSync(appPath, app);
 const appJsonPath = path.join(destination, 'src/app.json');
 const config = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
@@ -88,6 +88,7 @@ function resolve(method,path,body,query){
  if(path==='/users/'+user.id)return user;
  if(path==='/users/me/contacts'){if(!String(body.wechatContact||'').trim()&&!String(body.qqContact||'').trim())throw{status:400,message:'请至少填写一种联系方式'};Object.assign(user,{wechatContact:String(body.wechatContact||'').trim(),qqContact:String(body.qqContact||'').trim()});return user;}
  if(path==='/users/me/profile'){Object.assign(user,body);return user;}
+ if(path==='/notifications/read-all'&&method==='POST')return {updatedCount:0};
  if(path.endsWith('/notifications'))return [];
  throw{status:400,message:'这个操作尚未包含在离线样例中，不会请求真实服务器'};
 }

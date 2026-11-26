@@ -29,33 +29,19 @@
         class="goods-card spotlight-surface"
         @click="router.push(`/goods/${item.id}`)"
       >
-        <div class="goods-cover" :class="`cover-tone-${item.id % 4}`">
-          <div class="goods-cover-art"><strong class="cover-art-glyph">{{ item.title.slice(0, 1) || '物' }}</strong><small class="cover-art-sub">{{ item.conditionLevel }}</small></div>
-          <div class="catalog-cover"><CatalogPhotos kind="GOODS" :object-id="item.id" compact /></div>
-          <span class="goods-zone-floating">{{ formatCampusZone(item.campusZone) }}</span>
+        <div class="goods-cover catalog-slot">
+          <CatalogPhotos kind="GOODS" :object-id="item.id" compact :fallback-char="item.title.slice(0, 1) || '物'"
+            :fallback-sub="item.conditionLevel" :tone="item.id % 4" />
         </div>
-
         <div class="goods-card-body">
-          <div class="goods-title-row">
-            <h3>{{ item.title }}</h3>
-          </div>
-          <p class="goods-description">{{ item.description }}</p>
-
+          <h3 class="catalog-title"><router-link :to="`/goods/${item.id}`" @click.stop>{{ item.title }}</router-link></h3>
+          <p class="catalog-summary">{{ item.description }}</p>
           <div class="goods-price-row">
             <strong class="mono-num">¥{{ item.price }}</strong>
             <span v-if="item.originalPrice" class="goods-origin-price mono-num">原价 ¥{{ item.originalPrice }}</span>
           </div>
-
-          <div class="goods-meta">
-            <span class="meta-pill">{{ item.conditionLevel }}</span>
-            <span>📍 {{ item.tradeLocation }}</span>
-          </div>
-
-          <div class="goods-seller-line">
-            <span class="seller-name">{{ item.sellerNickname }}</span>
-            <span class="seller-credit mono-num">信用 {{ item.sellerCreditScore }}</span>
-            <span class="mono-num">{{ item.viewCount }} 次浏览</span>
-          </div>
+          <div class="catalog-meta">{{ formatCampusZone(item.campusZone) }} · {{ item.tradeLocation }}</div>
+          <div class="catalog-meta">{{ item.sellerNickname }} · 信用 {{ item.sellerCreditScore }} · {{ item.viewCount }} 次浏览</div>
         </div>
       </article>
     </div>
@@ -94,5 +80,3 @@ async function loadGoods() {
 
 onMounted(loadGoods)
 </script>
-
-<style scoped>.goods-cover{position:relative}.catalog-cover{position:absolute;inset:0;pointer-events:none}.catalog-cover :deep(img){width:100%;height:100%;max-height:none}.catalog-cover :deep(figure),.catalog-cover :deep(.gallery),.catalog-cover :deep(.catalog-pictures){width:100%;height:100%}</style>

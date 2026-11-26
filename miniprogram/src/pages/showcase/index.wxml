@@ -16,11 +16,14 @@
     <view class="section-title">值得看看 <text class="caption">／ 校园精选</text></view>
     <scroll-view scroll-x class="featured-scroll" show-scrollbar="{{false}}">
       <view class="featured-row">
-        <view wx:for="{{featured}}" wx:key="id" class="featured-card" data-url="/pages/showcase/detail?id={{item.id}}" bindtap="go" hover-class="pressed">
-          <view class="between"><text class="featured-kicker">{{item.typeLabel}}</text><text class="featured-seal">精选</text></view>
-          <catalog-photos kind="PROJECT_AD" object-id="{{item.id}}" compact="{{true}}"/><view class="featured-title clamp">{{item.title}}</view>
-          <view class="featured-summary clamp">{{item.summary || '点开了解这份校园新鲜事'}}</view>
-          <view class="featured-meta">{{item.zoneLabel}} · {{item.publisherNickname || '同学'}}</view>
+        <view wx:for="{{featured}}" wx:key="id" class="featured-card catalog-head" data-url="/pages/showcase/detail?id={{item.id}}" bindtap="go" hover-class="pressed">
+          <catalog-photos variant="thumb-sm" kind="PROJECT_AD" object-id="{{item.id}}" fallback-char="{{item.initial}}" tone="{{item.id % 4}}" />
+          <view class="catalog-copy">
+            <view class="between"><view class="featured-kicker single">{{item.typeLabel}}</view><text class="featured-seal">精选</text></view>
+            <view class="featured-title single">{{item.title}}</view>
+            <view class="featured-summary clamp">{{item.summary || '点开了解这份校园新鲜事'}}</view>
+            <view class="featured-meta single">{{item.zoneLabel}} · {{item.publisherNickname || '同学'}}</view>
+          </view>
         </view>
       </view>
     </scroll-view>
@@ -29,12 +32,15 @@
   <view class="between list-heading"><view class="section-title">{{adType || campusZone || keyword ? '筛选结果' : '正在发生'}}</view><button wx:if="{{adType || campusZone || keyword}}" class="small ghost" bindtap="resetFilters">清除筛选</button></view>
   <state-view loading="{{loading}}" error="{{error}}" empty="{{!projects.length}}" title="这里还没有宣传帖" description="换个校区或分类看看，也欢迎发布你的招募与作品。" bind:retry="reload" />
   <view wx:if="{{!loading && !error}}" class="stack">
-    <view wx:for="{{projects}}" wx:key="id" class="poster surface type-{{item.adType}}" data-url="/pages/showcase/detail?id={{item.id}}" bindtap="go" hover-class="pressed"><catalog-photos kind="PROJECT_AD" object-id="{{item.id}}" compact="{{true}}"/>
-      <view class="between"><text class="pill purple">{{item.typeLabel}}</text><text class="caption">{{item.zoneLabel}}</text></view>
-      <view class="poster-title clamp">{{item.title}}</view>
-      <view wx:if="{{item.summary}}" class="caption clamp poster-summary">{{item.summary}}</view>
-      <view wx:if="{{item.tagList.length}}" class="chips"><text wx:for="{{item.tagList}}" wx:for-item="tag" wx:key="*this" class="pill">#{{tag}}</text></view>
-      <view class="poster-footer"><text>{{item.publisherNickname || '同学'}}</text><text wx:if="{{item.expiresLabel}}">截至 {{item.expiresLabel}}</text><text wx:else>持续展示</text></view>
+    <view wx:for="{{projects}}" wx:key="id" class="poster surface catalog-head" data-url="/pages/showcase/detail?id={{item.id}}" bindtap="go" hover-class="pressed">
+      <catalog-photos variant="thumb" kind="PROJECT_AD" object-id="{{item.id}}" fallback-char="{{item.initial}}" tone="{{item.id % 4}}" />
+      <view class="catalog-copy">
+        <view class="poster-meta"><text class="pill gold">{{item.typeLabel}}</text><view class="single">{{item.zoneLabel}}</view></view>
+        <view class="poster-title single">{{item.title}}</view>
+        <view class="caption clamp poster-summary">{{item.summary}}</view>
+        <view wx:if="{{item.tagList.length}}" class="poster-tags single"><text wx:for="{{item.tagList}}" wx:for-item="tag" wx:key="*this">#{{tag}} </text></view>
+        <view class="poster-footer single">{{item.publisherNickname || '同学'}} · {{item.expiresLabel ? '截至 ' + item.expiresLabel : '持续展示'}}</view>
+      </view>
     </view>
   </view>
 </view>

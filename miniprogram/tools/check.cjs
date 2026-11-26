@@ -50,7 +50,9 @@ for (const base of [...app.pages, ...components]) {
 for (const tab of app.tabBar.list) {
   for (const key of ['iconPath','selectedIconPath']) {
     const image = fs.readFileSync(path.join(src, tab[key]));
+    assert(image.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')), 'Expected a PNG tab icon');
     assert.equal(image.readUInt32BE(16), 81);
+    assert.equal(image.readUInt32BE(20), 81);
     assert(image.length < 40 * 1024, 'Native tab icon exceeds 40KB');
   }
 }
@@ -62,13 +64,11 @@ const compilerRoot = process.env.WECHAT_COMPILER_DIR || 'C:/Program Files (x86)/
 const wcc = path.join(compilerRoot, 'wcc.exe');
 const wcsc = path.join(compilerRoot, 'wcsc.exe');
 if (fs.existsSync(wcc) && fs.existsSync(wcsc)) {
-  const out = path.resolve(root, '../.claude/verification/native-miniprogram');
-  fs.mkdirSync(out, { recursive: true });
   const relative = extension => all.filter(f => f.endsWith(extension)).map(f => './' + path.relative(src, f).split(path.sep).join('/'));
-  const xml = spawnSync(wcc, ['-o', path.join(out, 'wxml-compiled.js'), ...relative('.wxml')], { cwd: src, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+  const xml = spawnSync(wcc, relative('.wxml'), { cwd: src, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
   if (xml.status !== 0) { console.error(xml.stderr || xml.stdout); process.exit(1); }
   console.log('PASS official WXML compiler');
-  const css = spawnSync(wcsc, ['-o', path.join(out, 'wxss-compiled.js'), ...relative('.wxss')], { cwd: src, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+  const css = spawnSync(wcsc, relative('.wxss'), { cwd: src, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
   if (css.status !== 0) { console.error(css.stderr || css.stdout); process.exit(1); }
   if (css.stderr) console.log(css.stderr.slice(0, 2500));
   console.log('PASS official WXSS compiler');

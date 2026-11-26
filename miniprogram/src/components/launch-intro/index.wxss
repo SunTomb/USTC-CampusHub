@@ -1,4 +1,4 @@
-.intro-layer{--intro-bg:#f7f5f0;--intro-ink:#16325b;--intro-secondary:#526075;--intro-gold:#b1832b;--intro-soft:#efece4;position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;box-sizing:border-box;background:var(--intro-bg);color:var(--intro-ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:20rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));overflow:hidden}
+.intro-layer{--intro-bg:#f8f4ed;--intro-ink:#8c4a27;--intro-secondary:#5c4d42;--intro-gold:#c47d2b;--intro-soft:#f0e9dd;position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;box-sizing:border-box;background:var(--intro-bg);color:var(--intro-ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:20rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));overflow:hidden}
 .intro-layer view,.intro-layer text,.intro-layer button{box-sizing:border-box}
 .intro-top{display:flex;align-items:center;justify-content:space-between;gap:24rpx;flex-shrink:0}
 .intro-label{font-size:24rpx;letter-spacing:2rpx;color:var(--intro-secondary)}

@@ -2,6 +2,7 @@ package com.campushub.notification;
 
 import com.campushub.common.BusinessException;
 import com.campushub.user.User;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,5 +40,10 @@ public class NotificationService {
         }
         notification.markRead();
         return StationNotificationSummary.from(notification);
+    }
+
+    @Transactional
+    public int markAllRead(Long recipientId) {
+        return stationNotificationRepository.markAllReadByRecipientId(recipientId, LocalDateTime.now());
     }
 }

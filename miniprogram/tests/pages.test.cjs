@@ -151,6 +151,43 @@ test('only notification ids from the current recipient list can be marked read',
   assert.deepEqual(ids, [8]);
 });
 
+test('mark all read posts once, clears local notices and the personal tab badge only after success', async () => {
+  let finish, requests = 0;
+  const h = pageHarness('pass/index', { readAllNotifications() { requests++; return new Promise(done => { finish = done; }); } });
+  const badges = [];
+  global.wx.removeTabBarBadge = ({ index }) => badges.push(index);
+  h.page.setData({ unread: 2, notices: [true, true, false].map((unread, id) => ({ id, unread })) });
+  const pending = h.page.readAllNotices();
+  await h.page.readAllNotices();
+  assert.equal(requests, 1);
+  assert.equal(h.page.data.unread, 2);
+  assert.deepEqual(badges, []);
+  finish({ updatedCount: 2 });
+  await pending;
+  assert.equal(h.page.data.unread, 0);
+  assert.deepEqual(h.page.data.notices.map(n => n.unread), [false, false, false]);
+  assert.deepEqual(badges, [4]);
+  assert.deepEqual(h.calls, [['toast', '已全部标为已读']]);
+  await h.page.readAllNotices();
+  assert.equal(requests, 1);
+});
+
+test('refresh started before mark all read does not restore a stale unread badge', async () => {
+  let finishRefresh;
+  const h = pageHarness('pass/index', {
+    profile: async () => ({ id: 1 }), applications: async () => [], orderDesk: async () => ({}),
+    notifications: () => new Promise(done => { finishRefresh = done; }), readAllNotifications: async () => ({ updatedCount: 1 }),
+  });
+  h.page.setData({ notices: [{ id: 10, unread: true }], unread: 1 });
+  const refresh = h.page.reload();
+  await new Promise(done => setImmediate(done));
+  await h.page.readAllNotices();
+  finishRefresh([{ id: 10, readAt: null }]);
+  await refresh;
+  assert.equal(h.page.data.notices[0].unread, false);
+  assert.equal(h.page.data.unread, 0);
+});
+
 test('logout scrubs personal data and invalidates late requests', async () => {
   let done;
   const h = pageHarness('pass/index', {});
@@ -344,4 +381,24 @@ test('二手订单打开同一商品；返回时取最新内容，只有详情 4
   failure=404;await h.page.reload();assert.equal(h.page.data.deleted,false);assert.equal(h.page.data.item,null);assert.ok(h.page.data.error);
   failure=503;await h.page.reload();assert.equal(h.page.data.deleted,false);assert.ok(h.page.data.error);
   failure=410;await h.page.reload();assert.equal(h.page.data.deleted,true);assert.equal(h.page.data.item,null);assert.deepEqual(h.page.data.contacts,[]);
+});
+
+test('runner draft previews selected local photos without uploading or losing the selection on return',async()=>{
+  const {page}=pageHarness('tasks/publish',{});
+  const photos=[{key:'a',path:'tmp-a'},{key:'b',path:'tmp-b'}];
+  page.setData({photos});let shown;
+  global.wx.previewImage=o=>{shown=o;page.onHide();};
+  page.previewDraft({currentTarget:{dataset:{src:'tmp-b'}}});
+  assert.equal(shown.current,'tmp-b');assert.deepEqual(shown.urls,['tmp-a','tmp-b']);
+  await page.onShow();assert.deepEqual(page.data.photos,photos);
+  page.onHide();assert.deepEqual(page.data.photos,[]);
+});
+
+test('owner album stays mounted on picker return but is cleared on ordinary hide and logout',async()=>{
+  const h=pageHarness('goods/detail',{goodsDetail:async()=>({id:10,sellerId:1,title:'书'}),goodsIntents:async()=>[]});
+  await h.page.onShow();let picking=true;
+  h.page.selectAllComponents=()=>[{isSelectingMedia:()=>picking}];
+  h.page.onHide();assert.ok(h.page.data.item);picking=false;await h.page.onShow();
+  h.page.onHide();assert.equal(h.page.data.item,null);
+  await h.page.onShow();picking=true;h.page.onHide();h.auth.logout();assert.equal(h.page.data.item,null);
 });

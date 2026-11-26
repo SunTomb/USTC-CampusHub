@@ -48,7 +48,7 @@
             </div>
             <el-form-item label="主理人介绍与小店公告"><el-input v-model="shopForm.description" type="textarea" :rows="3" /></el-form-item>
           </FormSection>
-          <CatalogPhotos ref="cover" kind="SHOP" :object-id="shop?.id || 0" editable />
+          <CatalogPhotos ref="cover" kind="SHOP" :fallback-char="shopForm.name.slice(0, 1)" :object-id="shop?.id || 0" editable />
           <el-button type="primary" :loading="savingShop" @click="saveShop">{{ shop ? '保存店铺资料' : '立即创建小店' }}</el-button>
         </el-form>
       </el-card>
@@ -81,7 +81,7 @@
             </div>
             <el-form-item label="服务包含内容与说明"><el-input v-model="itemForm.description" type="textarea" :rows="3" /></el-form-item>
           </FormSection>
-          <CatalogPhotos ref="photos" kind="SERVICE_ITEM" :object-id="editingItemId || 0" editable />
+          <CatalogPhotos ref="photos" kind="SERVICE_ITEM" :fallback-char="itemForm.title.slice(0, 1)" :object-id="editingItemId || 0" editable />
           <el-button type="primary" :loading="savingItem" @click="saveItem">保存服务项目</el-button>
         </el-form>
 

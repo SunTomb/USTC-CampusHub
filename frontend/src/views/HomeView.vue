@@ -268,19 +268,19 @@ function handleSpotlight(event: MouseEvent) {
   width: 100%;
   padding-block: 1.1rem;
   text-align: center;
-  color: #526075;
+  color: var(--text-secondary);
 }
 .home-filing small { font-size: .8125rem; }
-.home-filing a:not(.home-github-link) { color: #526075; font-size: .8125rem; text-underline-offset: .2em; }
+.home-filing a:not(.home-github-link) { color: var(--text-secondary); font-size: .8125rem; text-underline-offset: .2em; }
 .home-github-link {
   display: inline-flex;
   align-items: center;
   gap: .38rem;
   padding: .32rem .8rem;
   border-radius: 999px;
-  border: 1px solid rgba(22, 50, 91, 0.16);
+  border: 1px solid var(--border-strong);
   background: rgba(255, 255, 255, 0.88);
-  color: #16325b;
+  color: var(--accent-primary);
   font-size: .8125rem;
   font-weight: 600;
   text-decoration: none;
@@ -288,9 +288,9 @@ function handleSpotlight(event: MouseEvent) {
 }
 .home-github-link:hover,
 .home-github-link:focus-visible {
-  border-color: rgba(22, 50, 91, 0.36);
-  background: #ffffff;
+  border-color: var(--accent-primary);
+  background: var(--bg-surface);
   transform: translateY(-1px);
 }
-.home-github-star { color: #c97a16; }
+.home-github-star { color: var(--accent-amber); }
 </style>

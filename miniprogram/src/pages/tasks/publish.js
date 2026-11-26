@@ -17,7 +17,7 @@ function payload(page) {
 ui.definePage({
   data: { editId:0,editing:false,editReady:false,step:0,zones:d.zones,originIndex:0,destinationIndex:1,form:emptyForm(),photos:[],publishedId:null,uncertain:false,progress:'',date:'',time:'' },
   onLoad(q) { this._epoch=0;this._visible=true;this._editParam=q.edit;this.setData({...d.dateParts(2 * 3600000),editing:q.edit!=null,editId:Number(q.edit)||0}); },
-  async onShow() { this._visible=true;await this.reload(); },
+  async onShow() { this._previewUntil=0;this._visible=true;await this.reload(); },
   async reload() {
     const v=this._epoch,user=await ui.requireUser('/pages/tasks/publish'+(this.data.editing?'?edit='+this.data.editId:''));
     if(!user || !this._alive || !this._visible || v!==this._epoch || !this.data.editing || this.data.publishedId || this.data.editReady)return;
@@ -31,7 +31,9 @@ ui.definePage({
       weightKg:t.weightGrams==null?'':String(t.weightGrams/1000),notes:t.notes||'',pickupCode:(w.privateDetails&&w.privateDetails.pickupCode)||'',rewardAmount:String(t.rewardAmount),
       acceptanceMode:t.acceptanceMode,verificationMode:t.verificationMode}};});
   },
-  onHide() { if (!this._picking) { this._visible=false;this._epoch++;this._loadSequence++;this.setData({'form.pickupCode':'',photos:[],editReady:false}); } },
+  onHide() {
+    if (Date.now() < (this._previewUntil || 0)) { this._previewUntil=0; return; }
+    if (!this._picking) { this._visible=false;this._epoch++;this._loadSequence++;this.setData({'form.pickupCode':'',photos:[],editReady:false}); } },
   next() {
     if(this.data.editing&&!this.data.editReady)return;
     try { payload(this); this.setData({step:1,error:''}); }
@@ -49,6 +51,13 @@ ui.definePage({
       if (epoch===this._epoch && this._alive && token===getApp().auth.token) this.setData({photos:[...this.data.photos,...added],error:''});
     } catch(e) { if (epoch===this._epoch && this._alive) this.setData({error:e.message}); }
     finally { this._picking=false; }
+  },
+  previewDraft(e) {
+    const urls=this.data.photos.map(photo=>photo.path), current=e.currentTarget.dataset.src;
+    if (!this._visible || this.data.busy || !urls.includes(current) || typeof wx==='undefined' || typeof wx.previewImage!=='function') return;
+    // Opening the system viewer can hide this page; keep this draft for its return trip.
+    this._previewUntil=Date.now()+1500;
+    wx.previewImage({current,urls,fail:()=>{this._previewUntil=0;}});
   },
   removePhoto(e) { if (!this.data.busy) this.setData({photos:this.data.photos.filter(p=>p.key!==e.currentTarget.dataset.key)}); },
   finish() { if (this.data.publishedId) wx.redirectTo({url:'/pages/tasks/detail?id='+this.data.publishedId}); },
@@ -77,5 +86,5 @@ ui.definePage({
     });
     if (visible()) this.setData({progress:''});
   },
-  clearPrivate() { this._epoch++; this.setData({editReady:false,step:0,form:emptyForm(),photos:[],publishedId:null,uncertain:false,progress:''}); },
+  clearPrivate() { this._previewUntil=0;this._epoch++; this.setData({editReady:false,step:0,form:emptyForm(),photos:[],publishedId:null,uncertain:false,progress:''}); },
 });

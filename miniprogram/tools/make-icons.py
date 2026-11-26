@@ -3,17 +3,24 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1] / 'src/assets'
 ROOT.mkdir(parents=True, exist_ok=True)
-for name in ['tasks', 'shops', 'showcase', 'pass']:
+for name in ['tasks', 'goods', 'shops', 'showcase', 'pass']:
     for active in [False, True]:
         im = Image.new('RGBA', (324, 324), (0, 0, 0, 0))
         draw = ImageDraw.Draw(im)
-        color = '#16325B' if active else '#8492A6'
+        color = '#8C4A27' if active else '#8A7A6D'
         width = 12
         if name == 'tasks':
             draw.line([(75, 240), (75, 150), (240, 150), (240, 75)], fill=color, width=width, joint='curve')
             draw.ellipse((43, 213, 107, 277), outline=color, width=width)
             draw.ellipse((208, 43, 272, 107), fill=color if active else None, outline=color, width=width)
             draw.line([(180, 105), (240, 150), (180, 195)], fill=color, width=width, joint='curve')
+        elif name == 'goods':
+            draw.rounded_rectangle((61, 111, 263, 277), radius=18, outline=color, width=width)
+            draw.arc((109, 49, 215, 173), 180, 360, fill=color, width=width)
+            draw.line([(115, 111), (115, 137)], fill=color, width=width)
+            draw.line([(209, 111), (209, 137)], fill=color, width=width)
+            draw.polygon([(135, 182), (164, 154), (194, 155), (195, 186), (166, 215)],
+                         fill=color if active else None, outline=color, width=width)
         elif name == 'shops':
             draw.rounded_rectangle((55, 125, 269, 276), radius=10, outline=color, width=width)
             draw.line([(40, 124), (68, 60), (256, 60), (284, 124)], fill=color, width=width, joint='curve')
@@ -32,4 +39,4 @@ for name in ['tasks', 'shops', 'showcase', 'pass']:
             draw.line([(178, 131), (248, 131)], fill=color, width=width)
             draw.line([(178, 176), (248, 176)], fill=color, width=width)
         im.resize((81, 81), Image.Resampling.LANCZOS).save(ROOT / ('tab-' + name + ('-active' if active else '') + '.png'), optimize=True)
-print('Generated eight lightweight native tab icons.')
+print('Generated ten lightweight native tab icons.')

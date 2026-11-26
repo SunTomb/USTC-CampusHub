@@ -6,8 +6,8 @@
   <view class="segmented"><view class="segment {{mode === '' ? 'active' : ''}}" data-mode="" bindtap="changeMode">全部</view><view class="segment {{mode === 'GRAB' ? 'active' : ''}}" data-mode="GRAB" bindtap="changeMode">即时抢单</view><view class="segment {{mode === 'APPLICATION' ? 'active' : ''}}" data-mode="APPLICATION" bindtap="changeMode">报名筛选</view></view>
   <state-view loading="{{loading}}" error="{{error && !selected ? error : ''}}" empty="{{!tasks.length}}" title="当前校区暂无待接跑腿" description="换个校区看看，或发布自己的小需求。" bind:retry="reload" />
   <view class="ticket" wx:for="{{tasks}}" wx:key="id" hover-class="pressed">
-    <view class="ticket-main" data-id="{{item.id}}" bindtap="detail"><view class="route"><text>{{item.originLabel}}</text><text class="route-arrow">→</text><text>{{item.destinationLabel}}</text></view><view class="ticket-title single">{{item.title}}</view><view class="ticket-meta single">{{item.deadlineLabel}} 前 · {{item.publisherNickname}}</view><text class="mode">{{item.modeLabel}}</text></view>
-    <view class="ticket-stub"><text class="ticket-price mono-num">¥{{item.rewardLabel}}</text><button class="take-button" data-id="{{item.id}}" bindtap="choose">{{user.id === item.publisherId ? '查看任务' : item.acceptanceMode === 'APPLICATION' ? '去报名' : '立即抢单'}}</button></view>
+    <view class="ticket-main" data-id="{{item.id}}" bindtap="detail"><view class="route"><text class="route-stop single">{{item.originLabel}}</text><text class="route-arrow">→</text><text class="route-stop single">{{item.destinationLabel}}</text></view><view class="ticket-title single">{{item.title}}</view><view class="ticket-meta single">{{item.deadlineLabel}} 前 · {{item.publisherNickname}}</view><text class="mode single">{{item.modeLabel}}</text></view>
+    <view class="ticket-stub"><text class="ticket-price mono-num single">¥{{item.rewardLabel}}</text><button class="take-button" data-id="{{item.id}}" bindtap="choose">{{user.id === item.publisherId ? '查看任务' : item.acceptanceMode === 'APPLICATION' ? '去报名' : '立即抢单'}}</button></view>
   </view>
   <view class="muted list-foot" wx:if="{{tasks.length}}">报酬由双方直接协商结算</view>
 </view>

@@ -72,7 +72,7 @@
         </FormSection>
 
       </el-form>
-      <CatalogPhotos ref="photos" kind="GOODS" :object-id="savedId || editingId || 0" editable />
+      <CatalogPhotos ref="photos" kind="GOODS" :fallback-char="form.title.slice(0, 1)" :object-id="savedId || editingId || 0" editable />
       <p v-if="savedId" role="status">闲置 #{{ savedId }} 已保存。未传完的照片可重试，不用重新发布。</p>
       <el-alert v-if="uncertain" title="未收到上架结果。请先在「我的订单」核对，避免重复发布。" type="warning" :closable="false" />
       <div class="form-actions">

@@ -29,13 +29,13 @@
       <view class="field"><label class="field-label">联系方式 · 必填</label><input class="input" data-field="contactInfo" value="{{form.contactInfo}}" bindinput="input" maxlength="255" placeholder="如：微信：your_wechat 或 QQ：123456" disabled="{{busy || !editable}}" /><view class="form-help">按下方设置的可见范围展示</view></view>
       <view class="field"><label class="field-label">联系方式可见范围 · 必选</label><picker mode="selector" range="{{visibilityOptions}}" range-key="label" value="{{visibilityIndex}}" bindchange="changeVisibility" disabled="{{busy || !editable}}"><view class="picker">{{visibilityLabel}}</view></picker></view>
       <view class="field"><label class="field-label">外部链接 · 选填</label><input class="input" data-field="linkUrl" value="{{form.linkUrl}}" bindinput="input" maxlength="255" placeholder="https://…（可留空）" disabled="{{busy || !editable}}" /><view class="form-help">仅支持 https 链接</view></view>
-      <view class="field"><view class="between"><label class="field-label">设置展示截止时间 · 选填</label><switch checked="{{form.expiryEnabled}}" bindchange="changeExpiry" color="#16325B" disabled="{{busy || !editable}}" /></view>
+      <view class="field"><view class="between"><label class="field-label">设置展示截止时间 · 选填</label><switch checked="{{form.expiryEnabled}}" bindchange="changeExpiry" color="#8C4A27" disabled="{{busy || !editable}}" /></view>
         <view wx:if="{{form.expiryEnabled}}" class="date-grid"><picker mode="date" value="{{form.expiryDate}}" bindchange="changeDate" disabled="{{busy || !editable}}"><view class="picker mono-num">{{form.expiryDate}}</view></picker><picker mode="time" value="{{form.expiryTime}}" bindchange="changeTime" disabled="{{busy || !editable}}"><view class="picker mono-num">{{form.expiryTime}}</view></picker></view>
         <view class="form-help">不设置则持续展示至手动关闭</view>
       </view>
     </view>
     <view class="notice">草稿保存在本地，提交后经站务审核即可公开展示。</view>
-    <catalog-photos id="project-media" kind="PROJECT_AD" object-id="{{draftId || 0}}" editable="{{true}}"/>
+    <catalog-photos class="catalog-media" id="project-media" kind="PROJECT_AD" object-id="{{draftId || 0}}" editable="{{true}}"/>
     <button wx:if="{{draftId && !dirty}}" class="plain new-draft" disabled="{{busy}}" bindtap="startNew">另写一份宣传</button>
     <view class="local-note caption">{{dirty ? '有修改尚未提交。' : '暂无待提交的修改。'}} 换设备后无法恢复本机草稿。</view>
   </view>

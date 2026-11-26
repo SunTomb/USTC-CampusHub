@@ -3,9 +3,15 @@
   <state-view loading="{{loading}}" error="{{project ? '' : error}}" bind:retry="reload" />
   <view wx:if="{{project}}">
     <view wx:if="{{error}}" class="error">{{error}}</view>
-    <view class="chips"><text class="pill purple">{{project.typeLabel}}</text><text class="pill">{{project.zoneLabel}}</text><text wx:if="{{project.status !== 'APPROVED'}}" class="pill gold">{{project.statusLabel}}</text></view>
-    <catalog-photos kind="PROJECT_AD" object-id="{{project.id}}" editable="{{user && user.id===project.publisherId}}" bind:changed="reload"/><view class="detail-title">{{project.title}}</view>
-    <view class="caption">{{project.publisherNickname || '同学'}} 发布 <text wx:if="{{project.expiresLabel}}"> · 截至 {{project.expiresLabel}}</text></view>
+    <view class="surface catalog-head project-head">
+      <catalog-photos class="catalog-media" id="project-thumb" variant="thumb" kind="PROJECT_AD" object-id="{{project.id}}" fallback-char="{{project.initial}}" tone="{{project.id % 4}}" />
+      <view class="catalog-copy">
+        <view class="chips"><text class="pill gold">{{project.typeLabel}}</text><text class="pill">{{project.zoneLabel}}</text><text class="pill gold">{{project.statusLabel}}</text></view>
+        <view class="detail-title single">{{project.title}}</view>
+        <view class="caption single">{{project.publisherNickname || '同学'}} 发布 <text wx:if="{{project.expiresLabel}}"> · 截至 {{project.expiresLabel}}</text></view>
+      </view>
+    </view>
+    <catalog-photos class="catalog-media" variant="detail" kind="PROJECT_AD" object-id="{{project.id}}" editable="{{user && user.id===project.publisherId}}" bind:changed="photosChanged" />
     <view wx:if="{{project.tagList.length}}" class="chips detail-tags"><text wx:for="{{project.tagList}}" wx:for-item="tag" wx:key="*this" class="pill">#{{tag}}</text></view>
     <view wx:if="{{project.summary}}" class="summary-text">{{project.summary}}</view>
     <view class="separator"></view>

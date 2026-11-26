@@ -1,1 +1,2 @@
-.listing{padding:24rpx;display:grid;gap:12rpx}.listing .heading{flex:1;min-width:0}.listing .price{flex:none}
+.listing{height:238rpx;padding:22rpx;gap:22rpx;align-items:stretch}
+.listing .catalog-copy{justify-content:space-between}.listing .price{color:var(--navy);font-size:32rpx;line-height:1.15}.listing .caption{font-size:23rpx;line-height:1.3}

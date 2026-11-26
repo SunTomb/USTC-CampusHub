@@ -25,16 +25,27 @@
       <div v-for="kind in photoKinds" :key="kind" class="evidence-panel">
         <h3>{{ evidenceTypeLabel(kind) }}</h3>
         <div class="photo-previews"><span v-for="photo in group(kind)" :key="photo.id" class="evidence-photo">
-          <img v-if="evidenceUrls.has(photo.id)" :src="evidenceUrls.get(photo.id)" :alt="evidenceTypeLabel(photo.evidenceType)" @click="preview = evidenceUrls.get(photo.id) || ''" />
+          <button v-if="evidenceUrls.has(photo.id)" type="button" class="task-photo-button" @click="preview = evidenceUrls.get(photo.id) || ''">
+            <img :src="evidenceUrls.get(photo.id)" :alt="evidenceTypeLabel(photo.evidenceType)" />
+          </button>
+          <span v-else class="evidence-placeholder cover-tone-0">{{ evidenceTypeLabel(kind).slice(0,1) }}</span>
           <small>{{ evidenceTypeLabel(photo.evidenceType) }} · {{ Math.ceil(photo.sizeBytes / 1024) }} KiB</small>
         </span></div>
-        <small v-if="!group(kind).length">暂无照片</small>
+        <div v-if="!group(kind).length && !queue(kind).length" class="evidence-photo">
+          <span class="evidence-placeholder cover-tone-0" aria-hidden="true">{{ evidenceTypeLabel(kind).slice(0,1) }}</span><small>暂无照片</small>
+        </div>
         <div v-if="canUpload(kind)"><input type="file" accept="image/jpeg,image/png" multiple :disabled="busy" @change="selectPhotos($event, kind)" />
+          <div v-if="queue(kind).length" class="photo-previews">
+            <span v-for="photo in queue(kind)" :key="photo.clientRequestId" class="evidence-photo">
+              <button type="button" class="task-photo-button" @click="preview = photo.url"><img :src="photo.url" alt="预览所选照片" /></button>
+              <small>{{ photo.uploaded ? '已上传' : '待上传' }}</small>
+            </span>
+          </div>
           <el-button v-if="queue(kind).length" :loading="busy" @click="uploadPhotos(kind)">上传所选照片（{{ queue(kind).filter(p => !p.uploaded).length }}）</el-button>
           <el-button v-if="queue(kind).length" :disabled="busy" @click="discardPhotos(queue(kind))">清除选择</el-button>
         </div>
       </div>
-      <el-dialog :model-value="!!preview" title="参与方照片" @close="preview = ''"><img v-if="preview" :src="preview" alt="私密交接照片" style="max-width:100%;max-height:70vh" /></el-dialog>
+      <TaskPhotoPreview :src="preview" alt="私密交接照片" @close="preview = ''" />
       <el-button v-if="canSubmitDelivery" type="success" :disabled="busy || deliveryPhotos.length > 0" @click="submitDelivery">提交送达凭证</el-button>
       <el-button v-if="canConfirm" type="success" @click="confirm">确认送达</el-button>
       <div v-if="canIssueCode" class="completion-code-panel"><el-button @click="issueCode">{{ issuedCode ? '重新生成（旧码失效）' : '生成完成码' }}</el-button><p v-if="issuedCode">完成码：<strong>{{ issuedCode.completionCode }}</strong> · 有效至 {{ issuedCode.expiresAt }}</p></div>
@@ -51,6 +62,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getApi } from '@/api/client'
 import { acceptRunnerTaskApplication, withdrawRunnerTask, type TaskApplicationSummary, advanceRunnerTask, confirmRunnerTask, completeRunnerTaskWithCode, issueRunnerCompletionCode, getTaskEvidenceBlob, getTaskWorkspace, reportRunnerTaskIssue, submitTaskDelivery, uploadTaskEvidence, type TaskEvidenceType, type TaskParticipantContact, type TaskWorkspaceSummary } from '@/api/campushub'
 import { useAuthStore } from '@/stores/auth'
+import TaskPhotoPreview from '@/components/TaskPhotoPreview.vue'
 import { weightLabel, workflowLabels, discardPhotos, draftPhoto, photoProblem, taskError, uploadMissing, type DraftPhoto } from '@/utils/taskHandoff'
 
 const route = useRoute(), router = useRouter(), auth = useAuthStore()
@@ -167,5 +179,7 @@ function reportIssue() { if (activeAssignment.value) return action((id,u,o) => r
 .applicant-row {display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin:.5rem 0}
 .photo-previews { display:flex; gap:.75rem; flex-wrap:wrap }
 .evidence-photo { display:grid; gap:.25rem }
-.evidence-photo img { width:7rem; height:7rem; object-fit:cover; border-radius:.5rem; cursor:zoom-in }
+.evidence-photo img, .evidence-placeholder { width:104px; height:104px; object-fit:cover; border-radius:.5rem; cursor:zoom-in }
+.evidence-placeholder {display:grid;place-items:center;font:600 2rem var(--font-display);cursor:default}
+.evidence-panel input {max-width:100%}
 </style>

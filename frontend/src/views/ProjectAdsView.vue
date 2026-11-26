@@ -35,33 +35,29 @@
         action-text="发布我的项目"
         @action="goManage"
       />
-      <el-card
+      <article
         v-for="project in projects"
         :key="project.id"
         class="showcase-card spotlight-surface"
-        shadow="hover"
         @click="goDetail(project.id)"
       >
-        <CatalogPhotos kind="PROJECT_AD" :object-id="project.id" compact/><div class="showcase-cover" :class="`showcase-tone-${project.id % 3}`">
-          <span>{{ typeLabel(project.adType) }}</span>
-          <el-tag v-if="project.featured" type="warning" effect="dark">站务精选</el-tag>
+        <div class="showcase-cover catalog-slot">
+          <CatalogPhotos kind="PROJECT_AD" :object-id="project.id" compact :fallback-char="project.title.slice(0, 1)"
+            :fallback-sub="typeLabel(project.adType)" :tone="project.id % 4" />
+          <div class="catalog-cover-badges">
+            <span>{{ typeLabel(project.adType) }}</span>
+            <span v-if="project.featured" class="featured-badge">站务精选</span>
+          </div>
         </div>
         <div class="showcase-content">
-          <div class="card-title-row">
-            <h3>{{ project.title }}</h3>
-            <span class="meta-pill">{{ zoneLabel(project.campusZone) }}</span>
-          </div>
-          <p>{{ project.summary || project.description }}</p>
-          <div class="tag-list">
+          <h3 class="catalog-title"><router-link :to="{ name: 'project-ad-detail', params: { id: project.id } }" @click.stop>{{ project.title }}</router-link></h3>
+          <p class="catalog-summary">{{ project.summary || project.description }}</p>
+          <div class="catalog-tags">
             <el-tag v-for="tag in splitTags(project.tags)" :key="tag" size="small" effect="plain">{{ tag }}</el-tag>
           </div>
-          <div class="meta-line">
-            <span>发起人：{{ project.publisherNickname }}</span>
-            <span class="mono-num">浏览 {{ project.viewCount }}</span>
-            <span v-if="project.expiresAt">截止 {{ formatDate(project.expiresAt) }}</span>
-          </div>
+          <div class="catalog-meta">{{ zoneLabel(project.campusZone) }} · {{ project.publisherNickname }} · 浏览 {{ project.viewCount }}<template v-if="project.expiresAt"> · 截止 {{ formatDate(project.expiresAt) }}</template></div>
         </div>
-      </el-card>
+      </article>
     </div>
   </section>
 </template>

@@ -4,7 +4,7 @@ ui.definePage({
   data: { zone:'', query:'', all:[], items:[], unlock:false },
   onShow() { this.reload(); },
   reload() { return ui.load(this, () => getApp().api.goods(), rows => {
-    const all=rows.map(row=>({...row,zoneLabel:d.zone(row.campusZone),priceLabel:d.money(row.price)})); return {all,items:this.filtered(all)};
+    const all=rows.map(row=>({...row,initial:(row.title || '物').slice(0, 1),zoneLabel:d.zone(row.campusZone),priceLabel:d.money(row.price)})); return {all,items:this.filtered(all)};
   }); },
   filtered(all) { const q=this.data.query.trim().toLowerCase();return all.filter(x=>(!this.data.zone||x.campusZone===this.data.zone) && (!q||[x.title,x.categoryName,x.description].some(v=>String(v||'').toLowerCase().includes(q)))); },
   search(e) { this.setData({query:e.detail.value}); this.setData({items:this.filtered(this.data.all)}); },

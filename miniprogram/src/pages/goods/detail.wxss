@@ -1,1 +1,2 @@
 .sheet{display:grid;gap:14rpx;margin:20rpx 0;padding:22rpx}.content{white-space:pre-wrap;overflow-wrap:anywhere}.orders{margin-top:32rpx}
+.goods-head{padding:22rpx;align-items:center}.goods-head .catalog-copy{min-height:184rpx;gap:6rpx}.goods-head .title{font-size:34rpx}.goods-head .price{color:var(--navy);font-size:34rpx}.goods-head .pill{flex:none}

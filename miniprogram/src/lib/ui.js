@@ -62,15 +62,20 @@ async function run(page, work, success) {
     return false;
   } finally { if (page._alive) page.setData({ busy: false }); }
 }
+// The native image picker/viewer can hide a page. Keep its component (and pending
+// selections) mounted for that round trip, but not for ordinary page navigation.
+function catalogMediaOpen(page) {
+  return (page.selectAllComponents?.('.catalog-media') || []).some(c => c.isSelectingMedia());
+}
 function toast(title) { wx.showToast({ title, icon: 'none' }); }
 function celebrate(title) { wx.showToast({ title, icon: 'success' }); wx.vibrateShort({ type: 'light', fail() {} }); }
 function confirm(title, content) {
   const auth = getApp().auth, token = auth.token, userId = auth.user && auth.user.id;
-  return new Promise(resolve => wx.showModal({ title, content, confirmColor: '#16325B', success: result => resolve(!!result.confirm && token === auth.token && userId === (auth.user && auth.user.id)), fail: () => resolve(false) }));
+  return new Promise(resolve => wx.showModal({ title, content, confirmColor: '#8C4A27', success: result => resolve(!!result.confirm && token === auth.token && userId === (auth.user && auth.user.id)), fail: () => resolve(false) }));
 }
 function copy(value) { if (typeof value === 'string' && value.trim()) wx.setClipboardData({ data: value.trim(), success: () => toast('已复制，可前往联系同学') }); }
 function storageKey(name) { const app = getApp(); return 'woke:' + app.config.baseUrl + ':' + (app.auth.user ? app.auth.user.id : 'guest') + ':' + name; }
 function readLocal(name, fallback) { try { return wx.getStorageSync(storageKey(name)) || fallback; } catch (_) { return fallback; } }
 function writeLocal(name, data) { try { wx.setStorageSync(storageKey(name), data); return true; } catch (_) { toast('本机存储暂不可用'); return false; } }
 function rememberTask(taskId) { const ids = readLocal('published-task-ids', []).filter(id => id !== taskId); writeLocal('published-task-ids', [taskId, ...ids].slice(0, 50)); }
-module.exports = { TABS, validRoute, open, authRoute, requireUser, definePage, load, run, toast, celebrate, confirm, copy, readLocal, writeLocal, rememberTask };
+module.exports = { catalogMediaOpen, TABS, validRoute, open, authRoute, requireUser, definePage, load, run, toast, celebrate, confirm, copy, readLocal, writeLocal, rememberTask };

@@ -83,12 +83,19 @@ ui.definePage({
   },
   onShow() {
     this._visible = true;
+    if (this._returningFromMedia) { this._returningFromMedia=false; return; }
+
     if (this._openingEditor) { this._reopenOnShow = true; return; }
     this.openEditor(this._initialized && !this.data.dirty);
   },
-  onHide() { this._visible = false; this._loadSequence++; this.setData({ loading: false }); },
+  onHide() {
+    this._visible = false;
+    if (ui.catalogMediaOpen(this)) { this._returningFromMedia=true; return; }
+    this._loadSequence++; this.setData({ loading: false });
+  },
   onUnload() { if (this._authRefresh) this._authRefresh(); },
   clearPrivate() {
+    this._returningFromMedia = false;
     this._initialized = false; this._editorToken = null; this._editorUser = null;
     this._savedPayload = ''; this._coverFileId = null; this._awaitingSubmit = false; this._storageUnavailable = false;
     this.setData({ authorized: false, ready: false, submitting: false, storageWarning: '', form: blankForm(), draftId: '', statusLabel: '尚未保存', editable: true,

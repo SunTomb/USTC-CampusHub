@@ -18,16 +18,16 @@
   ],
   "window": {
     "navigationBarTitleText": "蜗壳同路",
-    "navigationBarBackgroundColor": "#F7F5F0",
+    "navigationBarBackgroundColor": "#F8F4ED",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F5F0",
+    "backgroundColor": "#F8F4ED",
     "backgroundTextStyle": "dark",
     "enablePullDownRefresh": true
   },
   "tabBar": {
-    "color": "#526075",
-    "selectedColor": "#16325B",
-    "backgroundColor": "#FFFFFF",
+    "color": "#7A6A5D",
+    "selectedColor": "#8C4A27",
+    "backgroundColor": "#FFFDFA",
     "borderStyle": "white",
     "list": [
       {
