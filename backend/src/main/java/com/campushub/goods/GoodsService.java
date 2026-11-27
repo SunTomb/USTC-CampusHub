@@ -327,9 +327,12 @@ public class GoodsService {
                 : goodsIntentRepository.findByGoodsIdAndBuyerId(goods.getId(), viewerId).orElse(null);
         String contactSnapshot = owner ? buildContactSnapshot(goods.getSeller()) : null;
         if (mine != null && mine.contactAvailable()) contactSnapshot = mine.getContactSnapshot();
-        List<CommentSummary> comments = commentRepository.findByTargetTypeAndTargetIdOrderByCreatedAtAsc("GOODS", goods.getId()).stream()
-                .map(CommentSummary::from)
-                .toList();
+        // Listing history grants access to the goods, not to a hidden listing's comment thread.
+        boolean canReadComments = owner || GoodsListingAccess.isPublic(goods.getStatus());
+        List<CommentSummary> comments = canReadComments
+                ? commentRepository.findByTargetTypeAndTargetIdOrderByCreatedAtAsc("GOODS", goods.getId()).stream()
+                        .map(CommentSummary::from).toList()
+                : List.of();
         long favoriteCount = favoriteRepository.countByTargetTypeAndTargetId("GOODS", goods.getId());
         boolean favorited = viewerId != null && favoriteRepository.existsByUserIdAndTargetTypeAndTargetId(viewerId, "GOODS", goods.getId());
         String categoryName = categories.findById(goods.getCategoryId()).map(Category::getName).orElse(null);

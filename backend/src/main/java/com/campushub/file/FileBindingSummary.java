@@ -30,10 +30,6 @@ public record FileBindingSummary(
         return file.originalName();
     }
 
-    public String storagePath() {
-        return file.storagePath();
-    }
-
     public String contentType() {
         return file.contentType();
     }

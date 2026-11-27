@@ -22,6 +22,9 @@ spring:
       max-request-size: 6291456B
 
 campushub:
+  auth:
+    rate-limit:
+      enabled: true
   jwt:
     issuer: ${CAMPUSHUB_JWT_ISSUER:campushub-local}
     secret: ${CAMPUSHUB_JWT_SECRET:campushub-local-development-secret-with-enough-length}

@@ -34,6 +34,9 @@ logging:
     org.hibernate.SQL: warn
 
 campushub:
+  auth:
+    rate-limit:
+      enabled: true
   jwt:
     issuer: ${CAMPUSHUB_JWT_ISSUER:campushub}
     secret: ${CAMPUSHUB_JWT_SECRET}

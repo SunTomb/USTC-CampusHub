@@ -12,6 +12,9 @@ spring:
     show-sql: false
 
 campushub:
+  auth:
+    rate-limit:
+      enabled: false
   financial:
     enabled: false
 

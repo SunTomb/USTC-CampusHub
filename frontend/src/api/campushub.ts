@@ -65,7 +65,6 @@ export interface FileResourceSummary {
   uploaderId: number
   uploaderNickname: string
   originalName: string
-  storagePath: string
   contentType: string
   sizeBytes: number
   status: string

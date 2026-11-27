@@ -4,7 +4,9 @@ import com.campushub.common.ApiResponse;
 import com.campushub.common.BusinessException;
 import com.campushub.user.User;
 import com.campushub.user.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.Locale;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +24,7 @@ public class AuthController {
     private final JwtTokenService jwtTokenService;
     private final CurrentUserService currentUserService;
     private final UserRoleLookup userRoleLookup;
+    private final AuthRateLimitService authRateLimitService;
 
     public AuthController(
             UserRepository userRepository,
@@ -29,17 +32,20 @@ public class AuthController {
             RegistrationService registrationService,
             JwtTokenService jwtTokenService,
             CurrentUserService currentUserService,
-            UserRoleLookup userRoleLookup) {
+            UserRoleLookup userRoleLookup,
+            AuthRateLimitService authRateLimitService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.registrationService = registrationService;
         this.jwtTokenService = jwtTokenService;
         this.currentUserService = currentUserService;
         this.userRoleLookup = userRoleLookup;
+        this.authRateLimitService = authRateLimitService;
     }
 
     @PostMapping("/register/send-code")
-    public ApiResponse<RegisterCodeResponse> sendRegisterCode(@Valid @RequestBody SendRegisterCodeRequest request) {
+    public ApiResponse<RegisterCodeResponse> sendRegisterCode(@Valid @RequestBody SendRegisterCodeRequest request, HttpServletRequest httpRequest) {
+        authRateLimitService.checkSendCodeAllowed(httpRequest);
         return ApiResponse.ok(registrationService.sendRegisterCode(request));
     }
 
@@ -49,22 +55,25 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        User user = userRepository.findByUsername(request.username())
-                .or(() -> userRepository.findByEmail(request.username().trim().toLowerCase()))
-                .orElseThrow(() -> new BusinessException("用户名或密码错误"));
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BusinessException("用户名或密码错误");
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String account = request.username();
+        try (var attempt = authRateLimitService.checkLoginAllowed(httpRequest, account)) {
+            User user = userRepository.findByUsername(account)
+                    .or(() -> userRepository.findByEmail(account.trim().toLowerCase(Locale.ROOT)))
+                    .orElse(null);
+            if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                authRateLimitService.recordLoginFailure(httpRequest, account);
+                throw new BusinessException("用户名或密码错误");
+            }
+            if (!"ACTIVE".equals(user.getStatus())) {
+                throw new BusinessException("账号状态不可用");
+            }
+            String token = jwtTokenService.issueToken(user.getId(), user.getUsername());
+            LoginResponse response = new LoginResponse("Bearer", token, jwtTokenService.expirationMinutes(),
+                    CurrentUserSummary.from(user, userRoleLookup.findRoleCodes(user.getId())));
+            authRateLimitService.recordLoginSuccess(account);
+            return ApiResponse.ok(response);
         }
-        if (!"ACTIVE".equals(user.getStatus())) {
-            throw new BusinessException("账号状态不可用");
-        }
-        String token = jwtTokenService.issueToken(user.getId(), user.getUsername());
-        return ApiResponse.ok(new LoginResponse(
-                "Bearer",
-                token,
-                jwtTokenService.expirationMinutes(),
-                CurrentUserSummary.from(user, userRoleLookup.findRoleCodes(user.getId()))));
     }
 
     @GetMapping("/me")

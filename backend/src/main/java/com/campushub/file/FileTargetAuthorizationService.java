@@ -6,7 +6,9 @@ import com.campushub.projectad.ProjectAdRepository;
 import com.campushub.shop.ServiceItemRepository;
 import com.campushub.shop.ShopRepository;
 import com.campushub.task.RewardTaskRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class FileTargetAuthorizationService {
@@ -51,6 +53,15 @@ public class FileTargetAuthorizationService {
                     .orElseThrow(() -> new BusinessException("绑定目标不存在"))
                     .getShop().getOwner().getId(), userId);
             default -> throw new BusinessException("不支持的文件绑定目标");
+        }
+    }
+
+    public void requireCanReadBindings(String targetType, Long targetId, Long userId, boolean admin) {
+        try {
+            requireCanBind(targetType, targetId, userId, admin);
+        } catch (BusinessException denied) {
+            // Metadata reads must not distinguish a missing target from one owned by another user.
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号无权限执行此操作");
         }
     }
 
