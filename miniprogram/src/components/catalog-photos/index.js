@@ -1,5 +1,7 @@
 const { path, transfer } = require('../../lib/catalog-transfer');
 
+const { ApiError } = require('../../lib/request');
+
 function discard(images) {
   for (const image of images) if (image.temp) getApp().taskMedia.discard(image.src);
 }
@@ -75,7 +77,7 @@ Component({
           return;
         }
       } catch (_) {
-        if (seq === this._seq && this.properties.editable) this.setData({ error: '图片暂时无法加载' });
+        if (seq === this._seq && this.properties.editable && !this.data.error) this.setData({ error: '图片暂时无法加载' });
       }
       discard(images);
     },
@@ -95,5 +97,31 @@ Component({
     closePreview() { this.setData({ previewSrc: '' }); },
  async pick(){if(this._picking||this.data.busy||!this.properties.editable)return;this._picking=true;const n=this._rev;try{const capacity=(this.properties.kind==='SHOP'?1:3)-this.data.images.length-this.data.queue.length;if(capacity<1)return;const files=await getApp().taskMedia.pick(capacity);if(n===this._rev&&this._alive)this.setData({queue:this.data.queue.concat(files),error:''});}catch(e){if(n===this._rev)this.setData({error:e.message});}finally{this._picking=false;}},
  drop(e){if(this.data.busy)return;this.setData({queue:this.data.queue.filter(x=>x.key!==e.currentTarget.dataset.key)});},
- async saveTo(id){if(!id||!this.data.queue.length)return;if(this.data.busy)throw Error('正在上传');const rev=this._rev,app=getApp(),token=app.auth.token,kind=this.properties.kind;this.setData({busy:true,error:''});try{for(const f of this.data.queue.slice()){if(rev!==this._rev||!this._alive||token!==app.auth.token)throw Error('页面已变化');await transfer('uploadFile',{url:app.config.baseUrl+path(kind,id),filePath:f.path,name:'file',formData:{clientRequestId:f.key}});if(rev!==this._rev)throw Error('页面已变化');this.setData({queue:this.data.queue.filter(p=>p.key!==f.key)});}await this.load();if(rev===this._rev)this.triggerEvent('changed');}catch(e){if(rev===this._rev)this.setData({error:'资料已保存，照片未传完，请重试'});throw e;}finally{if(rev===this._rev)this.setData({busy:false});}},
- async retry(){try{await this.saveTo(this.properties.objectId);}catch{/* see inline error */}},async remove(e){const {kind,objectId}=this.properties;if(this.data.busy||!this.properties.editable)return;const n=this._rev;this.setData({busy:true,error:''});try{await getApp().client.delete(path(kind,objectId,e.currentTarget.dataset.id));if(n===this._rev){await this.load();this.triggerEvent('changed');}}catch(e){if(n===this._rev)this.setData({error:e.message});}finally{if(n===this._rev)this.setData({busy:false});}}}});
+    async saveTo(id) {
+      if (!id || !this.data.queue.length) return;
+      if (this.data.busy) throw Error('图片正在上传');
+      const rev = this._rev, app = getApp(), token = app.auth.token, kind = this.properties.kind;
+      this.setData({ busy: true, error: '' });
+      try {
+        for (const f of this.data.queue.slice()) {
+          if (rev !== this._rev || !this._alive || token !== app.auth.token) throw Error('页面已变化');
+          await transfer('uploadFile', { url: app.config.baseUrl + path(kind, id), filePath: f.path, name: 'file', formData: { clientRequestId: f.key } });
+          if (rev !== this._rev) throw Error('页面已变化');
+          this.setData({ queue: this.data.queue.filter(p => p.key !== f.key) });
+        }
+        await this.load();
+        if (rev === this._rev) this.triggerEvent('changed');
+      } catch (e) {
+        if (rev !== this._rev) throw e;
+        const message = e instanceof ApiError ? e.message : '照片上传失败：未收到具体原因，请重试';
+        this.setData({ error: message });
+        throw Error(message);
+      } finally { if (rev === this._rev) this.setData({ busy: false }); }
+    },
+    async retry() {
+      const rev = this._rev;
+      try { await this.saveTo(this.properties.objectId); }
+      catch { /* saveTo shows the reason inline. */ }
+      if (rev === this._rev && this._alive && !this._hidden) this.triggerEvent('retryresult', { error: this.data.error });
+    },
+ async remove(e){const {kind,objectId}=this.properties;if(this.data.busy||!this.properties.editable)return;const n=this._rev;this.setData({busy:true,error:''});try{await getApp().client.delete(path(kind,objectId,e.currentTarget.dataset.id));if(n===this._rev){await this.load();this.triggerEvent('changed');}}catch(e){if(n===this._rev)this.setData({error:e.message});}finally{if(n===this._rev)this.setData({busy:false});}}}});

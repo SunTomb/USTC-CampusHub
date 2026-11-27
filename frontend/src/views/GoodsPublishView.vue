@@ -144,9 +144,26 @@ async function submit(){
   if(!savedId.value && (!form.title.trim() || !form.description.trim() || !form.conditionLevel.trim() || !form.tradeLocation.trim() || !form.price || !categories.value.some(c=>c.id===form.categoryId))){ElMessage.warning('请填写分类、名称、成色、价格、说明与交接地点');return}
   const v=version;submitting.value=true
   try {
-    if(!savedId.value){const payload={...form};const item=editingId.value?await updateGoods(editingId.value,payload):await publishGoods(auth.currentUser.id,payload);if(v!==version)return;savedId.value=item.id}
-    await photos.value?.saveTo(savedId.value);if(v!==version)return;ElMessage.success('闲置已保存');await router.push(`/goods/${savedId.value}`)
-  }catch(e){if(v===version){const err=e as {isAxiosError?:boolean;response?:{status:number}};if(!editingId.value && !savedId.value && err?.isAxiosError && (!err.response || err.response.status>=500 || err.response.status===408))uncertain.value=true;ElMessage.error(savedId.value?'闲置已保存，照片未传完，请重试':e instanceof Error?e.message:'保存失败')}}
-  finally{if(v===version)submitting.value=false}
+    if (!savedId.value) {
+      const payload = {...form}
+      const item = editingId.value ? await updateGoods(editingId.value, payload) : await publishGoods(auth.currentUser.id, payload)
+      if (v !== version) return
+      savedId.value = item.id
+    }
+    try { await photos.value?.saveTo(savedId.value) }
+    catch (e) {
+      if (v === version) ElMessage.error(`闲置已保存，${e instanceof Error ? e.message : '照片上传失败：未收到具体原因，请重试'}`)
+      return
+    }
+    if (v !== version) return
+    ElMessage.success('闲置已保存')
+    try { await router.push(`/goods/${savedId.value}`) }
+    catch { if (v === version) ElMessage.error('未能打开详情，请点击「查看已保存的闲置」') }
+  } catch (e) {
+    if (v !== version) return
+    const err = e as {isAxiosError?: boolean; response?: {status: number}}
+    if (!editingId.value && !savedId.value && err?.isAxiosError && (!err.response || err.response.status >= 500 || err.response.status === 408)) uncertain.value = true
+    ElMessage.error(e instanceof Error ? e.message : '保存失败')
+  } finally { if (v === version) submitting.value = false }
 }
 </script>

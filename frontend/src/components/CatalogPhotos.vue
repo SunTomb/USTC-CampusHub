@@ -42,7 +42,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { apiClient, getApi, unwrapApiResponse } from '@/api/client'
+import { ApiError, apiClient, getApi, unwrapApiResponse } from '@/api/client'
+import { uploadCatalogPhoto } from '@/api/catalogUpload'
 import { useAuthStore } from '@/stores/auth'
 
 type Layout = 'thumb' | 'detail' | 'gallery'
@@ -100,7 +101,7 @@ async function load() {
     images.value = metadata.map(photo => ({ id: photo.id, key: `saved-${photo.id}`, src: photo.published ? `/api${base}/${photo.id}` : '' }))
     await loadVisible()
   } catch {
-    if (seq === readSeq) error.value = '图片暂时无法加载'
+    if (seq === readSeq && !error.value) error.value = '图片暂时无法加载'
   } finally {
     if (seq === readSeq) reading.value = false
   }
@@ -145,15 +146,17 @@ async function saveTo(id: number) {
       if (v !== generation) throw Error('页面已变化')
       const body = new FormData()
       body.append('clientRequestId', item.key); body.append('file', item.file!)
-      unwrapApiResponse((await apiClient.post(path(id), body, { timeout: 60000 })).data)
+      await uploadCatalogPhoto(path(id), body)
       if (v !== generation) throw Error('页面已变化')
       drop(item.key)
     }
     await load()
     if (v === generation) emit('changed')
   } catch (e) {
-    if (v === generation) error.value = '资料已保存，图片未传完，可重试'
-    throw e
+    if (v !== generation) throw e
+    const message = e instanceof ApiError ? e.message : '照片上传失败：未收到具体原因，请重试'
+    error.value = message
+    throw new Error(message)
   } finally { if (v === generation) busy.value = false }
 }
 async function retry() { try { await saveTo(target.value) } catch { /* error is shown inline */ } }

@@ -10,7 +10,7 @@
     <view class="form-row"><view class="field"><text class="field-label">所在校区</text><picker disabled="{{busy}}" range="{{zones}}" range-key="label" value="{{zoneIndex}}" data-field="zoneIndex" bindchange="field"><view class="picker">{{zones[zoneIndex].label}}</view></picker></view><view class="field"><text class="field-label">交接方式</text><picker disabled="{{busy}}" range="{{methods}}" range-key="label" value="{{methodIndex}}" data-field="methodIndex" bindchange="field"><view class="picker">{{methods[methodIndex].label}}</view></picker></view></view>
     <view class="field"><text class="field-label">交接点</text><input class="input" disabled="{{busy}}" value="{{form.tradeLocation}}" data-field="form.tradeLocation" bindinput="field" maxlength="120" placeholder="如：图书馆门口"/></view>
   </block>
-  <catalog-photos id="goods-photos" kind="GOODS" object-id="{{savedId || editId || 0}}" editable="{{true}}" />
+  <catalog-photos id="goods-photos" bind:retryresult="photoRetry" kind="GOODS" object-id="{{savedId || editId || 0}}" editable="{{true}}" />
   <view wx:if="{{savedId}}" class="notice">闲置 #{{savedId}} 已保存，可重试未上传的图片，不会重复上架。</view><view wx:if="{{uncertain}}" class="notice">未收到上架结果。请先在「个人 → 我的订单」核对，避免重复发布。</view><view wx:if="{{error}}" class="error">{{error}}</view></block>
 </view>
 <view wx:if="{{ready}}" class="dock"><button wx:if="{{uncertain}}" class="plain" data-url="/pages/orders/index?type=GOODS" bindtap="go">我的订单</button><block wx:else><button wx:if="{{savedId}}" class="plain" data-url="/pages/goods/detail?id={{savedId}}" bindtap="go">查看闲置</button><button class="primary" bindtap="save" loading="{{busy}}" disabled="{{busy}}">{{savedId ? '重试图片' : editId ? '保存修改' : '确认上架'}}</button></block></view>

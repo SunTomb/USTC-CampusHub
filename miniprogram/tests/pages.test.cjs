@@ -402,3 +402,27 @@ test('owner album stays mounted on picker return but is cleared on ordinary hide
   h.page.onHide();assert.equal(h.page.data.item,null);
   await h.page.onShow();picking=true;h.page.onHide();h.auth.logout();assert.equal(h.page.data.item,null);
 });
+
+for(const edit of [false,true]) test(`goods save and gallery share the specific failure; retry keeps the ID and keys (edit=${edit})`,async()=>{
+  let saves=0, rejectSave=true; const uploads=[];
+  const save=async()=>{saves++;if(rejectSave)throw Error('商品未保存');return {id:23};};
+  const {page,calls}=pageHarness('goods/publish',edit?{updateGoods:save}:{publishGoods:save});
+  const app=getApp(); app.client={get:async()=>[]};global.getApp=()=>app;
+  let gallery;global.Component=v=>{gallery=v;};const file=require.resolve('../src/components/catalog-photos/index');delete require.cache[file];require(file);
+  const el={...gallery.methods,properties:{kind:'GOODS',objectId:edit?23:0,editable:true},data:structuredClone(gallery.data),setData(v){Object.assign(this.data,v);},triggerEvent(name, detail){ if(name==='retryresult') page.photoRetry({detail}); }};
+  gallery.lifetimes.attached.call(el);page.selectComponent=()=>el;
+  page._visible=true;page.setData({ready:true,editId:edit?23:0,categories:[{id:1}],form:{title:'课本',description:'说明',price:'2',conditionLevel:'新',tradeLocation:'校内'}});
+  el.setData({queue:['a','b','c'].map(key=>({key,path:'tmp-'+key}))});
+  wx.uploadFile=o=>{assert.ok(o.url.endsWith('/GOODS/23'));uploads.push(o.formData.clientRequestId);o.success({statusCode:200,data:JSON.stringify(uploads.length===2?{success:false,message:'图片尺寸过大'}:{success:true,data:{id:1}})});};
+  await page.save();assert.equal(page.data.error,'商品未保存');assert.equal(page.data.savedId,0);assert.deepEqual(uploads,[]);
+  rejectSave=false;await Promise.all([page.save(),page.save()]);
+  const reason='照片上传失败：图片尺寸过大，请缩小图片宽高后重试';
+  assert.equal(page.data.error,'闲置已保存，'+reason);assert.equal(el.data.error,reason);assert.deepEqual(el.data.queue.map(f=>f.key),['b','c']);
+  if(edit){
+    wx.uploadFile=o=>o.success({statusCode:403,data:{success:false,message:'不能修改此图片'}});
+    await el.retry();assert.equal(page.data.error,'闲置已保存，照片上传失败：不能修改此图片');
+    wx.uploadFile=o=>{uploads.push(o.formData.clientRequestId);o.success({statusCode:200,data:{success:true,data:{id:2}}});};
+    await el.retry();assert.equal(page.data.error,'');
+  }
+  await page.save();assert.equal(saves,2);assert.deepEqual(uploads,['a','b','b','c']);assert.deepEqual(calls.at(-1),['redirect','/pages/goods/detail?id=23']);
+});
